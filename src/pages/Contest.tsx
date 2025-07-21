@@ -244,19 +244,18 @@ const Contest: React.FC = () => {
 
     return ""
   }
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Easy":
-        return "bg-green-100 text-green-700 border-green-200"
-      case "Medium":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200"
-      case "Hard":
-        return "bg-red-100 text-red-700 border-red-200"
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200"
-    }
+  const getDifficultyColor = (difficulty?: string) => {
+  switch (difficulty) {
+    case "Easy":
+      return "bg-green-100 text-green-700 border-green-200";
+    case "Medium":
+      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    case "Hard":
+      return "bg-red-100 text-red-700 border-red-200";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-200";
   }
+};
 
   const filteredContests = contests.filter((contest) => {
     if (filter === "all") return true
@@ -408,15 +407,22 @@ const Contest: React.FC = () => {
                   </div>
 
                   {/* Problems Preview */}
+                  {/* Problems Preview */}
                   {contest.problems.length > 0 && (
                     <div>
                       <p className="text-sm font-semibold text-gray-700 mb-2">Problems:</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {contest.problems.slice(0, 3).map((problem, index) => (
-                          <Badge key={index} className={`${getDifficultyColor(problem.difficulty)} text-xs`}>
-                            {problem.title}
-                          </Badge>
-                        ))}
+                        {actualStatus === "ended"
+                          ? contest.problems.slice(0, 3).map((problemObj, index) => (
+                              <Badge key={index} className={`${getDifficultyColor(problemObj.problem?.difficulty)} text-xs`}>
+                                {problemObj.problem?.title || "Untitled"}
+                              </Badge>
+                            ))
+                          : contest.problems.slice(0, 3).map((problemObj, index) => (
+                              <Badge key={index} className={`${getDifficultyColor(problemObj.problem?.difficulty)} text-xs`}>
+                                🔒 Locked
+                              </Badge>
+                            ))}
                         {contest.problems.length > 3 && (
                           <Badge variant="outline" className="text-xs">
                             +{contest.problems.length - 3} more
@@ -458,8 +464,11 @@ const Contest: React.FC = () => {
                       <div className="space-y-2">
                         {contest.participants
                           .sort((a, b) => a.rank - b.rank)
-                          .slice(0, 3)
-                          .map((participant, index) => (
+                          .slice(0, Math.min(3, contest.participants.length))
+                          .map((participant, index) => {
+                            console.log("Participant object:", participant); 
+                            return(
+                            // console.log("Participant object:", participant)
                             <div key={index} className="flex items-center justify-between">
                               <div className="flex items-center">
                                 <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${
@@ -469,11 +478,13 @@ const Contest: React.FC = () => {
                                 }`}>
                                   {participant.rank}
                                 </span>
-                                <span className="ml-2 text-sm font-medium text-gray-900">{participant.user.username}</span>
+                                <span className="ml-2 text-sm font-medium text-gray-900">
+                                  {participant.user?.username || "Unknown"}
+                                </span>
                               </div>
                               <span className="text-sm font-bold text-blue-600">{participant.score} pts</span>
                             </div>
-                          ))}
+                          )})}
                       </div>
                     </div>
                   )}

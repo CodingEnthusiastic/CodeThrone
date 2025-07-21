@@ -92,8 +92,8 @@ router.post('/login', async (req, res) => {
     }
 
     // Check role
-    if (user.role !== role) {
-      console.log('❌ Role mismatch for user:', user.username, 'Expected:', role, 'Actual:', user.role);
+    if (user.role !== "user" && user.role !== "admin") {
+      console.log('❌ Role not allowed for user:', user.username, 'Actual:', user.role);
       return res.status(400).json({ message: 'Invalid credentials or insufficient permissions' });
     }
 

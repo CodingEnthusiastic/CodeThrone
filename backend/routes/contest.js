@@ -1,6 +1,7 @@
 import express from "express"
 import Contest from "../models/Contest.js"
 import { authenticateToken, requireAdmin } from "../middleware/auth.js"
+import User from "../models/User.js" // Add this import at the top
 const router = express.Router()
 
 // Function to determine contest status based on current time
@@ -59,7 +60,8 @@ router.get("/", async (req, res) => {
     console.log("🔍 Querying all contests...")
     const contests = await Contest.find()
       .populate("createdBy", "username")
-      .populate("problems", "title difficulty")
+      .populate("participants.user", "username")
+      .populate("problems.problem", "title difficulty")
       .sort({ startTime: -1 })
 
     // Update contest statuses based on current time
@@ -103,14 +105,45 @@ router.get("/:id", async (req, res) => {
 
     // Update status based on current time
     const actualStatus = getContestStatus(contest.startTime, contest.endTime)
-
+    let ratingsUpdated = false
     if (contest.status !== actualStatus) {
       contest.status = actualStatus
       await contest.save()
+      // If contest just ended, update ratings and history
+      if (actualStatus === "ended") {
+        ratingsUpdated = true
+        for (const participant of contest.participants) {
+          const user = await User.findById(participant.user._id)
+          if (user) {
+            // Calculate new rating (simple example: +10 for top 3, else +2)
+            let ratingChange = 2
+            if (participant.rank === 1) ratingChange = 10
+            else if (participant.rank === 2) ratingChange = 7
+            else if (participant.rank === 3) ratingChange = 5
+
+            user.ratings.contestRating += ratingChange
+            if (!user.contestHistory.some(h => h.contest.toString() === contest._id.toString())) {
+            // Add contest history entry
+            user.contestHistory.push({
+              contest: contest._id,
+              rank: participant.rank,
+              score: participant.score,
+              ratingChange,
+              problemsSolved: participant.submissions.filter(s => s.score > 0).length,
+              totalProblems: contest.problems.length,
+              date: contest.endTime,
+            })
+          }
+            await user.save()
+            console.log(`✅ Updated rating and history for user ${user.username}: +${ratingChange}`)
+          }
+        }
+      }
     }
 
     console.log("✅ Contest found:", contest.name, "Status:", actualStatus)
-    res.json(contest)
+    // res.json(contest)
+    res.json({ ...contest.toObject(), ratingsUpdated })
   } catch (error) {
     console.error("❌ Get contest error:", error)
     res.status(500).json({ message: "Server error", error: error.message })
@@ -388,6 +421,76 @@ router.put("/:id", authenticateToken, requireAdmin, async (req, res) => {
     res.json(contest)
   } catch (error) {
     console.error("❌ Update contest error:", error)
+    res.status(500).json({ message: "Server error", error: error.message })
+  }
+})
+
+function calculateCodeforcesElo(participants) {
+  // Sort by rank (ascending)
+  participants.sort((a, b) => a.rank - b.rank);
+
+  // Get ratings before contest
+  const ratingsBefore = participants.map(p => p.user.ratings.contestRating || 1200);
+
+  // K-factor (Codeforces uses 60 for new, 30 for experienced)
+  const K = 40;
+
+  // Calculate expected place for each participant
+  const expectedRanks = ratingsBefore.map((rating, i) => {
+    let exp = 1;
+    for (let j = 0; j < ratingsBefore.length; j++) {
+      if (i === j) continue;
+      exp += 1 / (1 + Math.pow(10, (ratingsBefore[j] - rating) / 400));
+    }
+    return exp;
+  });
+
+  // Actual ranks are their position (1-based)
+  const actualRanks = participants.map(p => p.rank);
+
+  // Calculate rating change for each participant
+  const ratingChanges = ratingsBefore.map((rating, i) => {
+    // The lower your actual rank compared to expected, the more you gain
+    const delta = K * (expectedRanks[i] - actualRanks[i]);
+    return Math.round(delta);
+  });
+
+  return ratingChanges;
+}
+
+// Admin: Backfill ratings/history for all ended contests
+router.post("/admin/backfill-ended-contests", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const contests = await Contest.find({ status: "ended" }).populate("participants.user").populate("problems")
+    let updatedUsers = 0
+    for (const contest of contests) {
+      const validParticipants = contest.participants.filter(p => p.rank > 0 && p.user)
+      const ratingChanges = calculateCodeforcesElo(validParticipants)
+
+      for (let i = 0; i < validParticipants.length; i++) {
+        const participant = validParticipants[i]
+        const user = await User.findById(participant.user._id)
+        if (user) {
+          user.ratings.contestRating = (user.ratings.contestRating || 1200) + ratingChanges[i];
+          if (!user.contestHistory.some(h => h.contest.toString() === contest._id.toString())) {
+          user.contestHistory.push({
+            contest: contest._id,
+            rank: participant.rank,
+            score: participant.score,
+            ratingChange: ratingChanges[i],
+            problemsSolved: participant.submissions.filter(s => s.score > 0).length,
+            totalProblems: contest.problems.length,
+            date: contest.endTime,
+          })
+        }
+          await user.save()
+          updatedUsers++
+        }
+      }
+    }
+    res.json({ message: `Backfill complete. Updated ${updatedUsers} users.` })
+  } catch (error) {
+    console.error("❌ Backfill error:", error)
     res.status(500).json({ message: "Server error", error: error.message })
   }
 })

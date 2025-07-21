@@ -18,6 +18,8 @@ import geminiRoutes from './routes/gemini.js';
 import announcementsRouter from './routes/announcements.js';
 console.log('🚀 Starting backend server...');
 import announcementRoutes from './routes/announcements.js';
+import statsRouter from './routes/stats.js';
+
 // Load environment variables
 dotenv.config({path: '../.env'});
 console.log('✅ Environment variables loaded');
@@ -86,6 +88,8 @@ console.log('✅ Game routes mounted at /api/game');
 app.use('/api/profile', profileRoutes);
 console.log('✅ Profile routes mounted at /api/profile');
 
+// <-- This line is required
+
 // app.use('/api/announcements', announcementRoutes);
 // console.log('✅ Announcement routes mounted at /api/announcements');
 
@@ -108,6 +112,8 @@ app.get('/api/health', (req, res) => {
 app.use('/api/gemini', geminiRoutes);
 app.use('/api/announcements', announcementRoutes);
 
+// app.use('/api/stats', statsRouter); 
+
 // Socket.io setup
 console.log('🔌 Setting up Socket.IO...');
 setupGameSocket(io);
@@ -116,7 +122,7 @@ console.log('✅ Socket.IO game handlers configured');
 // ✅ CRITICAL FIX: Make io instance available to routes
 app.set('io', io);
 console.log('✅ Socket.IO instance made available to routes');
-
+app.use('/api/stats', statsRouter); 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log('🎉 Server is running successfully!');

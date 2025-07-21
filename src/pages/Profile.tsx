@@ -2,7 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { User, Github, Linkedin, Trophy, Code, TrendingUp, Calendar, Award, Star, Target, Zap, BookOpen, Activity, Clock, CheckCircle } from 'lucide-react';
+// import { Card, CardHeader, CardContent, CardTitle } from '../components/Card'; // Adjust path if needed
+
+export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
+  <div className={`bg-white rounded-lg shadow-sm p-6 ${className}`}>{children}</div>
+);
+
+export const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="mb-4">{children}</div>
+);
+
+export const CardContent: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div>{children}</div>
+);
+
+export const CardTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <h3 className="text-lg font-semibold text-gray-900 mb-2">{children}</h3>
+);
+
 
 interface UserProfile {
   _id: string;
@@ -95,6 +114,7 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<{ topContest: any[]; topGame: any[] }>({ topContest: [], topGame: [] });
   const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
@@ -113,6 +133,20 @@ const Profile: React.FC = () => {
       fetchProfile();
     }
   }, [username]);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+  const fetchLeaderboard = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/stats/global-leaderboard');
+      setLeaderboard(response.data);
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    }
+  };
+  fetchLeaderboard();
+}, []);
 
   const fetchProfile = async () => {
     console.log('📡 Fetching profile for username:', username);
@@ -450,7 +484,48 @@ const Profile: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            <Card className="mb-4">
+              <CardHeader>
+                <CardTitle>Global Leaderboard</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div>
+                  <h4 className="font-semibold mb-2">Top Contest Ratings</h4>
+                  {leaderboard.topContest.map((user, idx) => (
+                    <button
+                      key={user._id}
+                      className="w-full flex items-center justify-between px-4 py-2 mb-2 rounded-lg border hover:bg-blue-50 transition cursor-pointer"
+                      onClick={() => navigate(`/profile/${user.username}`)}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="font-bold text-gray-700">{idx + 1}.</span>
+                        <span className="font-medium text-blue-700">{user.username}</span>
+                      </span>
+                      <span className="font-bold text-purple-600 text-lg">{user.contestRating}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-2">Top Game Ratings</h4>
+                  {leaderboard.topGame.map((user, idx) => (
+                    <button
+                      key={user._id}
+                      className="w-full flex items-center justify-between px-4 py-2 mb-2 rounded-lg border hover:bg-green-50 transition cursor-pointer"
+                      onClick={() => navigate(`/profile/${user.username}`)}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="font-bold text-gray-700">{idx + 1}.</span>
+                        <span className="font-medium text-green-700">{user.username}</span>
+                      </span>
+                      <span className="font-bold text-blue-600 text-lg">{user.gameRating}</span>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
+
           
           {/* Main Content */}
           <div className="lg:col-span-2">

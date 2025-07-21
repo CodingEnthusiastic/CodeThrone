@@ -2,7 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import Problem from '../models/Problem.js';
 import Game from '../models/Game.js';
-import Submission from '../models/Submission.js';
+// import Submission from '../models/Submission.js';
 
 const router = express.Router();
 
@@ -217,6 +217,29 @@ router.get('/user/:userId', async (req, res) => {
       message: 'Failed to fetch user statistics',
       error: error.message 
     });
+  }
+});
+
+router.get('/global-leaderboard', async (req, res) => {
+  try {
+    // Fetch all users with ratings
+    const users = await User.find({}, 'username ratings profile');
+    console.log("Leaderboard userrs",users);
+    // Sort by contest rating and get top 5
+    const topContest = users
+      .filter(u => typeof u.ratings?.contestRating === 'number')
+      .sort((a, b) => b.ratings.contestRating - a.ratings.contestRating)
+      .slice(0, 5);
+    console.log(topContest);
+    // Sort by game rating and get top 5
+    const topGame = users
+      .filter(u => typeof u.ratings?.gameRating === 'number')
+      .sort((a, b) => b.ratings.gameRating - a.ratings.gameRating)
+      .slice(0, 5);
+    console.log(topGame);
+    res.json({ topContest, topGame });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 

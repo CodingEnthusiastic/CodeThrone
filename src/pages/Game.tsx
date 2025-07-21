@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useAuth } from "../contexts/AuthContext"
 import axios from "axios"
 import io from "socket.io-client"
@@ -63,8 +63,6 @@ interface SubmissionResult {
     passed: boolean
   }[]
 }
-
-// Enhanced Winner/Loser Modal Component with proper styling
 
 // Enhanced Winner/Loser Modal Component with proper styling
 const GameEndModal: React.FC<{
@@ -154,30 +152,31 @@ const GameStatusCard: React.FC<{
     if (searchingForMatch) {
       return "🔍 Searching for opponent..."
     }
-    
+
     if (!socketConnected) {
       return "🔌 Connecting to game server..."
     }
-    
+
     if (activeGame) {
+      const bothPlaying = activeGame.players.length === 2 &&
+        activeGame.players.every(p => p.status === "playing")
+      if (bothPlaying && activeGame.status === "ongoing") {
+        return "✅ Connected - Game in progress"
+      }
       if (activeGame.players.length === 1) {
         return "⏳ Waiting for opponent to join..."
       }
-      
       if (activeGame.players.length === 2 && activeGame.status === "waiting") {
         return "🚀 Match found! Starting game..."
       }
-      
-      // ✅ FIXED: Check for ongoing status OR gameStarted
       if ((activeGame.status === "ongoing" || gameStarted) && activeGame.players.length === 2) {
         return "✅ Game in progress - coding enabled"
       }
-      
       if (activeGame.status === "ongoing" && !activeGame.startTime) {
         return "🚀 Starting game..."
       }
     }
-    
+
     return "🎮 Preparing game..."
   }
 
@@ -247,6 +246,64 @@ const Game: React.FC = () => {
   const [socketConnected, setSocketConnected] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const timerRef = useRef<number | null>(null)
+
+  // State for resuming a game
+  const [resumeGame, setResumeGame] = useState<GameRoom | null>(null)
+  const [checkingResume, setCheckingResume] = useState(true)
+
+  // Effect to check for any in-progress game on component mount
+  useEffect(() => {
+    const checkForActiveGame = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setCheckingResume(true);
+        const response = await axios.get(
+          "http://localhost:5000/api/game/active",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        
+        if (response.data) {
+          console.log("🔄 Active game found:", response.data._id);
+          setResumeGame(response.data);
+        }
+      } catch (error) {
+        console.error("❌ Error checking for active game:", error);
+      } finally {
+        setCheckingResume(false);
+      }
+    };
+    
+    checkForActiveGame();
+  }, [user?.id]);
+
+  // Effect to check for resume game on mount
+  const forceLeaveAndDeleteGame = async () => {
+    if (activeGame) {
+      try {
+        await axios.post(
+          `http://localhost:5000/api/game/force-leave/${activeGame._id}`,
+          {},
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        )
+      } catch (e) {
+        // Ignore errors, still reset state
+      }
+    }
+    resetGame()
+  }
+
+  // Effect to check for resume game on mount
+  const handleResumeGame = useCallback(() => {
+    if (resumeGame) {
+      setActiveGame(resumeGame)
+      window.history.pushState({}, '', `/game/play/${resumeGame._id}`)
+    }
+  }, [resumeGame])
 
   // ✅ FIXED: Check URL params for direct game access on component mount
   useEffect(() => {
@@ -324,7 +381,6 @@ useEffect(() => {
 
   // 2️⃣ If there's an existing socket for a different game, tear it down
   if (socketRef.current && (socketRef.current as any).gameId !== activeGame._id) {
-    console.log("🔌 Disconnecting stale socket for game:", (socketRef.current as any).gameId);
     socketRef.current.disconnect();
     socketRef.current = null;
     setSocketConnected(false);
@@ -332,7 +388,6 @@ useEffect(() => {
 
   // 3️⃣ Create a new socket if needed
   if (!socketRef.current) {
-    console.log("🚀 Creating new socket for game:", activeGame._id);
     socketRef.current = io("http://localhost:5000", {
       auth: { token: localStorage.getItem("token"), userId: user.id },
       reconnection: true,
@@ -343,182 +398,50 @@ useEffect(() => {
       timeout: 10000,
       forceNew: true,
     });
-    
-    // attach gameId for cleanup logic
     (socketRef.current as any).gameId = activeGame._id;
-    console.log("✅ Socket created with game ID:", activeGame._id);
-  }
 
-  // 4️⃣ Remove any old listeners so we don't double‑register
-  socketRef.current.removeAllListeners();
-
-  // 5️⃣ CONNECTION EVENTS
-  socketRef.current.on("connect", () => {
-    console.log("✅ Socket connected, ID:", socketRef.current?.id);
-    setSocketConnected(true);
-    // Immediately join the game room
-    console.log("🎮 Joining game room:", activeGame._id);
-    socketRef.current!.emit("join-game", activeGame._id);
-  });
-
-  socketRef.current.on("disconnect", (reason: string) => {
-    console.log("🔌 Socket disconnected:", reason);
-    setSocketConnected(false);
-  });
-
-  socketRef.current.on("connect_error", (error: any) => {
-    console.error("❌ Socket connection error:", error);
-    setSocketConnected(false);
-  });
-
-  // Also check if the socket is already connected when the effect runs
-  if (socketRef.current.connected) {
-    console.log("✅ Socket was already connected on effect run.");
-    setSocketConnected(true);
-    console.log("🎮 Joining game room on re-render:", activeGame._id);
-    socketRef.current!.emit("join-game", activeGame._id);
-  }
-
-
-  // 6️⃣ GAME STATE UPDATES
-  socketRef.current.on("game-state", (gameState: GameRoom) => {
-    console.log("📊 game-state received:", {
-      gameId: gameState._id,
-      status: gameState.status,
-      playersCount: gameState.players.length,
-      startTime: gameState.startTime,
-      players: gameState.players.map(p => p.user.username)
+    // 4️⃣ Set up listeners ONCE
+    socketRef.current.on("connect", () => {
+      setSocketConnected(true);
+      socketRef.current!.emit("join-game", activeGame._id);
     });
-    
-    setActiveGame(gameState);
-    
-    // update opponent progress
-    const opp = gameState.players.find(p => p.user._id !== user.id);
-    if (opp) {
-      setOpponentProgress({
-        testCasesPassed: opp.testCasesPassed || 0,
-        totalTestCases: opp.totalTestCases || 0,
-      });
-    }
-    
-    // set template if needed
-    if (gameState.problem && code.length === 0) {
-      setCode(getDefaultCodeTemplate(language, gameState.problem));
-    }
-    
-    // ✅ CRITICAL FIX: Check if game should start based on updated state
-    if (gameState.status === "ongoing" && 
-        gameState.players.length === 2 && 
-        gameState.startTime) {
-      console.log("🚀 Game-state indicates game should start!");
+    socketRef.current.on("disconnect", () => setSocketConnected(false));
+    socketRef.current.on("connect_error", () => setSocketConnected(false));
+    // ...all your other listeners here...
+
+    // Listen for real-time game state updates
+    socketRef.current.on("game-started", (data) => {
+      console.log("🚦 [SOCKET] Game started event received", data);
+      setActiveGame(data.game);
       setGameStarted(true);
-      
-      // Calculate time remaining
-      const now = new Date().getTime();
-      const start = new Date(gameState.startTime).getTime();
-      const timeLimitMs = gameState.timeLimit * 60 * 1000;
-      const remaining = Math.max(0, start + timeLimitMs - now);
-      const remainingSeconds = Math.floor(remaining / 1000);
-      setTimeRemaining(remainingSeconds);
-    }
-  });
-
-  // 7️⃣ GAME START
-  socketRef.current.on("game-started", (data: { game: GameRoom; timeLimit: number }) => {
-    console.log("🚀 game-started received:", data);
-    setActiveGame(data.game);
-    setGameStarted(true);
-    setTimeRemaining(data.timeLimit * 60);
-  });
-
-  // 8️⃣ PLAYER JOINED - ✅ CRITICAL FIX: This should update User1 when User2 joins
-  socketRef.current.on("player-joined", (payload: { playerId: string; playerCount: number; game: GameRoom }) => {
-    console.log("👥 player-joined:", {
-      playerId: payload.playerId,
-      playerCount: payload.playerCount,
-      gameStatus: payload.game.status,
-      gameStartTime: payload.game.startTime
+      // Optionally, set timer here if needed
     });
-    
-    // ✅ Update the game state immediately
-    setActiveGame(payload.game);
-    
-    // ✅ If game is now ready to start (2 players, ongoing status), start it
-    if (payload.game.status === "ongoing" && 
-        payload.game.players.length === 2 && 
-        payload.game.startTime) {
-      console.log("🚀 Player-joined triggered game start!");
-      setGameStarted(true);
-      
-      // Calculate time remaining
-      const now = new Date().getTime();
-      const start = new Date(payload.game.startTime).getTime();
-      const timeLimitMs = payload.game.timeLimit * 60 * 1000;
-      const remaining = Math.max(0, start + timeLimitMs - now);
-      const remainingSeconds = Math.floor(remaining / 1000);
-      setTimeRemaining(remainingSeconds);
+
+    socketRef.current.on("player-joined", (data) => {
+      console.log("👥 [SOCKET] Player joined event received", data);
+      setActiveGame(data.game);
+    });
+
+    socketRef.current.on("game-state", (data) => {
+      console.log("🔄 [SOCKET] Game state update received", data);
+      setActiveGame(data);
+    });
+
+    // 5️⃣ If already connected, set state and join room
+    if (socketRef.current.connected) {
+      setSocketConnected(true);
+      socketRef.current!.emit("join-game", activeGame._id);
     }
-  });
-
-  // 9️⃣ PROGRESS / SUBMISSIONS / FINISH
-  socketRef.current.on("player-progress", (d) => {
-    if (d.playerId !== user.id) {
-      setOpponentProgress({ testCasesPassed: d.testCasesPassed, totalTestCases: d.totalTestCases });
-    }
-  });
-
-  socketRef.current.on("submission-result", (res: SubmissionResult) => {
-    console.log("📝 submission-result:", res);
-    setSubmissionResult(res);
-    setSubmitting(false);
-  });
-
-  socketRef.current.on("submission-error", (err: { message: string }) => {
-    console.error("❌ submission-error:", err);
-    alert("Submission failed: " + err.message);
-    setSubmitting(false);
-  });
-
-  socketRef.current.on("game-finished", (data) => {
-    console.log("🏁 game-finished:", data);
-    setGameFinished(true);
-    setGameStarted(false);
-    setWinner(data.winnerId || data.winner || null);
-    setShowGameEndModal(true);
-    setSubmitting(false);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (data.finalState) {
-        // Filter test cases before setting state
-        const finalStateWithFilteredProblem = {
-            ...data.finalState,
-            problem: {
-                ...data.finalState.problem,
-                testCases: data.finalState.problem.testCases.filter((tc: any) => tc.isPublic),
-            },
-        };
-        setActiveGame(finalStateWithFilteredProblem);
-    }
-  });
-
-  socketRef.current.on("error", (err: { message: string }) => {
-    console.error("❌ socket error:", err);
-    alert(err.message);
-  });
+  }
 
   // 🔚 CLEANUP on unmount or game ID change
   return () => {
-    console.log("🔌 Socket effect cleanup for game:", activeGame._id);
     if (socketRef.current) {
-      console.log("🧹 Disconnecting socket in cleanup");
       socketRef.current.disconnect();
       socketRef.current = null;
       setSocketConnected(false);
     }
   };
-
 }, [activeGame?._id, user?.id]);
 
   // Timer effect - Fixed to properly handle game timing
@@ -1116,17 +1039,19 @@ int main() {
   const isSubmitEnabled = () => {
     const hasCode = !!code.trim()
     const socketReady = socketRef.current?.connected && socketConnected
-    
-    // ✅ CRITICAL FIX: More permissive game start detection
-    const gameIsReady = activeGame && gameStarted
-    
+
+    // Both players must be "playing" and game must be "ongoing"
+    const bothPlaying = activeGame?.players?.length === 2 &&
+      activeGame.players.every(p => p.status === "playing")
+    const gameIsReady = activeGame && activeGame.status === "ongoing" && bothPlaying
+
     const canSubmit = (
       gameIsReady &&
       !gameFinished &&
       !submitting &&
       socketReady
     )
-    
+
     const enabled = hasCode && canSubmit
 
     console.log("🔘 Submit button enabled check:", {
@@ -1134,9 +1059,7 @@ int main() {
       socketReady,
       gameFinished,
       gameStatus: activeGame?.status,
-      gameStarted,
-      hasStartTime: !!activeGame?.startTime,
-      playersCount: activeGame?.players?.length,
+      bothPlaying,
       submitting,
       gameIsReady,
       result: enabled,
@@ -1232,7 +1155,7 @@ int main() {
             {/* Added Leave Game Button */}
             <div className="mt-4 flex justify-end">
               <button
-                onClick={resetGame}
+                onClick={forceLeaveAndDeleteGame}
                 className="flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
               >
                 <LogOut className="h-4 w-4 mr-2" />
@@ -1462,6 +1385,17 @@ int main() {
       />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Resume Game Button */}
+        {!activeGame && resumeGame && (
+          <div className="mb-6 flex justify-center">
+            <button
+              onClick={handleResumeGame}
+              className="bg-orange-500 text-white px-6 py-3 rounded-md hover:bg-orange-600 transition-colors font-semibold shadow"
+            >
+              Resume Previous Game
+            </button>
+          </div>
+        )}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
             <Gamepad2 className="h-16 w-16 text-blue-600" />

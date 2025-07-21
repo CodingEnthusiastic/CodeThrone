@@ -162,9 +162,11 @@ socket.on("disconnect", async (reason) => {
         console.log(`✅ Game ${game._id} marked as finished due to disconnect`)
       } else {
         // No opponent, just clean up
-        game.status = "cancelled";
-        await game.save();
-        console.log(`🗑️ Game ${game._id} cancelled - no opponent`)
+        game.status = "finished"
+        game.result = "abandoned"
+        await game.save()
+        await Game.deleteOne({ _id: game._id })
+        console.log(`🗑️ Game ${game._id} abandoned and deleted as the last player left`)
       }
     } else if (game.status === "waiting") {
       console.log(`🗑️ Removing player from waiting game ${game._id}`)
@@ -172,20 +174,26 @@ socket.on("disconnect", async (reason) => {
       game.players = game.players.filter((p) => p.user._id.toString() !== socket.userId)
       
       if (game.players.length === 0) {
-        await Game.deleteOne({ _id: game._id })
-        console.log(`🗑️ Waiting game ${game._id} deleted - no players left`)
+        await Game.deleteOne({ _id: game._id });
+        console.log(`🗑️ Game ${game._id} deleted as all players left`);
       } else {
         await game.save()
-        
         // Notify remaining players of updated game state
         const updatedGame = await Game.findById(game._id)
           .populate("players.user", "username ratings")
           .populate("problem")
-        
         io.to(game._id.toString()).emit("game-state", updatedGame)
         console.log(`📡 Updated game state sent to remaining players`)
       }
     }
+
+    // Remove user from all waiting/ongoing games as a failsafe
+    await Game.updateMany(
+      { "players.user": socket.userId, status: { $in: ["waiting", "ongoing"] } },
+      { $pull: { players: { user: socket.userId } } }
+    );
+    // Optionally, delete games with no players left
+    await Game.deleteMany({ players: { $size: 0 } });
   }
   
   if (graceTime > 0) {
@@ -299,18 +307,21 @@ socket.on("leave-game", async (gameId) => {
       return
     }
 
+    // Set player status to finished
+    game.players[playerIndex].status = "finished"
+
     if (game.status === "ongoing") {
-      console.log(`⚠️ User ${socket.userId} left ongoing game ${game._id}`)
       const opponentPlayer = game.players.find((p) => p.user.toString() !== socket.userId)
 
-      if (opponentPlayer) {
+      if (opponentPlayer && opponentPlayer.user) {
         game.winner = opponentPlayer.user
         game.status = "finished"
         game.endTime = new Date()
         game.result = "opponent_left"
-        console.log(`🏆 Game ${game._id} ended: ${socket.userId} left, ${opponentPlayer.user} wins`)
-
-        await updateELORatings(game)
+        // Only update ELO if there are 2 players
+        if (game.players.length === 2) {
+          await updateELORatings(game)
+        }
         await game.save()
 
         // ✅ CRITICAL FIX: Emit to ALL connections for both users to ensure cleanup
@@ -367,8 +378,8 @@ socket.on("leave-game", async (gameId) => {
       game.players = game.players.filter((p) => p.user.toString() !== socket.userId)
       
       if (game.players.length === 0) {
-        await Game.deleteOne({ _id: game._id })
-        console.log(`🗑️ Waiting game ${game._id} deleted as all players left`)
+        await Game.deleteOne({ _id: game._id });
+        console.log(`🗑️ Game ${game._id} deleted as all players left`);
       } else {
         await game.save()
         console.log(`💾 Waiting game ${game._id} updated after player left. Remaining players: ${game.players.length}`)
@@ -382,8 +393,8 @@ socket.on("leave-game", async (gameId) => {
 
     // ✅ CRITICAL FIX: Remove from active connections to prevent zombie connections
     if (activeConnections.get(socket.userId) === socket) {
-      activeConnections.delete(socket.userId)
-      console.log(`🗑️ Removed ${socket.userId} from active connections`)
+      activeConnections.delete(socket.userId);
+      console.log(`🗑️ Removed ${socket.userId} from active connections`);
     }
 
   } catch (error) {
@@ -445,7 +456,7 @@ socket.on("leave-game", async (gameId) => {
           game.winner = game.players[playerIndex].user
           game.status = "finished"
           game.endTime = new Date()
-          game.result = "win"
+          game.result = "win" 
           
           await updateELORatings(game)
           await game.save()
@@ -650,7 +661,7 @@ async function executeCodeForGame(code, language, testCases) {
 
 // Enhanced ELO rating calculation
 async function updateELORatings(game) {
-  if (game.players.length !== 2) {
+  if (!game.players || game.players.length !== 2) {
     console.log("⚠️ Cannot update ratings: game does not have exactly 2 players")
     return
   }
@@ -747,3 +758,5 @@ async function updateELORatings(game) {
 
   console.log("💾 User ratings and game history updated in database")
 }
+
+export { updateELORatings }

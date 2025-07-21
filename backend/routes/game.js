@@ -3,6 +3,7 @@ import Game from "../models/Game.js"
 import Problem from "../models/Problem.js"
 import { authenticateToken } from "../middleware/auth.js"
 import { v4 as uuidv4 } from "uuid"
+import { updateELORatings } from "../socket/game.js"
 
 const router = express.Router()
 
@@ -70,6 +71,10 @@ router.post("/random", authenticateToken, async (req, res) => {
         game.status = "ongoing"
         game.startTime = new Date()
         console.log("⏰ Game start time set to:", game.startTime)
+
+        // Set player status to "playing"
+        game.players.forEach(p => { p.status = "playing"; });
+        await game.save();
       }
 
       console.log("💾 Saving updated game with 2 players...")
@@ -346,6 +351,10 @@ router.post("/room/:roomId/join", authenticateToken, async (req, res) => {
       game.status = "ongoing"
       game.startTime = new Date()
       console.log("⏰ Room game start time set to:", game.startTime)
+
+      // Set player status to "playing"
+      game.players.forEach(p => { p.status = "playing"; });
+      await game.save();
     }
 
     console.log("💾 Saving joined game...")
@@ -494,6 +503,81 @@ router.get("/:gameId", authenticateToken, async (req, res) => {
   }
 })
 
+// Get my active game (waiting or ongoing)
+router.get("/my-active", authenticateToken, async (req, res) => {
+  const game = await Game.findOne({
+    "players.user": req.user._id,
+    status: { $in: ["waiting", "ongoing"] }
+  })
+    .populate("players.user", "username ratings")
+    .populate("problem", "title difficulty description examples constraints testCases")
+  if (!game) return res.json({})
+  res.json({
+    ...game.toObject(),
+    problem: {
+      ...game.problem.toObject(),
+      testCases: game.problem.testCases.filter((tc) => tc.isPublic),
+    },
+  })
+})
 
+// Handle socket disconnections
+const handleDisconnectCleanup = async (socket) => {
+  console.log("🔌 Socket disconnected:", socket.id)
+
+  try {
+    // Find the user by socket ID
+    const user = await User.findOne({ socketId: socket.id })
+    
+    if (user) {
+      console.log("👤 User found:", user.username)
+
+      // Remove user from all waiting/ongoing games as a failsafe
+      await Game.updateMany(
+        { "players.user": socket.userId, status: { $in: ["waiting", "ongoing"] } },
+        { $pull: { players: { user: socket.userId } } }
+      );
+      // Optionally, delete games with no players left
+      await Game.deleteMany({ players: { $size: 0 } });
+
+      console.log("✅ User removed from games")
+    } else {
+      console.log("❌ User not found")
+    }
+  } catch (error) {
+    console.error("❌ Disconnect cleanup error:", error)
+  }
+}
+
+// Force leave a game and set winner as the opponent
+router.post("/force-leave/:gameId", authenticateToken, async (req, res) => {
+  const game = await Game.findById(req.params.gameId)
+  if (!game) return res.status(404).json({ message: "Game not found" })
+  if (!game.players.some(p => p.user.toString() === req.user._id.toString())) {
+    return res.status(403).json({ message: "Not your game" })
+  }
+  if (game.status === "finished" || game.status === "cancelled") {
+    await Game.deleteOne({ _id: game._id })
+    return res.json({ message: "Game already finished" })
+  }
+  // Set winner as the opponent
+  const leavingPlayer = game.players.find(p => p.user.toString() === req.user._id.toString())
+  const opponentPlayer = game.players.find(p => p.user.toString() !== req.user._id.toString())
+  if (leavingPlayer) {
+    leavingPlayer.status = "finished"
+  }
+  if (opponentPlayer && opponentPlayer.user) {
+    game.winner = opponentPlayer.user
+    game.status = "finished"
+    game.endTime = new Date()
+    game.result = "opponent_left"
+    if (game.players.length === 2) {
+      await updateELORatings(game)
+    }
+    await game.save()
+  }
+  await Game.deleteOne({ _id: game._id })
+  res.json({ message: "Game forcibly ended" })
+})
 
 export default router
