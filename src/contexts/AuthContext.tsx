@@ -33,27 +33,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Auto-login if token exists
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchCurrentUser();
+      axios.get('http://localhost:5000/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => {
+        // ✅ CRITICAL FIX: Normalize user ID format on auto-login
+        const user = res.data;
+        const normalizedUser = {
+          ...user,
+          id: user.id || user._id,
+          _id: user._id || user.id
+        };
+        setUser(normalizedUser);
+        console.log('🔄 Auto-login successful with normalized user:', normalizedUser);
+      })
+      .catch(() => {
+        setUser(null);
+        localStorage.removeItem('token');
+      })
+      .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
   }, []);
 
-  const fetchCurrentUser = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/auth/me');
-      setUser(response.data);
-    } catch (error) {
-      console.error('Failed to fetch current user:', error);
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-    } finally {
-      setLoading(false);
-    }
+  const fetchUserProfile = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    const res = await axios.get('http://localhost:5000/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const user = res.data;
+    // ✅ CRITICAL FIX: Normalize user object to have both id and _id consistently
+    return { 
+      ...user, 
+      id: user.id || user._id,
+      _id: user._id || user.id
+    };
   };
 
   const login = async (username: string, password: string, role: string = 'user') => {
@@ -69,9 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('✅ Login successful, user data:', user);
       console.log('🔑 Token received, length:', token.length);
       localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
-      console.log('💾 User set in context:', user);
+      
+      // ✅ CRITICAL FIX: Ensure user object has consistent ID format
+      const normalizedUser = {
+        ...user,
+        id: user.id || user._id,
+        _id: user._id || user.id
+      };
+      setUser(normalizedUser);
+      console.log('💾 User set in context with normalized IDs:', normalizedUser);
     } catch (error: any) {
       console.error('Login error:', error);
       if (error.code === 'ERR_NETWORK') {
@@ -91,8 +117,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { token, user } = response.data;
       localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
+      
+      // ✅ CRITICAL FIX: Ensure user object has consistent ID format
+      const normalizedUser = {
+        ...user,
+        id: user.id || user._id,
+        _id: user._id || user.id
+      };
+      setUser(normalizedUser);
     } catch (error: any) {
       console.error('Registration error:', error);
       if (error.code === 'ERR_NETWORK') {

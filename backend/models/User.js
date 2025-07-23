@@ -22,7 +22,11 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    // Make password optional for Google OAuth users
+    required: function() {
+      // If googleId is present, password is not required
+      return !this.googleId;
+    },
     minlength: 6
   },
   role: {
@@ -30,6 +34,7 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'user'],
     default: 'user'
   },
+  googleId: { type: String, unique: true, sparse: true },
 
   // Profile Data
   profile: {
@@ -144,8 +149,8 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
   console.log('🔒 User pre-save middleware triggered for:', this.username);
 
-  if (!this.isModified('password')) {
-    console.log('✅ Password not modified, skipping hash');
+  // Only hash password if present (not for Google OAuth users)
+  if (!this.password || !this.isModified('password')) {
     return next();
   }
 

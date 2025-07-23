@@ -155,6 +155,25 @@ const Login: React.FC = () => {
                 )}
               </button>
             </div>
+            {/* OAuth Login Button */}
+            <div>
+              <button
+                type="button"
+                onClick={() => window.location.href = 'http://localhost:5000/api/auth/google'}
+                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 mt-2"
+              >
+                <svg className="h-5 w-5 mr-2" viewBox="0 0 48 48">
+                  <g>
+                    <path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.23l6.85-6.85C36.13 2.13 30.41 0 24 0 14.82 0 6.71 5.06 2.69 12.44l7.98 6.2C12.13 13.03 17.62 9.5 24 9.5z"/>
+                    <path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.91-2.17 5.38-4.62 7.04l7.13 5.55C43.94 37.03 46.1 31.33 46.1 24.55z"/>
+                    <path fill="#FBBC05" d="M10.67 28.64c-1.04-3.1-1.04-6.44 0-9.54l-7.98-6.2C.89 16.41 0 20.09 0 24c0 3.91.89 7.59 2.69 11.1l7.98-6.2z"/>
+                    <path fill="#EA4335" d="M24 48c6.41 0 12.13-2.13 16.67-5.81l-7.13-5.55c-2.01 1.35-4.59 2.16-7.54 2.16-6.38 0-11.87-3.53-14.33-8.74l-7.98 6.2C6.71 42.94 14.82 48 24 48z"/>
+                    <path fill="none" d="M0 0h48v48H0z"/>
+                  </g>
+                </svg>
+                Sign in with Google
+              </button>
+            </div>
           </form>
 
           <div className="mt-6">

@@ -75,9 +75,31 @@ const Navbar: React.FC = () => {
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className={`flex items-center px-3 py-2 rounded-full border transition-colors duration-200
+                ${isDark
+                  ? "bg-gray-800 border-gray-600 hover:bg-gray-700"
+                  : "bg-gray-100 border-gray-300 hover:bg-gray-200"
+                }`}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              <span className="flex items-center">
+                <Sun
+                  className={`h-5 w-5 mr-1 transition-colors duration-200 ${
+                    isDark ? "text-gray-400" : "text-yellow-500"
+                  }`}
+                  style={{ opacity: isDark ? 0.5 : 1 }}
+                />
+                <Moon
+                  className={`h-5 w-5 transition-colors duration-200 ${
+                    isDark ? "text-blue-400" : "text-gray-400"
+                  }`}
+                  style={{ opacity: isDark ? 1 : 0.5 }}
+                />
+              </span>
+              <span className="ml-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                {isDark ? "Dark" : "Light"}
+              </span>
             </button>
 
             {user ? (

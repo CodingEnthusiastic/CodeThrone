@@ -350,7 +350,8 @@ router.post("/:id/register", authenticateToken, async (req, res) => {
     // Check actual contest status
     const actualStatus = getContestStatus(contest.startTime, contest.endTime)
 
-    if (actualStatus !== "upcoming") {
+    // Allow registration if contest is not ended
+    if (actualStatus === "ended") {
       console.log("❌ Contest registration closed, status:", actualStatus)
       return res.status(400).json({ message: "Contest registration is closed" })
     }

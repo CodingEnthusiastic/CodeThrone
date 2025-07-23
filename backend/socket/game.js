@@ -124,11 +124,12 @@ socket.on("disconnect", async (reason) => {
         game.endTime = new Date()
         game.result = "opponent_left"
 
-        // Update ELO ratings
+        // ✅ CRITICAL FIX: Update ELO ratings and save BEFORE deleting
         await updateELORatings(game)
         await game.save()
+        console.log(`💾 Game ${game._id} saved with final state`)
 
-        // ✅ CRITICAL FIX: Get final game state with ratings
+        // ✅ CRITICAL FIX: Get final game state with ratings AFTER saving
         const finalGame = await Game.findById(game._id)
           .populate("players.user", "username ratings")
           .populate("problem")
@@ -158,15 +159,15 @@ socket.on("disconnect", async (reason) => {
         // 3. User-specific room notification (extra backup)
         io.to(`user-${opponentPlayer.user._id.toString()}`).emit("game-finished", gameEndData)
 
-        // Do not delete game immediately, let clients handle cleanup
-        console.log(`✅ Game ${game._id} marked as finished due to disconnect`)
+        // ✅ CRITICAL FIX: Delete game AFTER all operations are complete
+        await Game.deleteOne({ _id: game._id })
+        console.log(`🗑️ Finished game ${game._id} deleted from database`)
       } else {
         // No opponent, just clean up
-        game.status = "finished"
-        game.result = "abandoned"
-        await game.save()
+        game.status = "cancelled";
+        await game.save();
         await Game.deleteOne({ _id: game._id })
-        console.log(`🗑️ Game ${game._id} abandoned and deleted as the last player left`)
+        console.log(`🗑️ Game ${game._id} cancelled and deleted - no opponent`)
       }
     } else if (game.status === "waiting") {
       console.log(`🗑️ Removing player from waiting game ${game._id}`)
@@ -174,26 +175,20 @@ socket.on("disconnect", async (reason) => {
       game.players = game.players.filter((p) => p.user._id.toString() !== socket.userId)
       
       if (game.players.length === 0) {
-        await Game.deleteOne({ _id: game._id });
-        console.log(`🗑️ Game ${game._id} deleted as all players left`);
+        await Game.deleteOne({ _id: game._id })
+        console.log(`🗑️ Waiting game ${game._id} deleted - no players left`)
       } else {
         await game.save()
+        
         // Notify remaining players of updated game state
         const updatedGame = await Game.findById(game._id)
           .populate("players.user", "username ratings")
           .populate("problem")
+        
         io.to(game._id.toString()).emit("game-state", updatedGame)
         console.log(`📡 Updated game state sent to remaining players`)
       }
     }
-
-    // Remove user from all waiting/ongoing games as a failsafe
-    await Game.updateMany(
-      { "players.user": socket.userId, status: { $in: ["waiting", "ongoing"] } },
-      { $pull: { players: { user: socket.userId } } }
-    );
-    // Optionally, delete games with no players left
-    await Game.deleteMany({ players: { $size: 0 } });
   }
   
   if (graceTime > 0) {
@@ -243,7 +238,10 @@ socket.on("join-game", async (gameId) => {
       // Start game if 2 players now
       if (game.players.length === 2) {
         console.log("🚀 Game starting with 2 players!")
-        game.status = "ongoing"
+        game.status = "ongoing",
+        game.players.forEach((p) => {
+          p.status = 'ongoing'
+        })
         game.startTime = new Date()
       }
 
@@ -307,22 +305,25 @@ socket.on("leave-game", async (gameId) => {
       return
     }
 
-    // Set player status to finished
-    game.players[playerIndex].status = "finished"
-
     if (game.status === "ongoing") {
+      console.log(`⚠️ User ${socket.userId} left ongoing game ${game._id}`)
       const opponentPlayer = game.players.find((p) => p.user.toString() !== socket.userId)
 
-      if (opponentPlayer && opponentPlayer.user) {
+      if (opponentPlayer) {
         game.winner = opponentPlayer.user
         game.status = "finished"
         game.endTime = new Date()
         game.result = "opponent_left"
-        // Only update ELO if there are 2 players
-        if (game.players.length === 2) {
-          await updateELORatings(game)
-        }
+        console.log(`🏆 Game ${game._id} ended: ${socket.userId} left, ${opponentPlayer.user} wins`)
+
+        // ✅ CRITICAL FIX: Update ELO and save BEFORE any notifications or deletions
+        await updateELORatings(game)
         await game.save()
+
+        // ✅ CRITICAL FIX: Get fresh copy with updated ratings
+        const finalGameState = await Game.findById(game._id)
+          .populate("players.user", "username ratings")
+          .populate("problem")
 
         // ✅ CRITICAL FIX: Emit to ALL connections for both users to ensure cleanup
         const leavingUserConnections = [...activeConnections.entries()].filter(([userId, sock]) => userId === socket.userId)
@@ -331,37 +332,35 @@ socket.on("leave-game", async (gameId) => {
         console.log(`📡 Notifying ${leavingUserConnections.length} connections for leaving user`)
         console.log(`📡 Notifying ${opponentConnections.length} connections for opponent`)
 
+        const gameEndData = {
+          winner: game.winner,
+          winnerId: game.winner.toString(),
+          result: "opponent_left",
+          finalState: finalGameState
+        }
+
         // Send game-finished to both players across ALL their connections
         leavingUserConnections.forEach(([userId, userSocket]) => {
           userSocket.emit("game-finished", {
-            winner: game.winner,
-            winnerId: game.winner.toString(),
-            result: "opponent_left",
-            message: `You left the game. Your opponent wins!`,
-            finalState: game
+            ...gameEndData,
+            message: `You left the game. Your opponent wins!`
           })
         })
 
         opponentConnections.forEach(([userId, userSocket]) => {
           userSocket.emit("game-finished", {
-            winner: game.winner,
-            winnerId: game.winner.toString(),
-            result: "opponent_left", 
-            message: `Your opponent left the game. You win!`,
-            finalState: game
+            ...gameEndData,
+            message: `Your opponent left the game. You win!`
           })
         })
 
         // Also emit to the room in case we missed any connections
-        io.to(game._id).emit("game-finished", {
-          winner: game.winner,
-          winnerId: game.winner.toString(),
-          result: "opponent_left",
-          message: `Game ended - opponent left`,
-          finalState: game
+        io.to(game._id.toString()).emit("game-finished", {
+          ...gameEndData,
+          message: `Game ended - opponent left`
         })
 
-        // Delete the game after finishing
+        // ✅ CRITICAL FIX: Delete the game AFTER all operations
         await Game.deleteOne({ _id: game._id })
         console.log(`🗑️ Finished game ${game._id} deleted from database`)
 
@@ -378,8 +377,8 @@ socket.on("leave-game", async (gameId) => {
       game.players = game.players.filter((p) => p.user.toString() !== socket.userId)
       
       if (game.players.length === 0) {
-        await Game.deleteOne({ _id: game._id });
-        console.log(`🗑️ Game ${game._id} deleted as all players left`);
+        await Game.deleteOne({ _id: game._id })
+        console.log(`🗑️ Waiting game ${game._id} deleted as all players left`)
       } else {
         await game.save()
         console.log(`💾 Waiting game ${game._id} updated after player left. Remaining players: ${game.players.length}`)
@@ -387,14 +386,14 @@ socket.on("leave-game", async (gameId) => {
         const updatedGame = await Game.findById(game._id)
           .populate("players.user", "username ratings")
           .populate("problem")
-        io.to(game._id).emit("game-state", updatedGame)
+        io.to(game._id.toString()).emit("game-state", updatedGame)
       }
     }
 
     // ✅ CRITICAL FIX: Remove from active connections to prevent zombie connections
     if (activeConnections.get(socket.userId) === socket) {
-      activeConnections.delete(socket.userId);
-      console.log(`🗑️ Removed ${socket.userId} from active connections`);
+      activeConnections.delete(socket.userId)
+      console.log(`🗑️ Removed ${socket.userId} from active connections`)
     }
 
   } catch (error) {
@@ -456,7 +455,7 @@ socket.on("leave-game", async (gameId) => {
           game.winner = game.players[playerIndex].user
           game.status = "finished"
           game.endTime = new Date()
-          game.result = "win" 
+          game.result = "win"
           
           await updateELORatings(game)
           await game.save()
@@ -528,19 +527,26 @@ socket.on("leave-game", async (gameId) => {
           game.winner = player2.user
         }
 
+        // ✅ CRITICAL FIX: Update ELO and save BEFORE deleting
         await updateELORatings(game)
         await game.save()
 
-        // Delete the game after finishing
-        await Game.deleteOne({ _id: game._id })
-        console.log(`🗑️ Finished game ${game._id} deleted from database`)
+        // Get final state for notification
+        const finalGameState = await Game.findById(game._id)
+          .populate("players.user", "username ratings")
+          .populate("problem")
 
         io.to(gameId).emit("game-finished", {
           winner: game.winner,
           winnerId: game.winner ? game.winner.toString() : null,
           result: "timeout",
           message: "Game ended due to timeout",
+          finalState: finalGameState
         })
+
+        // ✅ CRITICAL FIX: Delete the game AFTER all operations
+        await Game.deleteOne({ _id: game._id })
+        console.log(`🗑️ Finished game ${game._id} deleted from database`)
       } catch (error) {
         console.error("❌ Game timeout error:", error)
       }
@@ -661,7 +667,7 @@ async function executeCodeForGame(code, language, testCases) {
 
 // Enhanced ELO rating calculation
 async function updateELORatings(game) {
-  if (!game.players || game.players.length !== 2) {
+  if (game.players.length !== 2) {
     console.log("⚠️ Cannot update ratings: game does not have exactly 2 players")
     return
   }
@@ -758,5 +764,3 @@ async function updateELORatings(game) {
 
   console.log("💾 User ratings and game history updated in database")
 }
-
-export { updateELORatings }

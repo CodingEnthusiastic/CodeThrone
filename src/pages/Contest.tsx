@@ -263,8 +263,10 @@ const Contest: React.FC = () => {
   })
 
   const isUserRegistered = (contest: Contest) => {
-    if (!user) return false
-    return contest.participants.some((p) => p.user._id === user?.id)
+    if (!user) 
+      return false
+    // Use user._id for comparison, not user.id
+    return contest.participants.some((p) => String(p.user._id) === String(user._id));
   }
 
   const handleEnterContest = (contestId: string) => {
@@ -293,10 +295,10 @@ const Contest: React.FC = () => {
               <Trophy className="h-12 w-12 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-700 dark:text-gray-700 mb-4">
             Programming Contests
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Participate in exciting programming competitions and test your skills against other developers
           </p>
         </div>
@@ -516,7 +518,6 @@ const Contest: React.FC = () => {
                           )}
                         </Button>
                       )}
-
                       {/* Ongoing Contest - Show Enter Contest or Registration Closed */}
                       {actualStatus === "ongoing" && (
                         <>
@@ -530,9 +531,14 @@ const Contest: React.FC = () => {
                               Enter Contest
                             </Button>
                           ) : (
-                            <Button disabled className="w-full" variant="outline" size="lg">
-                              <MapPin className="h-5 w-5 mr-2" />
-                              Registration Closed
+                            <Button
+                              onClick={() => registerForContest(contest._id)}
+                              className="w-full"
+                              variant="default"
+                              size="lg"
+                            >
+                              <Calendar className="h-5 w-5 mr-2" />
+                              Register Now
                             </Button>
                           )}
                         </>

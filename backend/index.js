@@ -1,7 +1,8 @@
+import './loadenv.js'; // <-- This must be first
+
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import authRoutes from './routes/auth.js';
@@ -10,18 +11,16 @@ import discussionRoutes from './routes/discussion.js';
 import contestRoutes from './routes/contest.js';
 import gameRoutes from './routes/game.js';
 import profileRoutes from './routes/profile.js';
-// import announcementRoutes from './routes/announcements.js';
 import interviewRoutes from './routes/interview.js';
 import { authenticateToken } from './middleware/auth.js';
 import { setupGameSocket } from './socket/game.js';
 import geminiRoutes from './routes/gemini.js';
 import announcementsRouter from './routes/announcements.js';
 console.log('🚀 Starting backend server...');
-import announcementRoutes from './routes/announcements.js';
 import statsRouter from './routes/stats.js';
 
 // Load environment variables
-dotenv.config({path: '../.env'});
+// dotenv.config({ path: '../.env' }); // This is correct if you run from backend folder
 console.log('✅ Environment variables loaded');
 console.log('📊 Environment check:');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
@@ -88,8 +87,6 @@ console.log('✅ Game routes mounted at /api/game');
 app.use('/api/profile', profileRoutes);
 console.log('✅ Profile routes mounted at /api/profile');
 
-// <-- This line is required
-
 // app.use('/api/announcements', announcementRoutes);
 // console.log('✅ Announcement routes mounted at /api/announcements');
 
@@ -110,7 +107,6 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/gemini', geminiRoutes);
-app.use('/api/announcements', announcementRoutes);
 
 // app.use('/api/stats', statsRouter); 
 

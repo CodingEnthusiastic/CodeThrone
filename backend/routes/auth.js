@@ -2,8 +2,20 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { authenticateToken } from '../middleware/auth.js';
+import passport from 'passport';
+import session from 'express-session';
+import '../services/passport.js'; // See next code block for this file
 
 const router = express.Router();
+
+// Session middleware for passport (required for OAuth)
+router.use(session({
+  secret: process.env.JWT_SECRET || 'secret',
+  resave: false,
+  saveUninitialized: false,
+}));
+router.use(passport.initialize());
+router.use(passport.session());
 
 // Register
 router.post('/register', async (req, res) => {
@@ -11,7 +23,7 @@ router.post('/register', async (req, res) => {
   console.log('📊 Request body:', { ...req.body, password: '[HIDDEN]' });
   
   try {
-    const { username, email, password, role = 'user' } = req.body;
+    const { username, email, password, role = 'user', googleId } = req.body;
 
     console.log('🔍 Checking for existing user...');
     // Check if user already exists
@@ -31,8 +43,9 @@ router.post('/register', async (req, res) => {
     const user = new User({
       username,
       email,
-      password,
-      role
+      password: googleId ? undefined : password,
+      role,
+      googleId: googleId || undefined
     });
 
     console.log('💾 Saving user to database...');
@@ -62,6 +75,11 @@ router.post('/register', async (req, res) => {
     console.log('🎉 Registration successful for:', user.username);
     res.status(201).json(responseData);
   } catch (error) {
+    // Handle duplicate key error (E11000)
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ message: `A user with this ${field} already exists.` });
+    }
     console.error('❌ Registration error:', error);
     console.error('📊 Error details:', {
       name: error.name,
@@ -159,5 +177,27 @@ router.get('/me', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+// --- Google OAuth2 routes ---
+router.get('/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get('/google/callback',
+  passport.authenticate('google', { failureRedirect: '/login', session: false }),
+  async (req, res) => {
+    // Successful authentication, issue JWT and redirect or respond
+    const user = req.user;
+    // Ensure user object has all required fields for frontend
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    // Redirect to correct frontend port
+    res.redirect('http://localhost:5173/oauth?token=' + encodeURIComponent(token));
+    // Or: res.json({ token, user });
+  }
+);
 
 export default router;
