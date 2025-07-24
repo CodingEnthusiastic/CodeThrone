@@ -352,14 +352,11 @@ const Interview: React.FC = () => {
     recognitionRef.current = recognition
   }, [voiceLanguage])
 
-  // ✅ SIMPLE: Mic toggle function - handles both video and speech recognition
+  // --- Replace toggleMic with this version ---
   const toggleMic = async () => {
     if (!micEnabled) {
-      // Enable mic and start speech recognition
-      if (!videoEnabled) {
-        await enableVideo() // This will enable both video and mic
-      }
-      
+      // Enable mic and start speech recognition (no dependency on video)
+      setMicEnabled(true)
       if (speechRecognitionSupported && recognitionRef.current) {
         try {
           recognitionRef.current.start()
@@ -370,7 +367,6 @@ const Interview: React.FC = () => {
     } else {
       // Disable mic and stop speech recognition
       setMicEnabled(false)
-      
       if (recognitionRef.current && isListening) {
         try {
           recognitionRef.current.stop()
@@ -383,9 +379,9 @@ const Interview: React.FC = () => {
     }
   }
 
-  // ✅ UPDATED: Enable video function
+  // --- Replace enableVideo with this version ---
   const enableVideo = async () => {
-    console.log("📹 Enabling video and audio...")
+    console.log("📹 Enabling video...")
     setRecognitionError(null)
 
     try {
@@ -399,11 +395,8 @@ const Interview: React.FC = () => {
           height: { ideal: 720 },
           facingMode: "user",
         },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100,
-        },
+        // Only request audio if mic is enabled
+        audio: false,
       })
 
       streamRef.current = stream
@@ -418,25 +411,15 @@ const Interview: React.FC = () => {
       }
 
       setVideoEnabled(true)
-      setMicEnabled(true)
-
-      // Auto-start speech recognition when mic is enabled
-      if (speechRecognitionSupported && recognitionRef.current) {
-        try {
-          recognitionRef.current.start()
-        } catch (error) {
-          console.error("Failed to auto-start speech recognition:", error)
-        }
-      }
-
-      console.log("✅ Video and audio enabled successfully")
+      // Do NOT touch micEnabled here
+      console.log("✅ Video enabled successfully")
     } catch (error: any) {
-      console.error("❌ Error accessing media devices:", error)
-      setRecognitionError("Please allow access to camera and microphone")
+      console.error("❌ Error accessing video device:", error)
+      setRecognitionError("Please allow access to camera")
     }
   }
 
-  // ✅ UPDATED: Disable video function
+  // --- Replace disableVideo with this version ---
   const disableVideo = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop())
@@ -447,19 +430,8 @@ const Interview: React.FC = () => {
       videoRef.current.srcObject = null
     }
 
-    // Stop speech recognition when disabling video
-    if (recognitionRef.current && isListening) {
-      try {
-        recognitionRef.current.stop()
-      } catch (error) {
-        console.error("Failed to stop speech recognition:", error)
-      }
-    }
-
     setVideoEnabled(false)
-    setMicEnabled(false)
-    setIsListening(false)
-    setInterimTranscript("")
+    // Do NOT touch micEnabled or speech recognition here
   }
 
   // ✅ ADD MISSING FUNCTION: Start Interview
@@ -1142,22 +1114,19 @@ const Interview: React.FC = () => {
                 {/* ✅ SIMPLIFIED: Single mic button that handles everything */}
                 <button
                   onClick={toggleMic}
-                  disabled={!videoEnabled}
                   className={`p-3 rounded-full ${
                     micEnabled && isListening 
                       ? "bg-green-600 text-white hover:bg-green-700" 
                       : micEnabled 
                         ? "bg-yellow-600 text-white hover:bg-yellow-700"
                         : "bg-red-600 text-white hover:bg-red-700"
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  }`}
                   title={
-                    !videoEnabled 
-                      ? "Enable video first" 
-                      : micEnabled && isListening 
-                        ? "Mic ON - Speech recognition active" 
-                        : micEnabled 
-                          ? "Mic ON - Speech recognition paused"
-                          : "Mic OFF"
+                    micEnabled && isListening 
+                      ? "Mic ON - Speech recognition active" 
+                      : micEnabled 
+                        ? "Mic ON - Speech recognition paused"
+                        : "Mic OFF"
                   }
                 >
                   {micEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
