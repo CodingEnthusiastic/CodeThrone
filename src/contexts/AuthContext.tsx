@@ -13,6 +13,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;  // ✅ Add token to the interface
   login: (username: string, password: string, role?: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -32,16 +33,21 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
 
   // Auto-login if token exists
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
+    const savedToken = localStorage.getItem('token');
+    console.log('🔄 Checking saved token:', savedToken ? `Present (${savedToken.length} chars)` : 'Not found');
+    
+    if (savedToken && savedToken.trim()) {
+      setToken(savedToken);
+      console.log('🔑 Setting token in state:', savedToken.substring(0, 20) + '...');
+      
       axios.get('http://localhost:5000/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${savedToken}` }
       })
       .then(res => {
-        // ✅ CRITICAL FIX: Normalize user ID format on auto-login
         const user = res.data;
         const normalizedUser = {
           ...user,
@@ -51,8 +57,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(normalizedUser);
         console.log('🔄 Auto-login successful with normalized user:', normalizedUser);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('❌ Auto-login failed:', error.response?.data || error.message);
         setUser(null);
+        setToken(null);
         localStorage.removeItem('token');
       })
       .finally(() => setLoading(false));
@@ -84,20 +92,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         role
       });
-      
-      const { token, user } = response.data;
+
+      const { token: receivedToken, user } = response.data;
       console.log('✅ Login successful, user data:', user);
-      console.log('🔑 Token received, length:', token.length);
-      localStorage.setItem('token', token);
+      console.log('🔑 Token received, length:', receivedToken?.length);
+      console.log('🔑 Token preview:', receivedToken?.substring(0, 20) + '...');
       
-      // ✅ CRITICAL FIX: Ensure user object has consistent ID format
-      const normalizedUser = {
-        ...user,
-        id: user.id || user._id,
-        _id: user._id || user.id
-      };
-      setUser(normalizedUser);
-      console.log('💾 User set in context with normalized IDs:', normalizedUser);
+      if (receivedToken && receivedToken.trim()) {
+        localStorage.setItem('token', receivedToken);
+        setToken(receivedToken);
+        
+        const normalizedUser = {
+          ...user,
+          id: user.id || user._id,
+          _id: user._id || user.id
+        };
+        setUser(normalizedUser);
+        console.log('💾 User set in context with normalized IDs:', normalizedUser);
+      } else {
+        throw new Error('Invalid token received from server');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       if (error.code === 'ERR_NETWORK') {
@@ -114,17 +128,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password
       });
+
+      const { token: receivedToken, user } = response.data;
       
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      
-      // ✅ CRITICAL FIX: Ensure user object has consistent ID format
-      const normalizedUser = {
-        ...user,
-        id: user.id || user._id,
-        _id: user._id || user.id
-      };
-      setUser(normalizedUser);
+      if (receivedToken && receivedToken.trim()) {
+        localStorage.setItem('token', receivedToken);
+        setToken(receivedToken);
+
+        const normalizedUser = {
+          ...user,
+          id: user.id || user._id,
+          _id: user._id || user.id
+        };
+        setUser(normalizedUser);
+      } else {
+        throw new Error('Invalid token received from server');
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
       if (error.code === 'ERR_NETWORK') {
@@ -138,10 +157,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
+    setToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

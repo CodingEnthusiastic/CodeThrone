@@ -18,6 +18,7 @@ import {
   Code,
   AlertCircle,
 } from "lucide-react"
+import SmartCodeEditor from "../components/SmartCodeEditor"
 
 interface Problem {
   _id: string
@@ -145,11 +146,10 @@ const SelectOption: React.FC<{ value: string; children: React.ReactNode }> = ({ 
 )
 
 const ContestProblemDetail: React.FC = () => {
-  // const { contestId, problemId } = useParams<{ contestId: string; problemId: string }>()
   const { id, problemId } = useParams<{ id: string; problemId: string }>()
   console.log("🧩 URL params:", { id, problemId })
   const contestId = id
-  const { user } = useAuth()
+  const { user, token } = useAuth(); // ✅ Get token from auth context
   const navigate = useNavigate()
   const [problem, setProblem] = useState<Problem | null>(null)
   const [contest, setContest] = useState<Contest | null>(null)
@@ -297,6 +297,11 @@ const ContestProblemDetail: React.FC = () => {
       return
     }
 
+    if (!token) {
+      alert('Please login to run code.');
+      return;
+    }
+
     setRunning(true)
     setRunResult(null)
 
@@ -304,10 +309,19 @@ const ContestProblemDetail: React.FC = () => {
       const response = await axios.post(`http://localhost:5000/api/problems/${problemId}/run`, {
         code,
         language,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
       setRunResult(response.data)
     } catch (error: any) {
       console.error("Error running code:", error)
+      if (error.response?.status === 401) {
+        alert('Authentication failed. Please login again.');
+        return;
+      }
       setRunResult({
         status: "Error",
         passedTests: 0,
@@ -336,6 +350,11 @@ const ContestProblemDetail: React.FC = () => {
       return
     }
 
+    if (!token) {
+      alert('Please login to submit solutions.');
+      return;
+    }
+
     if (contest?.status === "ended") {
       alert("Contest has ended. Submissions are no longer accepted.")
       return
@@ -352,7 +371,7 @@ const ContestProblemDetail: React.FC = () => {
         language,
       }, {
         headers: { 
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`, // ✅ Use token from auth context
           'Content-Type': 'application/json'
         }
       })
@@ -379,7 +398,10 @@ const ContestProblemDetail: React.FC = () => {
               totalTests: response.data.totalTests
             },
             {
-              headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+              headers: { 
+                'Authorization': `Bearer ${token}`, // ✅ Use token from auth context
+                'Content-Type': 'application/json'
+              }
             }
           );
           console.log('✅ Contest score updated:', contestResponse.data);
@@ -390,7 +412,6 @@ const ContestProblemDetail: React.FC = () => {
           }
         } catch (contestError) {
           console.error('❌ Error updating contest score:', contestError);
-          // console.error('📊 Contest error details:', contestError.response?.data);
           alert('Problem solved but failed to update contest score. Please contact support.');
         }
       } else {
@@ -403,6 +424,10 @@ const ContestProblemDetail: React.FC = () => {
     } catch (error: any) {
       console.error("Error submitting solution:", error)
       console.error('📊 Submission error details:', error.response?.data);
+      if (error.response?.status === 401) {
+        alert('Authentication failed. Please login again.');
+        return;
+      }
       setSubmissionResult({
         status: "Error",
         passedTests: 0,
@@ -594,29 +619,14 @@ const ContestProblemDetail: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative">
-                <textarea
-                  ref={textareaRef}
+                <SmartCodeEditor
                   value={code}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCode(e.target.value)}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-                    console.log('⌨️ Contest editor key pressed:', e.key);
-                    if (e.key === 'Tab') {
-                      e.preventDefault();
-                      const textarea = e.target as HTMLTextAreaElement;
-                      const start = textarea.selectionStart;
-                      const end = textarea.selectionEnd;
-                      const newValue = code.substring(0, start) + '    ' + code.substring(end);
-                      setCode(newValue);
-                      // Set cursor position after the inserted spaces
-                      setTimeout(() => {
-                        textarea.selectionStart = textarea.selectionEnd = start + 4;
-                      }, 0);
-                      console.log('✅ Contest editor: Tab converted to 4 spaces');
-                    }
-                  }}
-                  className="w-full h-96 p-4 border-2 border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
+                  onChange={setCode}
+                  language={language}
+                  disabled={contest.status === "ended"}
                   placeholder="Write your code here..."
-                  spellCheck="false"
+                  className="h-96"
+                  contestMode={true} // Enable contest mode restrictions
                 />
                 <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
                   Copy/Paste Disabled

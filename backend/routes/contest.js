@@ -1,7 +1,7 @@
 import express from "express"
 import Contest from "../models/Contest.js"
 import { authenticateToken, requireAdmin } from "../middleware/auth.js"
-import User from "../models/User.js" // Add this import at the top
+import User from "../models/User.js"
 const router = express.Router()
 
 // Function to determine contest status based on current time
@@ -142,7 +142,6 @@ router.get("/:id", async (req, res) => {
     }
 
     console.log("✅ Contest found:", contest.name, "Status:", actualStatus)
-    // res.json(contest)
     res.json({ ...contest.toObject(), ratingsUpdated })
   } catch (error) {
     console.error("❌ Get contest error:", error)
@@ -186,6 +185,21 @@ router.get("/:id/problems", async (req, res) => {
         score: p.score,
         order: p.order,
       })),
+      participants: contest.participants.map((p) => ({
+        user: {
+          _id: p.user._id,
+          username: p.user.username
+        },
+        score: p.score,
+        rank: p.rank,
+        submissions: p.submissions.map((sub) => ({
+          problem: sub.problem,
+          score: sub.score,
+          timeSubmitted: sub.timeSubmitted,
+          penalty: sub.penalty,
+          attempts: sub.attempts
+        }))
+      }))
     }
 
     console.log(
@@ -209,8 +223,6 @@ router.post("/:contestId/submit/:problemId", authenticateToken, async (req, res)
     userId: req.user._id,
     username: req.user.username
   })
-  console.log("📊 Request body:", req.body);
-  console.log("📊 Request headers auth:", req.headers.authorization ? "Present" : "Missing");
 
   try {
     const { contestId, problemId } = req.params
@@ -327,7 +339,6 @@ router.post("/:contestId/submit/:problemId", authenticateToken, async (req, res)
     }
   } catch (error) {
     console.error("❌ Contest submission error:", error)
-    console.error("📊 Error stack:", error.stack)
     res.status(500).json({ message: "Server error", error: error.message })
   }
 })
@@ -572,4 +583,6 @@ router.get("/:contestId/problem/:problemId", async (req, res) => {
   }
 })
 
-export default router
+export default router; 
+
+//last night changes here 

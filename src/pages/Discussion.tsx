@@ -29,7 +29,7 @@ interface Discussion {
 }
 
 const Discussion: React.FC = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth(); // ✅ Get token from auth context
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,35 +50,34 @@ const Discussion: React.FC = () => {
   }, [selectedTag, sortBy]);
 
   const fetchDiscussions = async () => {
-  try {
-    const params = new URLSearchParams();
-    if (selectedTag) params.append('tag', selectedTag);
-    if (sortBy) params.append('sortBy', sortBy);
+    try {
+      const params = new URLSearchParams();
+      if (selectedTag) params.append('tag', selectedTag);
+      if (sortBy) params.append('sortBy', sortBy);
 
-    const response = await axios.get(
-      `http://localhost:5000/api/discussion?${params}`
-    );
+      const response = await axios.get(
+        `http://localhost:5000/api/discussion?${params}`
+      );
 
-    setDiscussions(response.data.discussions);
+      setDiscussions(response.data.discussions);
 
-    // ✅ Extract all unique usernames from discussions
-    const uniqueUsers = Array.from(
-      new Set(
-        (response.data.discussions as Discussion[]).map((d) => d.author.username)
-      )
-    );
-    setAllUsers(uniqueUsers);
-  } catch (error) {
-    console.error('Error fetching discussions:', error);
-  } finally {
-    setLoading(false);
-  }
-};
-
+      // ✅ Extract all unique usernames from discussions
+      const uniqueUsers = Array.from(
+        new Set(
+          (response.data.discussions as Discussion[]).map((d) => d.author.username)
+        )
+      );
+      setAllUsers(uniqueUsers);
+    } catch (error) {
+      console.error('Error fetching discussions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateDiscussion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !token) return;
 
     try {
       const response = await axios.post('http://localhost:5000/api/discussion', {
@@ -88,6 +87,11 @@ const Discussion: React.FC = () => {
           .split(',')
           .map((tag) => tag.trim())
           .filter((tag) => tag),
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       setDiscussions([response.data, ...discussions]);
@@ -99,13 +103,18 @@ const Discussion: React.FC = () => {
   };
 
   const handleVote = async (discussionId: string, voteType: 'up' | 'down') => {
-    if (!user) return;
+    if (!user || !token) return;
 
     try {
       const response = await axios.post(
         `http://localhost:5000/api/discussion/${discussionId}/vote`,
-        { type: voteType }
-        
+        { type: voteType },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
       );
 
       setDiscussions((prev) =>
@@ -119,8 +128,6 @@ const Discussion: React.FC = () => {
             : discussion
         )
       );
-      // const uniqueUsers = Array.from(new Set(response.data.discussions.map((d: Discussion) => d.author.username)));
-      // setAllUsers(uniqueUsers);
     } catch (error) {
       console.error('Error voting:', error);
     }

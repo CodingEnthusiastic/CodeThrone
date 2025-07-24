@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Play, Send, Clock, MemoryStick as Memory, CheckCircle, XCircle, BookOpen, Video, Code, FileText, MessageSquare, Bot, Eye, Calendar, User } from 'lucide-react';
+import SmartCodeEditor from '../components/SmartCodeEditor';
 
 interface Problem {
   _id: string;
@@ -69,7 +70,7 @@ interface RunResult {
 
 const ProblemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, token } = useAuth(); // ✅ Get token from auth context
   const [problem, setProblem] = useState<Problem | null>(null);
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('cpp');
@@ -147,6 +148,11 @@ const ProblemDetail: React.FC = () => {
       return;
     }
 
+    if (!token) {
+      alert('Please login to use AI chat feature.');
+      return;
+    }
+
     setAiLoading(true);
     setAiResponse('');
 
@@ -154,6 +160,11 @@ const ProblemDetail: React.FC = () => {
       const res = await axios.post('http://localhost:5000/api/gemini', {
         prompt: aiPrompt,
         context: problem?.description || ''
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // ✅ Add auth header
+          'Content-Type': 'application/json'
+        }
       });
 
       setAiResponse(res.data.reply || 'No response received.');
@@ -166,10 +177,15 @@ const ProblemDetail: React.FC = () => {
   };
 
   const checkIfSolved = async () => {
-    if (!user || !id) return;
+    if (!user || !id || !token) return;
     
     try {
-      const response = await axios.get(`http://localhost:5000/api/profile/${user.username}/solved`);
+      const response = await axios.get(`http://localhost:5000/api/profile/${user.username}/solved`, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // ✅ Add auth header
+          'Content-Type': 'application/json'
+        }
+      });
       const solvedProblems = response.data.solvedProblems;
       setIsSolved(solvedProblems.some((p: any) => p._id === id));
     } catch (error) {
@@ -187,10 +203,15 @@ const ProblemDetail: React.FC = () => {
   };
 
   const fetchSubmissions = async () => {
-    if (!user) return;
+    if (!user || !token) return;
     
     try {
-      const response = await axios.get(`http://localhost:5000/api/problems/${id}/submissions`);
+      const response = await axios.get(`http://localhost:5000/api/problems/${id}/submissions`, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // ✅ Add auth header
+          'Content-Type': 'application/json'
+        }
+      });
       setSubmissions(response.data.submissions);
     } catch (error) {
       console.error('Error fetching submissions:', error);
@@ -260,17 +281,32 @@ int main() {
       return;
     }
 
+    if (!token) {
+      alert('Please login to run code.');
+      return;
+    }
+
     setRunning(true);
     setRunResult(null);
     
     try {
+      console.log('🔑 Running code with token:', token.substring(0, 20) + '...');
       const response = await axios.post(`http://localhost:5000/api/problems/${id}/run`, {
         code,
         language
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // ✅ Add auth header
+          'Content-Type': 'application/json'
+        }
       });
       setRunResult(response.data);
     } catch (error: any) {
       console.error('Error running code:', error);
+      if (error.response?.status === 401) {
+        alert('Authentication failed. Please login again.');
+        return;
+      }
       setRunResult({
         status: 'Error',
         passedTests: 0,
@@ -291,13 +327,24 @@ int main() {
       return;
     }
 
+    if (!token) {
+      alert('Please login to submit solutions.');
+      return;
+    }
+
     setSubmitting(true);
     setSubmissionResult(null);
     
     try {
+      console.log('🔑 Submitting solution with token:', token.substring(0, 20) + '...');
       const response = await axios.post(`http://localhost:5000/api/problems/${id}/submit`, {
         code,
         language
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // ✅ Add auth header
+          'Content-Type': 'application/json'
+        }
       });
       setSubmissionResult(response.data);
       
@@ -312,6 +359,10 @@ int main() {
       }
     } catch (error: any) {
       console.error('Error submitting solution:', error);
+      if (error.response?.status === 401) {
+        alert('Authentication failed. Please login again.');
+        return;
+      }
       setSubmissionResult({
         status: 'Error',
         passedTests: 0,
@@ -585,7 +636,7 @@ int main() {
 
               {activeTab === 'submissions' && (
                 <div>
-                  {user ? (
+                  {user && token ? (
                     submissions.length > 0 ? (
                       <div className="space-y-3">
                         {submissions.map((submission, index) => (
@@ -647,36 +698,38 @@ int main() {
                 </div>
               )}
 
-              {/* {activeTab === 'chatai' && (
-                <div className="text-center py-8 text-gray-500">
-                  <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>AI Chat feature coming soon!</p>
-                  <p className="text-sm mt-2">Get hints and explanations from our AI assistant</p>
-                </div>
-              )} */}
               {activeTab === 'chatai' && (
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      placeholder="Ask something about the problem..."
-                    />
-                    <button
-                      onClick={generateResponse}
-                      disabled={aiLoading}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {aiLoading ? 'Thinking...' : 'Ask'}
-                    </button>
-                  </div>
-
-                  {aiResponse && (
-                    <div className="p-4 border border-gray-300 rounded-lg bg-gray-50 text-left whitespace-pre-wrap text-sm text-gray-700 max-h-96 overflow-y-auto">
-                      {aiResponse}
+                  {!token ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Please login to use AI Chat feature</p>
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={aiPrompt}
+                          onChange={(e) => setAiPrompt(e.target.value)}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="Ask something about the problem..."
+                        />
+                        <button
+                          onClick={generateResponse}
+                          disabled={aiLoading}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {aiLoading ? 'Thinking...' : 'Ask'}
+                        </button>
+                      </div>
+
+                      {aiResponse && (
+                        <div className="p-4 border border-gray-300 rounded-lg bg-gray-50 text-left whitespace-pre-wrap text-sm text-gray-700 max-h-96 overflow-y-auto">
+                          {aiResponse}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -720,45 +773,31 @@ int main() {
 
             <div className="p-6">
               <div className="mb-4">
-                <textarea
-                  ref={textareaRef}
+                <SmartCodeEditor
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  onKeyDown={(e) => {
-                    console.log('⌨️ Key pressed in code editor:', e.key);
-                    if (e.key === 'Tab') {
-                      e.preventDefault();
-                      const textarea = e.target as HTMLTextAreaElement;
-                      const start = textarea.selectionStart;
-                      const end = textarea.selectionEnd;
-                      const newValue = code.substring(0, start) + '    ' + code.substring(end);
-                      setCode(newValue);
-                      // Set cursor position after the inserted spaces
-                      setTimeout(() => {
-                        textarea.selectionStart = textarea.selectionEnd = start + 4;
-                      }, 0);
-                      console.log('✅ Tab converted to 4 spaces');
-                    }
-                  }}
-                  className="w-full h-96 p-4 border border-gray-300 rounded-md font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  onChange={setCode}
+                  language={language}
+                  disabled={false}
                   placeholder="Write your code here..."
-                  onContextMenu={(e) => e.preventDefault()} // Prevent right-click
+                  className="h-96"
                 />
               </div>
 
               <div className="flex space-x-4 mb-6">
                 <button
                   onClick={handleRun}
-                  disabled={running}
+                  disabled={running || !token}
                   className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!token ? "Please login to run code" : ""}
                 >
                   <Play className="h-4 w-4 mr-2" />
                   {running ? 'Running...' : 'Run'}
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={submitting}
+                  disabled={submitting || !token}
                   className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!token ? "Please login to submit code" : ""}
                 >
                   <Send className="h-4 w-4 mr-2" />
                   {submitting ? 'Submitting...' : 'Submit'}

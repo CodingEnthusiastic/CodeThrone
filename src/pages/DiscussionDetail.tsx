@@ -33,7 +33,7 @@ interface Discussion {
 
 const DiscussionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, token } = useAuth(); // ✅ Get token from auth context
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
@@ -56,11 +56,16 @@ const DiscussionDetail: React.FC = () => {
   };
 
   const handleVote = async (voteType: 'up' | 'down') => {
-    if (!user || !discussion) return;
+    if (!user || !discussion || !token) return;
 
     try {
       const response = await axios.post(`http://localhost:5000/api/discussion/${discussion._id}/vote`, {
         type: voteType
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       setDiscussion({
@@ -75,11 +80,16 @@ const DiscussionDetail: React.FC = () => {
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !discussion || !newComment.trim()) return;
+    if (!user || !discussion || !newComment.trim() || !token) return;
 
     try {
       const response = await axios.post(`http://localhost:5000/api/discussion/${discussion._id}/comments`, {
         content: newComment
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       setDiscussion({

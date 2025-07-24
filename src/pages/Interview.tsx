@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import { Video, Mic, MicOff, VideoOff, User, Bot, Send, Volume2, VolumeX, X } from "lucide-react"
+import { useAuth } from '../contexts/AuthContext' // Import your auth context
 
 interface InterviewSession {
   sessionId: string
@@ -89,6 +90,7 @@ declare global {
 }
 
 const Interview: React.FC = () => {
+  const { token, user } = useAuth()
   const [session, setSession] = useState<InterviewSession | null>(null)
   const [videoEnabled, setVideoEnabled] = useState(false)
   const [micEnabled, setMicEnabled] = useState(false)
@@ -103,20 +105,20 @@ const Interview: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [finalReport, setFinalReport] = useState<FinalReport | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState("")
   const [permissionError, setPermissionError] = useState<string | null>(null)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [speechEnabled, setSpeechEnabled] = useState(true)
   const [waitingForNextQuestion, setWaitingForNextQuestion] = useState(false)
 
+  // ✅ ADD MISSING STATE: Voice language
   const [voiceLanguage, setVoiceLanguage] = useState("en-US")
-  const [recognitionInstance, setRecognitionInstance] = useState<any>(null)
+  
+  // ✅ SIMPLIFIED: Remove complex speech recognition state
+  const [isListening, setIsListening] = useState(false)
   const [recognitionError, setRecognitionError] = useState<string | null>(null)
   const [interimTranscript, setInterimTranscript] = useState("")
-  const [finalTranscript, setFinalTranscript] = useState("")
-  const [shouldRestart, setShouldRestart] = useState(false)
-  const [restartAttempts, setRestartAttempts] = useState(0)
+  const [speechRecognitionSupported, setSpeechRecognitionSupported] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -125,11 +127,10 @@ const Interview: React.FC = () => {
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null)
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
   const finalTranscriptRef = useRef<string>("")
-  const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Text-to-speech function
   const speakText = (text: string) => {
-    if (!speechEnabled || !("speechSynthesis" in window)) return
+    if (!("speechSynthesis" in window)) return
 
     // Stop any current speech
     window.speechSynthesis.cancel()
@@ -148,11 +149,10 @@ const Interview: React.FC = () => {
       utterance.voice = preferredVoice
     }
 
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    utterance.onerror = () => setIsSpeaking(false)
+    utterance.onstart = () => setIsListening(true)
+    utterance.onend = () => setIsListening(false)
+    utterance.onerror = () => setIsListening(false)
 
-    speechSynthesisRef.current = utterance
     window.speechSynthesis.speak(utterance)
   }
 
@@ -160,7 +160,7 @@ const Interview: React.FC = () => {
   const stopSpeaking = () => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel()
-      setIsSpeaking(false)
+      setIsListening(false)
     }
   }
 
@@ -186,10 +186,16 @@ const Interview: React.FC = () => {
         disableVideo()
 
         // Clear all timeouts
-        if (restartTimeoutRef.current) {
-          clearTimeout(restartTimeoutRef.current)
+        if (recordingIntervalRef.current) {
+          clearInterval(recordingIntervalRef.current)
         }
-
+        if (recognitionRef.current) {
+          recognitionRef.current.stop()
+        }
+        stopSpeaking()
+      } catch (error) {
+        console.error("Error stopping interview:", error)
+      } finally {
         // Reset all states to initial values
         setSession(null)
         setScores([])
@@ -199,43 +205,10 @@ const Interview: React.FC = () => {
         setFinalReport(null)
         setCurrentAnswer("")
         setTranscript("")
-        setFinalTranscript("")
         setInterimTranscript("")
-        setPermissionError(null)
-        setWaitingForNextQuestion(false)
-        setIsListening(false)
-        setShouldRestart(false)
-        setRestartAttempts(0)
         setRecognitionError(null)
         setLoading(false)
         setIsUploading(false)
-
-        // Reset refs
-        finalTranscriptRef.current = ""
-
-        console.log("✅ Interview stopped and reset to initial state")
-      } catch (error) {
-        console.error("Error stopping interview:", error)
-        // Force reset on error
-        setSession(null)
-        setScores([])
-        setVideoOnTime(0)
-        setTotalTime(0)
-        setStartTime(null)
-        setFinalReport(null)
-        setCurrentAnswer("")
-        setTranscript("")
-        setFinalTranscript("")
-        setInterimTranscript("")
-        setPermissionError(null)
-        setWaitingForNextQuestion(false)
-        setIsListening(false)
-        setShouldRestart(false)
-        setRestartAttempts(0)
-        setRecognitionError(null)
-        setLoading(false)
-        setIsUploading(false)
-        finalTranscriptRef.current = ""
       }
     }
   }
@@ -251,9 +224,6 @@ const Interview: React.FC = () => {
       }
       if (recognitionRef.current) {
         recognitionRef.current.stop()
-      }
-      if (restartTimeoutRef.current) {
-        clearTimeout(restartTimeoutRef.current)
       }
       stopSpeaking()
     }
@@ -276,7 +246,7 @@ const Interview: React.FC = () => {
           enableVideo()
         } else {
           console.warn("⛔ videoRef still not ready after timeout, skipping enableVideo")
-          setPermissionError("Video could not be enabled. Try again.")
+          setRecognitionError("Video could not be enabled. Try again.")
           setVideoEnabled(false)
         }
       }, 200)
@@ -296,40 +266,54 @@ const Interview: React.FC = () => {
   }, [startTime])
 
   useEffect(() => {
-    // Update session timing periodically
-    if (session && startTime) {
+    if (session && startTime && token) {
       const interval = setInterval(async () => {
         try {
           await axios.post("http://localhost:5000/api/interview/update-timing", {
             sessionId: session.sessionId,
             videoOnTime,
             totalTime,
+          }, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
           })
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error updating timing:", error)
+          if (error.response?.status === 401) {
+            console.error("❌ Token expired during timing update")
+          }
         }
       }, 10000)
       return () => clearInterval(interval)
     }
-  }, [session, videoOnTime, totalTime])
+  }, [session, videoOnTime, totalTime, token])
 
-  // Enhanced speech recognition with better restart logic
+  // ✅ SIMPLE: Speech recognition initialization - no complex restart logic
   useEffect(() => {
-    // Don't initialize if not supported
+    console.log("🎤 Initializing speech recognition...")
+    
+    // Check browser support
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      console.warn("Speech recognition not supported")
+      console.warn("❌ Speech recognition not supported in this browser")
+      setSpeechRecognitionSupported(false)
+      setRecognitionError("Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.")
       return
     }
 
+    setSpeechRecognitionSupported(true)
+    
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition
     const recognition = new SpeechRecognitionAPI()
 
     recognition.continuous = true
     recognition.interimResults = true
     recognition.lang = voiceLanguage
-    recognition.maxAlternatives = 1
 
     recognition.onresult = (event) => {
+      console.log("🎤 Speech recognition result received")
+      
       let finalText = ""
       let interimText = ""
 
@@ -337,142 +321,78 @@ const Interview: React.FC = () => {
         const transcript = event.results[i][0].transcript
         if (event.results[i].isFinal) {
           finalText += transcript + " "
+          console.log("🎤 Final transcript:", transcript)
         } else {
           interimText += transcript
         }
       }
 
-      if (finalText) {
-        setFinalTranscript((prev) => prev + finalText)
+      if (finalText.trim()) {
         setCurrentAnswer((prev) => (prev + " " + finalText).trim())
-        // Reset restart attempts on successful recognition
-        setRestartAttempts(0)
       }
-
       setInterimTranscript(interimText)
     }
 
     recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error)
-
-      // Don't show error for aborted recognition (user stopped intentionally)
       if (event.error !== "aborted") {
-        setRecognitionError(`Error: ${event.error}`)
-
-        // Handle specific errors
-        if (event.error === "no-speech" || event.error === "audio-capture") {
-          // These are recoverable errors, try to restart
-          setShouldRestart(true)
-        }
+        setRecognitionError(`Speech error: ${event.error}`)
       }
-
-      setIsListening(false)
     }
 
     recognition.onend = () => {
-      console.log("Recognition ended, restart attempts:", restartAttempts)
       setIsListening(false)
-
-      // Auto-restart if we should be listening and haven't exceeded max attempts
-      if (shouldRestart && restartAttempts < 5) {
-        console.log("Attempting to restart recognition...")
-        setRestartAttempts((prev) => prev + 1)
-
-        // Clear any existing timeout
-        if (restartTimeoutRef.current) {
-          clearTimeout(restartTimeoutRef.current)
-        }
-
-        // Restart after a short delay
-        restartTimeoutRef.current = setTimeout(() => {
-          try {
-            recognition.start()
-            setIsListening(true)
-            setRecognitionError(null)
-          } catch (err) {
-            console.error("Failed to restart recognition:", err)
-            if (restartAttempts >= 4) {
-              setRecognitionError("Speech recognition failed multiple times. Please try manually.")
-              setShouldRestart(false)
-            }
-          }
-        }, 1000)
-      } else if (restartAttempts >= 5) {
-        setRecognitionError("Speech recognition stopped. Please restart manually.")
-        setShouldRestart(false)
-        setRestartAttempts(0)
-      }
     }
 
     recognition.onstart = () => {
-      console.log("Recognition started")
       setIsListening(true)
       setRecognitionError(null)
     }
 
-    setRecognitionInstance(recognition)
+    recognitionRef.current = recognition
+  }, [voiceLanguage])
 
-    return () => {
-      if (recognition) {
-        recognition.stop()
+  // ✅ SIMPLE: Mic toggle function - handles both video and speech recognition
+  const toggleMic = async () => {
+    if (!micEnabled) {
+      // Enable mic and start speech recognition
+      if (!videoEnabled) {
+        await enableVideo() // This will enable both video and mic
       }
-      if (restartTimeoutRef.current) {
-        clearTimeout(restartTimeoutRef.current)
+      
+      if (speechRecognitionSupported && recognitionRef.current) {
+        try {
+          recognitionRef.current.start()
+        } catch (error) {
+          console.error("Failed to start speech recognition:", error)
+        }
       }
-    }
-  }, [voiceLanguage, shouldRestart, restartAttempts])
-
-  useEffect(() => {
-    if (textAreaRef.current) {
-      textAreaRef.current.scrollTop = textAreaRef.current.scrollHeight
-    }
-  }, [currentAnswer])
-
-  // Only speak question when it's a new question and not waiting for next question
-  useEffect(() => {
-    if (session?.question && speechEnabled && !waitingForNextQuestion) {
-      const questionText = `Question ${session.questionNumber} of 10. ${session.question}`
-      // Add a small delay to ensure the UI is ready
-      setTimeout(() => speakText(questionText), 500)
-    }
-  }, [session?.question, speechEnabled, waitingForNextQuestion])
-
-  const startInterview = async () => {
-    console.log("🎤 Starting interview with role:", role, "experience:", experience)
-    setLoading(true)
-    setPermissionError(null)
-
-    try {
-      const response = await axios.post("http://localhost:5000/api/interview/start", {
-        role,
-        experience,
-      })
-      console.log("✅ Interview started successfully:", response.data)
-      setSession(response.data)
-      setStartTime(new Date())
-      setVideoOnTime(0)
-      setTotalTime(0)
-      setScores([])
-      setFinalReport(null)
-      setWaitingForNextQuestion(false)
-    } catch (error: any) {
-      console.error("❌ Error starting interview:", error)
-      setPermissionError(error.response?.data?.message || "Failed to start interview. Please try again.")
-    } finally {
-      setLoading(false)
+    } else {
+      // Disable mic and stop speech recognition
+      setMicEnabled(false)
+      
+      if (recognitionRef.current && isListening) {
+        try {
+          recognitionRef.current.stop()
+        } catch (error) {
+          console.error("Failed to stop speech recognition:", error)
+        }
+      }
+      setIsListening(false)
+      setInterimTranscript("")
     }
   }
 
+  // ✅ UPDATED: Enable video function
   const enableVideo = async () => {
     console.log("📹 Enabling video and audio...")
-    setPermissionError(null)
+    setRecognitionError(null)
 
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
       }
 
-      await new Promise((res) => requestAnimationFrame(res))
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -488,29 +408,36 @@ const Interview: React.FC = () => {
 
       streamRef.current = stream
 
+      // Wait for video ref to be ready
       for (let i = 0; i < 10 && !videoRef.current; i++) {
         await new Promise((r) => setTimeout(r, 50))
-      }
-      if (!videoRef.current) {
-        throw new Error("videoRef not available after retries")
       }
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        console.log("✅ Video stream attached to video element")
       }
 
       setVideoEnabled(true)
       setMicEnabled(true)
+
+      // Auto-start speech recognition when mic is enabled
+      if (speechRecognitionSupported && recognitionRef.current) {
+        try {
+          recognitionRef.current.start()
+        } catch (error) {
+          console.error("Failed to auto-start speech recognition:", error)
+        }
+      }
+
       console.log("✅ Video and audio enabled successfully")
     } catch (error: any) {
       console.error("❌ Error accessing media devices:", error)
-      setPermissionError("Please allow access to camera and microphone for the best interview experience")
+      setRecognitionError("Please allow access to camera and microphone")
     }
   }
 
+  // ✅ UPDATED: Disable video function
   const disableVideo = () => {
-    console.log("📹 Disabling video and audio...")
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop())
       streamRef.current = null
@@ -520,67 +447,128 @@ const Interview: React.FC = () => {
       videoRef.current.srcObject = null
     }
 
+    // Stop speech recognition when disabling video
+    if (recognitionRef.current && isListening) {
+      try {
+        recognitionRef.current.stop()
+      } catch (error) {
+        console.error("Failed to stop speech recognition:", error)
+      }
+    }
+
     setVideoEnabled(false)
     setMicEnabled(false)
-
-    if (isListening) {
-      stopListening()
-    }
-    console.log("✅ Video and audio disabled")
+    setIsListening(false)
+    setInterimTranscript("")
   }
 
+  // ✅ ADD MISSING FUNCTION: Start Interview
+  const startInterview = async () => {
+    console.log("🎤 Starting interview with role:", role, "experience:", experience)
+    console.log("🔑 Token from useAuth:", token ? `Present (${token.length} chars)` : 'Missing')
+    console.log("👤 User from useAuth:", user ? `Present (${user.username})` : 'Missing')
+    
+    if (!token) {
+      setRecognitionError('Authentication required. Please log in again.');
+      return;
+    }
+    
+    setLoading(true)
+    setRecognitionError(null)
+
+    try {
+      console.log('📡 Making request with token:', token.substring(0, 20) + '...');
+      const response = await axios.post("http://localhost:5000/api/interview/start", {
+        role,
+        experience,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      console.log("✅ Interview started successfully:", response.data)
+      setSession(response.data)
+      setStartTime(new Date())
+      setVideoOnTime(0)
+      setTotalTime(0)
+      setScores([])
+      setFinalReport(null)
+      setIsListening(false)
+    } catch (error: any) {
+      console.error("❌ Error starting interview:", error)
+      console.error("❌ Error response:", error.response?.data)
+      console.error("❌ Error status:", error.response?.status)
+      
+      if (error.response?.status === 401) {
+        setRecognitionError("Authentication failed. Please log in again.");
+      } else {
+        setRecognitionError(error.response?.data?.message || "Failed to start interview. Please try again.")
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ✅ BULLETPROOF: Enhanced start listening function
   const startListening = () => {
-    if (!recognitionInstance || !micEnabled) {
-      setPermissionError("Please enable microphone first or speech recognition is not supported")
+    if (!speechRecognitionSupported) {
+      setRecognitionError("Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.")
+      return
+    }
+
+    if (!recognitionRef.current || !micEnabled) {
+      setRecognitionError("Please enable microphone first or speech recognition is not available")
       return
     }
 
     console.log("🎤 Starting speech recognition...")
     setRecognitionError(null)
-    setFinalTranscript("")
     setInterimTranscript("")
-    setShouldRestart(true)
-    setRestartAttempts(0)
+    setIsListening(true)
 
     try {
-      recognitionInstance.start()
-      setIsListening(true)
+      recognitionRef.current.start()
     } catch (error) {
-      console.error("Error starting speech recognition:", error)
-      setRecognitionError("Failed to start speech recognition")
+      console.error("❌ Error starting speech recognition:", error)
+      setRecognitionError("Failed to start speech recognition. Please try again.")
     }
   }
 
+  // ✅ BULLETPROOF: Enhanced stop listening function  
   const stopListening = () => {
-    if (!recognitionInstance) return
+    if (!recognitionRef.current) return
 
     console.log("🎤 Stopping speech recognition...")
-    setShouldRestart(false)
-    setRestartAttempts(0)
-
-    if (restartTimeoutRef.current) {
-      clearTimeout(restartTimeoutRef.current)
-    }
+    setIsListening(false)
+    setInterimTranscript("")
 
     try {
-      recognitionInstance.stop()
+      recognitionRef.current.stop()
+      console.log("✅ Speech recognition stopped successfully")
+    } catch (error) {
+      console.error("❌ Error stopping speech recognition:", error)
+      // Force state reset even if stop fails
       setIsListening(false)
       setInterimTranscript("")
-    } catch (error) {
-      console.error("Error stopping speech recognition:", error)
     }
   }
 
   const submitAnswer = async (answer: string) => {
     if (!session || !answer.trim()) {
-      setPermissionError("Please provide an answer before submitting")
+      setRecognitionError("Please provide an answer before submitting")
       return
+    }
+
+    if (!token) {
+      setRecognitionError('Authentication required. Please log in again.');
+      return;
     }
 
     console.log("📝 Submitting answer for question", session.questionNumber)
     setLoading(true)
-    setPermissionError(null)
-    setWaitingForNextQuestion(true)
+    setRecognitionError(null)
+    setIsListening(false)
 
     // Stop any current speech and listening
     stopSpeaking()
@@ -589,10 +577,16 @@ const Interview: React.FC = () => {
     }
 
     try {
+      console.log('📡 Submitting answer with token:', token.substring(0, 20) + '...');
       const response = await axios.post("http://localhost:5000/api/interview/answer", {
         sessionId: session.sessionId,
         answer,
         questionNumber: session.questionNumber,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
 
       console.log("✅ Answer submitted, response:", response.data)
@@ -610,11 +604,10 @@ const Interview: React.FC = () => {
               }
             : null,
         )
-        setWaitingForNextQuestion(false)
+        setIsListening(false)
         await generateFinalReport()
       } else {
         console.log("➡️ Moving to next question:", response.data.questionNumber)
-        // Show evaluation first, then wait for user to proceed
         setSession((prev) =>
           prev
             ? {
@@ -626,27 +619,36 @@ const Interview: React.FC = () => {
         )
       }
 
-      // Clear answer and reset transcript
       setCurrentAnswer("")
-      finalTranscriptRef.current = ""
     } catch (error: any) {
       console.error("❌ Error submitting answer:", error)
-      setPermissionError(error.response?.data?.message || "Failed to submit answer. Please try again.")
-      setWaitingForNextQuestion(false)
+      console.error("❌ Error response:", error.response?.data)
+      
+      if (error.response?.status === 401) {
+        setRecognitionError("Authentication failed. Please log in again.");
+      } else {
+        setRecognitionError(error.response?.data?.message || "Failed to submit answer. Please try again.")
+      }
+      setIsListening(false)
     } finally {
       setLoading(false)
     }
   }
 
   const proceedToNextQuestion = async () => {
-    if (!session) return
+    if (!session || !token) return
 
     try {
-      // Get the next question data from the previous response
+      console.log('📡 Getting next question with token:', token.substring(0, 20) + '...');
       const response = await axios.post("http://localhost:5000/api/interview/answer", {
         sessionId: session.sessionId,
         answer: currentAnswer || "No additional response",
         questionNumber: session.questionNumber,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
 
       if (!response.data.isComplete) {
@@ -659,33 +661,45 @@ const Interview: React.FC = () => {
                 questionNumber: response.data.questionNumber,
                 expectedTopics: response.data.expectedTopics || [],
                 difficulty: response.data.difficulty || "medium",
-                evaluation: undefined, // Clear previous evaluation
+                evaluation: undefined,
                 isComplete: false,
               }
             : null,
         )
       }
 
-      setWaitingForNextQuestion(false)
-    } catch (error) {
+      setIsListening(false)
+    } catch (error: any) {
       console.error("❌ Error getting next question:", error)
-      setWaitingForNextQuestion(false)
+      if (error.response?.status === 401) {
+        setRecognitionError("Authentication failed. Please log in again.");
+      }
+      setIsListening(false)
     }
   }
 
   const generateFinalReport = async () => {
-    if (!session) return
+    if (!session || !token) return
 
     console.log("📊 Generating final report...")
     try {
+      console.log('📡 Generating report with token:', token.substring(0, 20) + '...');
       const response = await axios.post("http://localhost:5000/api/interview/generate-report", {
         sessionId: session.sessionId,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
 
       console.log("✅ Final report generated:", response.data)
       setFinalReport(response.data)
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error generating report:", error)
+      if (error.response?.status === 401) {
+        setRecognitionError("Authentication failed. Please log in again.");
+      }
       const basicReport: FinalReport = {
         overallScore: Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10),
         recommendation: "consider",
@@ -723,6 +737,15 @@ const Interview: React.FC = () => {
     }
   }
 
+  // Only speak question when it's a new question and not waiting for next question
+  useEffect(() => {
+    if (session?.question && speechEnabled && !waitingForNextQuestion) {
+      const questionText = `Question ${session.questionNumber} of 10. ${session.question}`
+      // Add a small delay to ensure the UI is ready
+      setTimeout(() => speakText(questionText), 500)
+    }
+  }, [session?.question, speechEnabled, waitingForNextQuestion])
+
   if (!session) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -741,9 +764,9 @@ const Interview: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm p-8 max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Setup Your Interview</h2>
 
-            {permissionError && (
+            {recognitionError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-red-800">{permissionError}</p>
+                <p className="text-red-800">{recognitionError}</p>
               </div>
             )}
 
@@ -924,8 +947,8 @@ const Interview: React.FC = () => {
                   setFinalReport(null)
                   setCurrentAnswer("")
                   setTranscript("")
-                  setPermissionError(null)
-                  setWaitingForNextQuestion(false)
+                  setRecognitionError(null)
+                  setIsListening(false)
                   finalTranscriptRef.current = ""
                   disableVideo()
                 }}
@@ -954,9 +977,9 @@ const Interview: React.FC = () => {
           </button>
         </div>
 
-        {permissionError && (
+        {recognitionError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800">{permissionError}</p>
+            <p className="text-red-800">{recognitionError}</p>
           </div>
         )}
 
@@ -966,7 +989,7 @@ const Interview: React.FC = () => {
             <div className="text-center mb-6">
               <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 relative">
                 <Bot className="h-16 w-16 text-white" />
-                {isSpeaking && (
+                {isListening && (
                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
                     <Volume2 className="h-4 w-4 text-white" />
                   </div>
@@ -995,7 +1018,7 @@ const Interview: React.FC = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => speakText(session.question)}
-                    disabled={isSpeaking}
+                    disabled={isListening}
                     className="p-2 text-blue-600 hover:bg-blue-100 rounded-full disabled:opacity-50"
                     title="Speak question"
                   >
@@ -1003,7 +1026,7 @@ const Interview: React.FC = () => {
                   </button>
                   <button
                     onClick={stopSpeaking}
-                    disabled={!isSpeaking}
+                    disabled={!isListening}
                     className="p-2 text-red-600 hover:bg-red-100 rounded-full disabled:opacity-50"
                     title="Stop speaking"
                   >
@@ -1067,7 +1090,7 @@ const Interview: React.FC = () => {
                   </div>
                 )}
 
-                {waitingForNextQuestion && (
+                {isListening && (
                   <button
                     onClick={proceedToNextQuestion}
                     className="w-full mt-4 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors"
@@ -1101,15 +1124,9 @@ const Interview: React.FC = () => {
                     🎤 Listening...
                   </div>
                 )}
-
-                {restartAttempts > 0 && (
-                  <div className="absolute top-4 right-4 bg-yellow-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    Restarting... ({restartAttempts}/5)
-                  </div>
-                )}
               </div>
 
-              {/* Removed the purple play button, kept only video and mic controls */}
+              {/* ✅ SIMPLIFIED: Only video and mic toggle buttons */}
               <div className="flex justify-center space-x-4 mb-6">
                 <button
                   onClick={() => setVideoEnabled((prev) => !prev)}
@@ -1122,12 +1139,26 @@ const Interview: React.FC = () => {
                   {videoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
                 </button>
 
+                {/* ✅ SIMPLIFIED: Single mic button that handles everything */}
                 <button
-                  onClick={() => setMicEnabled(!micEnabled)}
+                  onClick={toggleMic}
                   disabled={!videoEnabled}
                   className={`p-3 rounded-full ${
-                    micEnabled ? "bg-green-600 text-white hover:bg-green-700" : "bg-red-600 text-white hover:bg-red-700"
+                    micEnabled && isListening 
+                      ? "bg-green-600 text-white hover:bg-green-700" 
+                      : micEnabled 
+                        ? "bg-yellow-600 text-white hover:bg-yellow-700"
+                        : "bg-red-600 text-white hover:bg-red-700"
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title={
+                    !videoEnabled 
+                      ? "Enable video first" 
+                      : micEnabled && isListening 
+                        ? "Mic ON - Speech recognition active" 
+                        : micEnabled 
+                          ? "Mic ON - Speech recognition paused"
+                          : "Mic OFF"
+                  }
                 >
                   {micEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
                 </button>
@@ -1158,7 +1189,6 @@ const Interview: React.FC = () => {
                       value={voiceLanguage}
                       onChange={(e) => setVoiceLanguage(e.target.value)}
                       className="text-xs px-2 py-1 border border-gray-300 rounded"
-                      disabled={isListening}
                     >
                       <option value="en-US">English (US)</option>
                       <option value="en-IN">English (Indian)</option>
@@ -1169,32 +1199,29 @@ const Interview: React.FC = () => {
                       <option value="ja-JP">Japanese</option>
                       <option value="zh-CN">Chinese</option>
                     </select>
-                    <button
-                      onClick={isListening ? stopListening : startListening}
-                      disabled={!micEnabled}
-                      className={`flex items-center px-3 py-1 text-sm rounded ${
-                        isListening
-                          ? "bg-red-100 text-red-700 hover:bg-red-200"
-                          : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
+                    
+                    {/* ✅ SIMPLIFIED: Status indicator only */}
+                    <div className={`flex items-center px-3 py-1 text-sm rounded ${
+                      isListening
+                        ? "bg-green-100 text-green-700"
+                        : micEnabled
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-700"
+                    }`}>
                       <Mic className="h-4 w-4 mr-1" />
-                      {isListening ? "Stop Listening" : "Start Speaking"}
-                    </button>
+                      {isListening ? "Listening..." : micEnabled ? "Mic Ready" : "Mic Off"}
+                    </div>
                   </div>
                 </div>
 
-                {/* Show recording status and interim results */}
+                {/* ✅ SIMPLIFIED: Show only active listening status */}
                 {isListening && (
-                  <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <span className="h-3 w-3 rounded-full bg-red-500 animate-pulse mr-2"></span>
-                        <span className="text-sm font-medium text-blue-700">
-                          Listening... ({voiceLanguage.split("-")[0]}) - Auto-restart enabled
-                        </span>
-                      </div>
-                      {recognitionError && <span className="text-xs text-red-500">{recognitionError}</span>}
+                  <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                    <div className="flex items-center">
+                      <span className="h-3 w-3 rounded-full bg-green-500 animate-pulse mr-2"></span>
+                      <span className="text-sm font-medium text-green-700">
+                        🎤 Listening in {voiceLanguage.split("-")[0]} - Speak naturally
+                      </span>
                     </div>
                     {interimTranscript && (
                       <div className="text-sm text-gray-600 mt-1 italic">"{interimTranscript}"</div>
@@ -1202,46 +1229,43 @@ const Interview: React.FC = () => {
                   </div>
                 )}
 
+                {recognitionError && (
+                  <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                    <span className="text-sm text-red-700">{recognitionError}</span>
+                  </div>
+                )}
+
                 <textarea
                   ref={textAreaRef}
                   value={currentAnswer + (interimTranscript ? " " + interimTranscript : "")}
-                  onChange={(e) => {
-                    setCurrentAnswer(e.target.value)
-                    setFinalTranscript(e.target.value)
-                  }}
+                  onChange={(e) => setCurrentAnswer(e.target.value)}
                   rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Start recording and speaking, or type your detailed answer here..."
-                  disabled={isListening}
+                  placeholder="Speak naturally or type your answer here..."
                 />
               </div>
 
+              {/* ✅ SIMPLIFIED: Single tip section */}
               <div className="text-sm text-gray-500 mb-4 p-3 bg-blue-50 rounded-lg">
-                <p className="mb-2">
-                  💡 <strong>Pro Tips:</strong>
-                </p>
+                <p className="mb-2">💡 <strong>Speech Recognition:</strong></p>
                 <ul className="space-y-1 text-xs">
-                  <li>• Select your preferred language and click "Start Speaking"</li>
-                  <li>• Speech recognition will automatically restart if it stops</li>
-                  <li>• Speak naturally - text appears in real-time</li>
-                  <li>• You can continue speaking for as long as needed</li>
-                  <li>• Click "Stop Listening" when you're done speaking</li>
-                  <li>• Explain your thought process step by step</li>
-                  <li>• Provide specific examples from your experience</li>
+                  {speechRecognitionSupported ? (
+                    <>
+                      <li>• ✅ Speech recognition is supported in your browser</li>
+                      <li>• Click the microphone button to enable/disable speech recognition</li>
+                      <li>• Speak naturally - your words will appear automatically</li>
+                      <li>• You can edit the text manually at any time</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>• ❌ Speech recognition not supported - please use Chrome, Edge, or Safari</li>
+                      <li>• You can still type your answers manually</li>
+                    </>
+                  )}
                 </ul>
-                {isListening && (
-                  <p className="text-blue-600 mt-2 font-medium">
-                    🎤 <strong>Listening continuously...</strong> Keep speaking, the system will auto-restart if needed.
-                  </p>
-                )}
-                {recognitionError && (
-                  <p className="text-red-600 mt-2 font-medium">
-                    ❌ <strong>Error:</strong> {recognitionError}
-                  </p>
-                )}
               </div>
 
-              {!waitingForNextQuestion && (
+              {!isListening && (
                 <button
                   onClick={() => submitAnswer(currentAnswer)}
                   disabled={loading || !currentAnswer.trim()}

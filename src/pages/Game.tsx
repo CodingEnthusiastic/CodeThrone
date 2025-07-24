@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext"
 import axios from "axios"
 import {io} from "socket.io-client"
 import { Gamepad2, Users, Clock, Zap, Send, CheckCircle, XCircle, Medal, Heart, LogOut } from "lucide-react"
+import SmartCodeEditor from "../components/SmartCodeEditor"
 
 interface GameRoom {
   _id: string
@@ -131,7 +132,7 @@ const GameEndModal: React.FC<{
           onClick={handleClose}
           className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors"
         >
-          Play Again
+          Back to Home page
         </button>
       </div>
     </div>
@@ -844,7 +845,7 @@ int main() {
     console.log("⏰ Submit timeout - resetting submitting state")
     setSubmitting(false)
     alert("Submission timed out. Please try again.")
-  }, 10000) // 10 second timeout
+  }, 25000) // 25 second timeout
 
   // Clear timeout if submission completes
   const originalOn = socketRef.current.on
@@ -1377,15 +1378,21 @@ const getOpponentPlayer = () => {
                   <option value="c">C</option>
                 </select>
               </div>
+              
               <div className="mb-4">
-                <textarea
-                  ref={textareaRef}
-                  value={code}
-                  onChange={(e) => handleCodeChange(e.target.value)}
-                  className="w-full h-96 p-4 border border-gray-300 rounded-md font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  placeholder="Write your code here..."
-                  disabled={gameFinished || !gameStarted}
-                />
+                <div className="relative">
+                  <SmartCodeEditor
+                    value={code}
+                    onChange={handleCodeChange}
+                    language={language}
+                    disabled={gameFinished || !gameStarted}
+                    placeholder="Write your code here..."
+                    contestMode={true} // ✅ Enable contest mode restrictions for game mode
+                  />
+                  <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
+                    Copy/Paste Disabled
+                  </div>
+                </div>
               </div>
               <div className="flex space-x-4 mb-4">
                 <button

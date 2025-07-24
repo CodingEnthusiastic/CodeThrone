@@ -244,9 +244,48 @@ const ContestProblems: React.FC = () => {
 
   const isProblemSolved = (problemId: string) => {
     if (!user || !contest) return false
-    const participant = contest.participants.find((p) => p.user._id === user.id)
-    if (!participant) return false
-    return participant.submissions.some((sub) => sub.problem === problemId && sub.score > 0)
+    
+    console.log('🔍 Checking if problem is solved:', {
+      problemId,
+      userId: user.id,
+      participantsCount: contest.participants.length
+    })
+    
+    const participant = contest.participants.find((p) => {
+      const participantUserId = p.user._id || p.user.id || p.user
+      const currentUserId = user.id || user._id
+      console.log('👤 Comparing user IDs:', { participantUserId, currentUserId })
+      return participantUserId.toString() === currentUserId.toString()
+    })
+    
+    if (!participant) {
+      console.log('❌ User not found in participants')
+      return false
+    }
+    
+    console.log('✅ Participant found:', {
+      username: participant.user.username || 'N/A',
+      submissionsCount: participant.submissions.length
+    })
+    
+    const hasSolvedSubmission = participant.submissions.some((sub) => {
+      const submissionProblemId = sub.problem._id || sub.problem
+      const isSameProblem = submissionProblemId.toString() === problemId.toString()
+      const hasScore = sub.score > 0
+      
+      console.log('📝 Checking submission:', {
+        submissionProblemId,
+        problemId,
+        isSameProblem,
+        score: sub.score,
+        hasScore
+      })
+      
+      return isSameProblem && hasScore
+    })
+    
+    console.log('🎯 Problem solved status:', hasSolvedSubmission)
+    return hasSolvedSubmission
   }
 
   const canViewEditorial = () => {
@@ -394,20 +433,34 @@ const ContestProblems: React.FC = () => {
               .sort((a, b) => (a.order || 0) - (b.order || 0))
               .map((problem, index) => {
                 const solved = isProblemSolved(problem._id)
+                console.log('🎮 Rendering problem:', {
+                  title: problem.title,
+                  id: problem._id,
+                  solved
+                })
+                
                 return (
                   <Card
                     key={problem._id}
-                    className="hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                    className={`hover:shadow-xl transition-all duration-300 cursor-pointer group ${
+                      solved ? 'ring-2 ring-green-200 bg-green-50' : ''
+                    }`}
                     onClick={() => handleProblemClick(problem._id)}
                   >
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl font-bold text-lg shadow-lg">
-                            {String.fromCharCode(65 + index)}
+                          <div className={`flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg shadow-lg ${
+                            solved 
+                              ? 'bg-gradient-to-br from-green-500 to-green-600 text-white'
+                              : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
+                          }`}>
+                            {solved ? '✓' : String.fromCharCode(65 + index)}
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold text-gray-900 flex items-center group-hover:text-blue-600 transition-colors">
+                            <h3 className={`text-xl font-bold flex items-center group-hover:text-blue-600 transition-colors ${
+                              solved ? 'text-green-700' : 'text-gray-900'
+                            }`}>
                               {problem.title}
                               {solved && <CheckCircle className="h-6 w-6 text-green-600 ml-3" />}
                             </h3>
@@ -425,16 +478,18 @@ const ContestProblems: React.FC = () => {
 
                         <div className="flex items-center space-x-3">
                           <Button
-                            variant="outline"
+                            variant={solved ? "success" : "outline"}
                             size="sm"
-                            className="group-hover:bg-blue-50 group-hover:border-blue-300 bg-transparent"
+                            className={`group-hover:bg-blue-50 group-hover:border-blue-300 ${
+                              solved ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green'
+                            }`}
                             onClick={(e) => {
                               e.stopPropagation()
                               handleProblemClick(problem._id)
                             }}
                           >
                             <Play className="h-4 w-4 mr-2" />
-                            Solve Problem
+                            {solved ? 'Solved' : 'Solve Problem'}
                           </Button>
                         </div>
                       </div>

@@ -680,6 +680,8 @@ async function updateELORatings(game) {
   const rating2 = user2.ratings?.gameRating || 1200
 
   console.log("📊 Current ratings:", { user1: rating1, user2: rating2 })
+  console.log("🎮 Game result type:", game.result)
+  console.log("🏆 Game winner:", game.winner ? game.winner.toString() : "No winner")
 
   player1.ratingBefore = rating1
   player2.ratingBefore = rating2
@@ -691,38 +693,79 @@ async function updateELORatings(game) {
 
   let actualScore1, actualScore2
 
-  if (game.result === "timeout" || game.result === "draw") {
-    if (player1.testCasesPassed > player2.testCasesPassed) {
-      actualScore1 = 0.75
-      actualScore2 = 0.25
-    } else if (player2.testCasesPassed > player1.testCasesPassed) {
-      actualScore1 = 0.25
-      actualScore2 = 0.75
+  // ✅ CRITICAL FIX: Handle opponent_left scenario properly
+  if (game.result === "opponent_left") {
+    console.log("🚪 Handling opponent left scenario")
+    
+    // Determine who left and who stayed
+    const winnerId = game.winner.toString()
+    const player1Id = player1.user._id ? player1.user._id.toString() : player1.user.toString()
+    const player2Id = player2.user._id ? player2.user._id.toString() : player2.user.toString()
+    
+    console.log("🔍 Winner ID:", winnerId)
+    console.log("🔍 Player1 ID:", player1Id)
+    console.log("🔍 Player2 ID:", player2Id)
+    
+    if (winnerId === player1Id) {
+      // Player 1 wins because player 2 left
+      actualScore1 = 1.0  // Full win for staying player
+      actualScore2 = 0.0  // Full loss for leaving player
+      console.log("🏆 Player 1 wins (opponent left)")
+    } else if (winnerId === player2Id) {
+      // Player 2 wins because player 1 left
+      actualScore1 = 0.0  // Full loss for leaving player
+      actualScore2 = 1.0  // Full win for staying player
+      console.log("🏆 Player 2 wins (opponent left)")
     } else {
+      console.log("⚠️ Winner ID doesn't match either player, defaulting to draw")
       actualScore1 = 0.5
       actualScore2 = 0.5
     }
-  } else if (game.winner.toString() === player1.user.toString()) {
-    actualScore1 = 1
-    actualScore2 = 0
-  } else if (game.winner.toString() === player2.user.toString()) {
-    actualScore1 = 0
-    actualScore2 = 1
-  } else if (game.result === "opponent_left") {
-    if (game.winner.toString() === player1.user.toString()) {
-      actualScore1 = 1
-      actualScore2 = 0
-    } else if (game.winner.toString() === player2.user.toString()) {
-      actualScore1 = 0
-      actualScore2 = 1
+  } else if (game.result === "timeout" || game.result === "draw") {
+    console.log("⏰ Handling timeout/draw scenario")
+    if (player1.testCasesPassed > player2.testCasesPassed) {
+      actualScore1 = 0.75
+      actualScore2 = 0.25
+      console.log("🎯 Player 1 has more test cases passed")
+    } else if (player2.testCasesPassed > player1.testCasesPassed) {
+      actualScore1 = 0.25
+      actualScore2 = 0.75
+      console.log("🎯 Player 2 has more test cases passed")
     } else {
+      actualScore1 = 0.5
+      actualScore2 = 0.5
+      console.log("🤝 Equal test cases - draw")
+    }
+  } else if (game.result === "win") {
+    console.log("🏆 Handling normal win scenario")
+    const winnerId = game.winner.toString()
+    const player1Id = player1.user._id ? player1.user._id.toString() : player1.user.toString()
+    const player2Id = player2.user._id ? player2.user._id.toString() : player2.user.toString()
+    
+    if (winnerId === player1Id) {
+      actualScore1 = 1.0
+      actualScore2 = 0.0
+      console.log("🏆 Player 1 wins normally")
+    } else if (winnerId === player2Id) {
+      actualScore1 = 0.0
+      actualScore2 = 1.0
+      console.log("🏆 Player 2 wins normally")
+    } else {
+      console.log("⚠️ Winner mismatch in normal win, defaulting to draw")
       actualScore1 = 0.5
       actualScore2 = 0.5
     }
   } else {
+    console.log("🤷 Unknown game result, defaulting to draw")
     actualScore1 = 0.5
     actualScore2 = 0.5
   }
+
+  console.log("📊 Actual scores calculated:", { 
+    player1: actualScore1, 
+    player2: actualScore2,
+    gameResult: game.result 
+  })
 
   const newRating1 = Math.round(rating1 + K * (actualScore1 - expectedScore1))
   const newRating2 = Math.round(rating2 + K * (actualScore2 - expectedScore2))
@@ -736,12 +779,45 @@ async function updateELORatings(game) {
     user2: newRating2 - rating2,
   })
 
+  // ✅ IMPROVED: Better game history result determination
+  let player1Result, player2Result
+  
+  if (game.result === "opponent_left") {
+    const winnerId = game.winner.toString()
+    const player1Id = player1.user._id ? player1.user._id.toString() : player1.user.toString()
+    
+    if (winnerId === player1Id) {
+      player1Result = "win"
+      player2Result = "lose"
+    } else {
+      player1Result = "lose"
+      player2Result = "win"
+    }
+  } else {
+    // Use actual scores to determine result for history
+    if (actualScore1 > 0.5) {
+      player1Result = "win"
+      player2Result = "lose"
+    } else if (actualScore1 < 0.5) {
+      player1Result = "lose"
+      player2Result = "win"
+    } else {
+      player1Result = "draw"
+      player2Result = "draw"
+    }
+  }
+
+  console.log("📚 Game history results:", { 
+    player1: player1Result, 
+    player2: player2Result 
+  })
+
   await User.findByIdAndUpdate(player1.user, {
     "ratings.gameRating": newRating1,
     $push: {
       gameHistory: {
         opponent: player2.user,
-        result: actualScore1 > 0.5 ? "win" : actualScore1 < 0.5 ? "lose" : "draw",
+        result: player1Result,
         ratingChange: newRating1 - rating1,
         problem: game.problem,
         date: new Date(),
@@ -754,7 +830,7 @@ async function updateELORatings(game) {
     $push: {
       gameHistory: {
         opponent: player1.user,
-        result: actualScore2 > 0.5 ? "win" : actualScore2 < 0.5 ? "lose" : "draw",
+        result: player2Result,
         ratingChange: newRating2 - rating2,
         problem: game.problem,
         date: new Date(),
