@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { 
   Plus, 
   Edit, 
@@ -64,37 +64,82 @@ const AdminDashboard: React.FC = () => {
   const [showCreateProblem, setShowCreateProblem] = useState(false);
   const [showCreateContest, setShowCreateContest] = useState(false);
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
   
   const [newProblem, setNewProblem] = useState({
     title: '',
     description: '',
     difficulty: 'Easy',
     tags: '',
+    companies: '',
     constraints: '',
     examples: [{ input: '', output: '', explanation: '' }],
-    testCases: [{ input: '', output: '', isPublic: true }]
+    testCases: [{ input: '', output: '', isPublic: true }],
+    codeTemplates: {
+      cpp: '',
+      java: '',
+      python: '',
+      c: ''
+    },
+    functionSignature: {
+      cpp: '',
+      java: '',
+      python: '',
+      c: ''
+    },
+    timeLimit: 2000,
+    memoryLimit: 256,
+    isPublished: false,
+    isFeatured: false,
+    editorial: {
+      written: '',
+      videoUrl: '',
+      thumbnailUrl: '',
+      duration: 0
+    }
   });
   
   const [newContest, setNewContest] = useState({
     name: '',
     description: '',
+    bannerImage: '',
     startTime: '',
     endTime: '',
-    duration: 60
+    duration: 60,
+    isPublic: true,
+    password: '',
+    leaderboardVisible: true,
+    freezeTime: 0,
+    rules: '',
+    allowedLanguages: ['cpp', 'python', 'java', 'c']
   });
   
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: '',
     content: '',
     type: 'general',
-    priority: 'medium'
+    priority: 'medium',
+    tags: '',
+    imageUrl: '',
+    link: '',
+    expiresAt: '',
+    visibleToRoles: ['user'],
+    pinned: false
   });
 
   // Redirect if not admin
   if (!user || user.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
+
+  // Helper function to show notifications
+  const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  };
 
   useEffect(() => {
     console.log('🔄 Admin dashboard mounted, fetching data...');
@@ -130,7 +175,7 @@ const AdminDashboard: React.FC = () => {
       setContests(contestsRes.data || []);
       setDiscussions(discussionsRes.data.discussions || []);
       setAnnouncements(announcementsRes.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching admin data:', error);
       console.error('📊 Error details:', error.response?.data);
     } finally {
@@ -146,10 +191,21 @@ const AdminDashboard: React.FC = () => {
     
     try {
       const problemData = {
-        ...newProblem,
+        title: newProblem.title,
+        description: newProblem.description,
+        difficulty: newProblem.difficulty,
         tags: newProblem.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        companies: newProblem.companies.split(',').map(company => company.trim()).filter(company => company),
+        constraints: newProblem.constraints,
         examples: newProblem.examples.filter(ex => ex.input && ex.output),
-        testCases: newProblem.testCases.filter(tc => tc.input && tc.output)
+        testCases: newProblem.testCases.filter(tc => tc.input && tc.output),
+        codeTemplates: newProblem.codeTemplates,
+        functionSignature: newProblem.functionSignature,
+        timeLimit: newProblem.timeLimit,
+        memoryLimit: newProblem.memoryLimit,
+        isPublished: newProblem.isPublished,
+        isFeatured: newProblem.isFeatured,
+        editorial: newProblem.editorial.written ? newProblem.editorial : undefined
       };
       
       console.log('📤 Sending problem data:', problemData);
@@ -176,19 +232,42 @@ const AdminDashboard: React.FC = () => {
         description: '',
         difficulty: 'Easy',
         tags: '',
+        companies: '',
         constraints: '',
         examples: [{ input: '', output: '', explanation: '' }],
-        testCases: [{ input: '', output: '', isPublic: true }]
+        testCases: [{ input: '', output: '', isPublic: true }],
+        codeTemplates: {
+          cpp: '',
+          java: '',
+          python: '',
+          c: ''
+        },
+        functionSignature: {
+          cpp: '',
+          java: '',
+          python: '',
+          c: ''
+        },
+        timeLimit: 2000,
+        memoryLimit: 256,
+        isPublished: false,
+        isFeatured: false,
+        editorial: {
+          written: '',
+          videoUrl: '',
+          thumbnailUrl: '',
+          duration: 0
+        }
       });
-      alert('Problem created successfully!');
-    } catch (error) {
+      showNotification('success', 'Problem created successfully!');
+    } catch (error: any) {
       console.error('❌ Admin: Error creating problem:', error);
       console.error('📊 Error response:', error.response?.data);
       
       if (error.response?.status === 401) {
-        alert('Authentication failed. Please logout and login again.');
+        showNotification('error', 'Authentication failed. Please logout and login again.');
       } else {
-        alert(`Failed to create problem: ${error.response?.data?.message || error.message}`);
+        showNotification('error', `Failed to create problem: ${error.response?.data?.message || error.message}`);
       }
     }
   };
@@ -222,19 +301,26 @@ const AdminDashboard: React.FC = () => {
       setNewContest({
         name: '',
         description: '',
+        bannerImage: '',
         startTime: '',
         endTime: '',
-        duration: 60
+        duration: 60,
+        isPublic: true,
+        password: '',
+        leaderboardVisible: true,
+        freezeTime: 0,
+        rules: '',
+        allowedLanguages: ['cpp', 'python', 'java', 'c']
       });
-      alert('Contest created successfully!');
-    } catch (error) {
+      showNotification('success', 'Contest created successfully!');
+    } catch (error: any) {
       console.error('❌ Admin: Error creating contest:', error);
       console.error('📊 Error response:', error.response?.data);
       
       if (error.response?.status === 401) {
-        alert('Authentication failed. Please logout and login again.');
+        showNotification('error', 'Authentication failed. Please logout and login again.');
       } else {
-        alert(`Failed to create contest: ${error.response?.data?.message || error.message}`);
+        showNotification('error', `Failed to create contest: ${error.response?.data?.message || error.message}`);
       }
     }
   };
@@ -247,7 +333,20 @@ const AdminDashboard: React.FC = () => {
     console.log('🔍 User role check:', user?.role);
     
     try {
-      console.log('📤 Sending announcement data:', newAnnouncement);
+      const announcementData = {
+        title: newAnnouncement.title,
+        content: newAnnouncement.content,
+        type: newAnnouncement.type,
+        priority: newAnnouncement.priority,
+        tags: newAnnouncement.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        imageUrl: newAnnouncement.imageUrl,
+        link: newAnnouncement.link,
+        expiresAt: newAnnouncement.expiresAt ? new Date(newAnnouncement.expiresAt) : null,
+        visibleToRoles: newAnnouncement.visibleToRoles,
+        pinned: newAnnouncement.pinned
+      };
+      
+      console.log('📤 Sending announcement data:', announcementData);
       
       // Double-check authentication
       const token = localStorage.getItem('token');
@@ -263,7 +362,7 @@ const AdminDashboard: React.FC = () => {
         return;
       }
       
-      const response = await axios.post('http://localhost:5000/api/announcements', newAnnouncement, {
+      const response = await axios.post('http://localhost:5000/api/announcements', announcementData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -277,10 +376,16 @@ const AdminDashboard: React.FC = () => {
         title: '',
         content: '',
         type: 'general',
-        priority: 'medium'
+        priority: 'medium',
+        tags: '',
+        imageUrl: '',
+        link: '',
+        expiresAt: '',
+        visibleToRoles: ['user'],
+        pinned: false
       });
-      alert('Announcement created successfully!');
-    } catch (error) {
+      showNotification('success', 'Announcement created successfully!');
+    } catch (error: any) {
       console.error('❌ Admin: Error creating announcement:', error);
       console.error('📊 Error response:', error.response?.data);
       console.error('📊 Error status:', error.response?.status);
@@ -288,9 +393,9 @@ const AdminDashboard: React.FC = () => {
       
       if (error.response?.status === 401) {
         console.error('🔒 Authentication failed - token may be invalid');
-        alert('Authentication failed. Please logout and login again.');
+        showNotification('error', 'Authentication failed. Please logout and login again.');
       } else {
-        alert(`Failed to create announcement: ${error.response?.data?.message || error.message}`);
+        showNotification('error', `Failed to create announcement: ${error.response?.data?.message || error.message}`);
       }
     }
   };
@@ -305,10 +410,10 @@ const AdminDashboard: React.FC = () => {
       });
       console.log('✅ Problem deleted successfully');
       setProblems(problems.filter(p => p._id !== problemId));
-      alert('Problem deleted successfully!');
+      showNotification('success', 'Problem deleted successfully!');
     } catch (error) {
       console.error('❌ Error deleting problem:', error);
-      alert('Failed to delete problem.');
+      showNotification('error', 'Failed to delete problem.');
     }
   };
 
@@ -322,10 +427,10 @@ const AdminDashboard: React.FC = () => {
       });
       console.log('✅ Contest deleted successfully');
       setContests(contests.filter(c => c._id !== contestId));
-      alert('Contest deleted successfully!');
+      showNotification('success', 'Contest deleted successfully!');
     } catch (error) {
       console.error('❌ Error deleting contest:', error);
-      alert('Failed to delete contest.');
+      showNotification('error', 'Failed to delete contest.');
     }
   };
 
@@ -339,10 +444,10 @@ const AdminDashboard: React.FC = () => {
       });
       console.log('✅ Announcement deleted successfully');
       setAnnouncements(announcements.filter(a => a._id !== announcementId));
-      alert('Announcement deleted successfully!');
+      showNotification('success', 'Announcement deleted successfully!');
     } catch (error) {
       console.error('❌ Error deleting announcement:', error);
-      alert('Failed to delete announcement.');
+      showNotification('error', 'Failed to delete announcement.');
     }
   };
 
@@ -356,10 +461,10 @@ const AdminDashboard: React.FC = () => {
     });
     console.log('✅ Discussion deleted successfully');
     setDiscussions(discussions.filter(d => d._id !== discussionId));
-    alert('Discussion deleted successfully!');
+    showNotification('success', 'Discussion deleted successfully!');
   } catch (error) {
     console.error('❌ Error deleting discussion:', error);
-    alert('Failed to delete discussion.');
+    showNotification('error', 'Failed to delete discussion.');
   }
 };
 
@@ -368,25 +473,25 @@ const AdminDashboard: React.FC = () => {
       title: 'Total Problems',
       value: problems.length,
       icon: <Code className="h-8 w-8 text-blue-600" />,
-      color: 'bg-blue-50 border-blue-200'
+      color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
     },
     {
       title: 'Active Contests',
       value: contests.filter(c => c.status === 'ongoing').length,
       icon: <Trophy className="h-8 w-8 text-yellow-600" />,
-      color: 'bg-yellow-50 border-yellow-200'
+      color: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
     },
     {
       title: 'Discussions',
       value: discussions.length,
       icon: <MessageSquare className="h-8 w-8 text-green-600" />,
-      color: 'bg-green-50 border-green-200'
+      color: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
     },
     {
       title: 'Announcements',
       value: announcements.length,
       icon: <Megaphone className="h-8 w-8 text-purple-600" />,
-      color: 'bg-purple-50 border-purple-200'
+      color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
     }
   ];
 
@@ -408,6 +513,17 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+          notification.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+          notification.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+          'bg-blue-100 text-blue-800 border border-blue-200'
+        }`}>
+          <p className="font-medium">{notification.message}</p>
+        </div>
+      )}
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -421,8 +537,8 @@ const AdminDashboard: React.FC = () => {
             <div key={index} className={`p-6 rounded-lg border ${stat.color}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.title}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                 </div>
                 {stat.icon}
               </div>
@@ -506,12 +622,13 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 
                 {showCreateProblem && (
-                  <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg max-h-96 overflow-y-auto">
                     <h4 className="text-lg font-semibold mb-4">Create New Problem</h4>
                     <form onSubmit={handleCreateProblem} className="space-y-4">
+                      {/* Basic Info */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium mb-2">Title</label>
+                          <label className="block text-sm font-medium mb-2">Title *</label>
                           <input
                             type="text"
                             required
@@ -521,7 +638,7 @@ const AdminDashboard: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-2">Difficulty</label>
+                          <label className="block text-sm font-medium mb-2">Difficulty *</label>
                           <select
                             value={newProblem.difficulty}
                             onChange={(e) => setNewProblem({...newProblem, difficulty: e.target.value})}
@@ -535,13 +652,14 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2">Description</label>
+                        <label className="block text-sm font-medium mb-2">Description *</label>
                         <textarea
                           required
                           rows={4}
                           value={newProblem.description}
                           onChange={(e) => setNewProblem({...newProblem, description: e.target.value})}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          placeholder="Describe the problem..."
                         />
                       </div>
                       
@@ -557,14 +675,150 @@ const AdminDashboard: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-2">Constraints</label>
-                          <textarea
-                            required
-                            rows={2}
-                            value={newProblem.constraints}
-                            onChange={(e) => setNewProblem({...newProblem, constraints: e.target.value})}
+                          <label className="block text-sm font-medium mb-2">Companies (comma-separated)</label>
+                          <input
+                            type="text"
+                            value={newProblem.companies}
+                            onChange={(e) => setNewProblem({...newProblem, companies: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                            placeholder="Google, Microsoft, Amazon"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Constraints *</label>
+                        <textarea
+                          required
+                          rows={2}
+                          value={newProblem.constraints}
+                          onChange={(e) => setNewProblem({...newProblem, constraints: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          placeholder="1 <= n <= 10^4"
+                        />
+                      </div>
+
+                      {/* Limits and Settings */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Time Limit (ms)</label>
+                          <input
+                            type="number"
+                            value={newProblem.timeLimit}
+                            onChange={(e) => setNewProblem({...newProblem, timeLimit: parseInt(e.target.value) || 2000})}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Memory Limit (MB)</label>
+                          <input
+                            type="number"
+                            value={newProblem.memoryLimit}
+                            onChange={(e) => setNewProblem({...newProblem, memoryLimit: parseInt(e.target.value) || 256})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-4 pt-6">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={newProblem.isPublished}
+                              onChange={(e) => setNewProblem({...newProblem, isPublished: e.target.checked})}
+                              className="mr-2"
+                            />
+                            Published
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={newProblem.isFeatured}
+                              onChange={(e) => setNewProblem({...newProblem, isFeatured: e.target.checked})}
+                              className="mr-2"
+                            />
+                            Featured
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Example */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Example (first one)</label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <input
+                            type="text"
+                            placeholder="Input"
+                            value={newProblem.examples[0]?.input || ''}
+                            onChange={(e) => {
+                              const examples = [...newProblem.examples];
+                              examples[0] = { ...examples[0], input: e.target.value };
+                              setNewProblem({...newProblem, examples});
+                            }}
+                            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Output"
+                            value={newProblem.examples[0]?.output || ''}
+                            onChange={(e) => {
+                              const examples = [...newProblem.examples];
+                              examples[0] = { ...examples[0], output: e.target.value };
+                              setNewProblem({...newProblem, examples});
+                            }}
+                            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Explanation"
+                            value={newProblem.examples[0]?.explanation || ''}
+                            onChange={(e) => {
+                              const examples = [...newProblem.examples];
+                              examples[0] = { ...examples[0], explanation: e.target.value };
+                              setNewProblem({...newProblem, examples});
+                            }}
+                            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Test Case */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Test Case (first one)</label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <input
+                            type="text"
+                            placeholder="Input"
+                            value={newProblem.testCases[0]?.input || ''}
+                            onChange={(e) => {
+                              const testCases = [...newProblem.testCases];
+                              testCases[0] = { ...testCases[0], input: e.target.value };
+                              setNewProblem({...newProblem, testCases});
+                            }}
+                            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Output"
+                            value={newProblem.testCases[0]?.output || ''}
+                            onChange={(e) => {
+                              const testCases = [...newProblem.testCases];
+                              testCases[0] = { ...testCases[0], output: e.target.value };
+                              setNewProblem({...newProblem, testCases});
+                            }}
+                            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={newProblem.testCases[0]?.isPublic || false}
+                              onChange={(e) => {
+                                const testCases = [...newProblem.testCases];
+                                testCases[0] = { ...testCases[0], isPublic: e.target.checked };
+                                setNewProblem({...newProblem, testCases});
+                              }}
+                              className="mr-2"
+                            />
+                            Public
+                          </label>
                         </div>
                       </div>
                       
@@ -668,7 +922,7 @@ const AdminDashboard: React.FC = () => {
                     <form onSubmit={handleCreateContest} className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium mb-2">Contest Name</label>
+                          <label className="block text-sm font-medium mb-2">Contest Name *</label>
                           <input
                             type="text"
                             required
@@ -678,7 +932,7 @@ const AdminDashboard: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-2">Duration (minutes)</label>
+                          <label className="block text-sm font-medium mb-2">Duration (minutes) *</label>
                           <input
                             type="number"
                             required
@@ -690,19 +944,31 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2">Description</label>
+                        <label className="block text-sm font-medium mb-2">Description *</label>
                         <textarea
                           required
                           rows={3}
                           value={newContest.description}
                           onChange={(e) => setNewContest({...newContest, description: e.target.value})}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          placeholder="Contest description..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Banner Image URL</label>
+                        <input
+                          type="url"
+                          value={newContest.bannerImage}
+                          onChange={(e) => setNewContest({...newContest, bannerImage: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          placeholder="https://example.com/banner.jpg"
                         />
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium mb-2">Start Time</label>
+                          <label className="block text-sm font-medium mb-2">Start Time *</label>
                           <input
                             type="datetime-local"
                             required
@@ -712,7 +978,7 @@ const AdminDashboard: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-2">End Time</label>
+                          <label className="block text-sm font-medium mb-2">End Time *</label>
                           <input
                             type="datetime-local"
                             required
@@ -720,6 +986,83 @@ const AdminDashboard: React.FC = () => {
                             onChange={(e) => setNewContest({...newContest, endTime: e.target.value})}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
                           />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Freeze Time (minutes before end)</label>
+                          <input
+                            type="number"
+                            value={newContest.freezeTime}
+                            onChange={(e) => setNewContest({...newContest, freezeTime: parseInt(e.target.value) || 0})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Password (for private contest)</label>
+                          <input
+                            type="text"
+                            value={newContest.password}
+                            onChange={(e) => setNewContest({...newContest, password: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                            placeholder="Leave empty for public contest"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Rules (Markdown supported)</label>
+                        <textarea
+                          rows={3}
+                          value={newContest.rules}
+                          onChange={(e) => setNewContest({...newContest, rules: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          placeholder="Contest rules and guidelines..."
+                        />
+                      </div>
+
+                      <div className="flex items-center space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={newContest.isPublic}
+                            onChange={(e) => setNewContest({...newContest, isPublic: e.target.checked})}
+                            className="mr-2"
+                          />
+                          Public Contest
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={newContest.leaderboardVisible}
+                            onChange={(e) => setNewContest({...newContest, leaderboardVisible: e.target.checked})}
+                            className="mr-2"
+                          />
+                          Show Leaderboard
+                        </label>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Allowed Languages</label>
+                        <div className="flex flex-wrap gap-3">
+                          {['cpp', 'java', 'python', 'c'].map((lang) => (
+                            <label key={lang} className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={newContest.allowedLanguages.includes(lang)}
+                                onChange={(e) => {
+                                  const languages = e.target.checked 
+                                    ? [...newContest.allowedLanguages, lang]
+                                    : newContest.allowedLanguages.filter(l => l !== lang);
+                                  setNewContest({...newContest, allowedLanguages: languages});
+                                }}
+                                className="mr-1"
+                              />
+                              {lang.toUpperCase()}
+                            </label>
+                          ))}
                         </div>
                       </div>
                       
@@ -832,7 +1175,7 @@ const AdminDashboard: React.FC = () => {
                     <h4 className="text-lg font-semibold mb-4">Create New Announcement</h4>
                     <form onSubmit={handleCreateAnnouncement} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2">Title</label>
+                        <label className="block text-sm font-medium mb-2">Title *</label>
                         <input
                           type="text"
                           required
@@ -843,13 +1186,14 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2">Content</label>
+                        <label className="block text-sm font-medium mb-2">Content *</label>
                         <textarea
                           required
                           rows={4}
                           value={newAnnouncement.content}
                           onChange={(e) => setNewAnnouncement({...newAnnouncement, content: e.target.value})}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          placeholder="Announcement content (supports Markdown)"
                         />
                       </div>
                       
@@ -881,6 +1225,96 @@ const AdminDashboard: React.FC = () => {
                             <option value="high">High</option>
                             <option value="critical">Critical</option>
                           </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Tags (comma-separated)</label>
+                          <input
+                            type="text"
+                            value={newAnnouncement.tags}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, tags: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                            placeholder="urgent, feature, contest"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Image URL</label>
+                          <input
+                            type="url"
+                            value={newAnnouncement.imageUrl}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, imageUrl: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Link URL</label>
+                          <input
+                            type="url"
+                            value={newAnnouncement.link}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, link: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://example.com/more-info"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Expires At</label>
+                          <input
+                            type="datetime-local"
+                            value={newAnnouncement.expiresAt}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, expiresAt: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={newAnnouncement.pinned}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, pinned: e.target.checked})}
+                            className="mr-2"
+                          />
+                          Pin to top
+                        </label>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Visible to roles</label>
+                          <div className="flex space-x-4">
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={newAnnouncement.visibleToRoles.includes('user')}
+                                onChange={(e) => {
+                                  const roles = e.target.checked 
+                                    ? [...newAnnouncement.visibleToRoles, 'user'].filter((v, i, a) => a.indexOf(v) === i)
+                                    : newAnnouncement.visibleToRoles.filter(r => r !== 'user');
+                                  setNewAnnouncement({...newAnnouncement, visibleToRoles: roles});
+                                }}
+                                className="mr-1"
+                              />
+                              Users
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={newAnnouncement.visibleToRoles.includes('admin')}
+                                onChange={(e) => {
+                                  const roles = e.target.checked 
+                                    ? [...newAnnouncement.visibleToRoles, 'admin'].filter((v, i, a) => a.indexOf(v) === i)
+                                    : newAnnouncement.visibleToRoles.filter(r => r !== 'admin');
+                                  setNewAnnouncement({...newAnnouncement, visibleToRoles: roles});
+                                }}
+                                className="mr-1"
+                              />
+                              Admins
+                            </label>
+                          </div>
                         </div>
                       </div>
                       

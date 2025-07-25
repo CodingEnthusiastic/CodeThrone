@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
-import { Search, Filter, Code, CheckCircle, Clock, Building, ArrowLeft } from 'lucide-react';
+import { Search, Filter, Code, CheckCircle, Clock, Building, ArrowLeft, Award, Download, Trophy, Star } from 'lucide-react';
+import Certificate from '../components/Certificate';
 
 interface Problem {
   _id: string;
@@ -26,10 +28,28 @@ interface CompanyStats {
   hardSolved: number;
 }
 
+interface CertificateData {
+  isEligible: boolean;
+  completionPercentage: number;
+  company: string;
+  userName: string;
+  userEmail: string;
+  totalProblems: number;
+  solvedProblems: number;
+  difficultyStats: {
+    easy: { total: number; solved: number };
+    medium: { total: number; solved: number };
+    hard: { total: number; solved: number };
+  };
+  completionDate: string | null;
+  certificateId: string | null;
+}
+
 const CompanyProblems: React.FC = () => {
   const { company } = useParams<{ company: string }>();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [solvedProblems, setSolvedProblems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -38,6 +58,9 @@ const CompanyProblems: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [certificateData, setCertificateData] = useState<CertificateData | null>(null);
+  const [showCertificate, setShowCertificate] = useState(false);
+  const [certificateLoading, setCertificateLoading] = useState(false);
   const [companyStats, setCompanyStats] = useState<CompanyStats>({
     totalProblems: 0,
     solvedByUser: 0,
@@ -98,10 +121,56 @@ const CompanyProblems: React.FC = () => {
       stats: response.data.stats
     });
 
+    // Check certificate eligibility
+    if (user) {
+      checkCertificateEligibility();
+    }
+
   } catch (error) {
     console.error('❌ Error:', error);
   } finally {
     setLoading(false);
+  }
+};
+
+const checkCertificateEligibility = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const response = await axios.get(
+      `http://localhost:5000/api/certificates/company/${encodeURIComponent(companyName)}/check`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    setCertificateData(response.data);
+  } catch (error) {
+    console.error('Certificate check error:', error);
+  }
+};
+
+const generateCertificate = async () => {
+  if (!certificateData?.isEligible) return;
+
+  try {
+    setCertificateLoading(true);
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const response = await axios.post(
+      `http://localhost:5000/api/certificates/company/${encodeURIComponent(companyName)}/generate`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (response.data.success) {
+      setCertificateData(response.data.certificateData);
+      setShowCertificate(true);
+    }
+  } catch (error) {
+    console.error('Certificate generation error:', error);
+  } finally {
+    setCertificateLoading(false);
   }
 };
 
@@ -176,11 +245,20 @@ const fetchSolvedProblems = async () => {
   };
 
   const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'Easy': return 'text-green-600 bg-green-100';
-      case 'Medium': return 'text-yellow-600 bg-yellow-100';
-      case 'Hard': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+    if (isDark) {
+      switch (difficulty) {
+        case 'Easy': return 'text-green-300 bg-green-900/50';
+        case 'Medium': return 'text-yellow-300 bg-yellow-900/50';
+        case 'Hard': return 'text-red-300 bg-red-900/50';
+        default: return 'text-gray-300 bg-gray-700';
+      }
+    } else {
+      switch (difficulty) {
+        case 'Easy': return 'text-green-600 bg-green-100';
+        case 'Medium': return 'text-yellow-600 bg-yellow-100';
+        case 'Hard': return 'text-red-600 bg-red-100';
+        default: return 'text-gray-600 bg-gray-100';
+      }
     }
   };
 
@@ -196,48 +274,128 @@ const fetchSolvedProblems = async () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${
+        isDark ? 'bg-gray-900' : 'bg-gray-50'
+      }`}>
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
+  if (showCertificate && certificateData?.isEligible) {
+    return (
+      <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'} py-8`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <button
+              onClick={() => setShowCertificate(false)}
+              className={`flex items-center ${
+                isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+              } mb-4`}
+            >
+              <ArrowLeft className="h-5 w-5 mr-1" />
+              Back to Problems
+            </button>
+          </div>
+          <Certificate 
+            certificateData={certificateData} 
+            onDownload={() => {
+              // Optional: Add download tracking or feedback here
+              console.log('Certificate downloaded for', companyName);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center mb-4">
             <Link
               to="/"
-              className="flex items-center text-blue-600 hover:text-blue-800 mr-4"
+              className={`flex items-center ${
+                isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+              } mr-4`}
             >
               <ArrowLeft className="h-5 w-5 mr-1" />
               Back to Home
             </Link>
           </div>
-          <div className="flex items-center mb-4">
-            <Building className="h-8 w-8 text-blue-600 mr-3" />
-            <h1 className="text-3xl font-bold text-gray-900">{companyName} Problems</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <Building className="h-8 w-8 text-blue-600 mr-3" />
+              <h1 className={`text-3xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>{companyName} Problems</h1>
+            </div>
+            
+            {/* Certificate Button */}
+            {certificateData && (
+              <div className="flex items-center space-x-4">
+                {certificateData.isEligible ? (
+                  <button
+                    onClick={generateCertificate}
+                    disabled={certificateLoading}
+                    className={`flex items-center px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                      isDark
+                        ? 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white'
+                        : 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white'
+                    } shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {certificateLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    ) : (
+                      <Trophy className="h-5 w-5 mr-2" />
+                    )}
+                    {certificateLoading ? 'Generating...' : 'Download Certificate'}
+                  </button>
+                ) : (
+                  <div className={`flex items-center px-4 py-2 rounded-lg ${
+                    isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <Award className="h-5 w-5 mr-2" />
+                    <span className="text-sm">
+                      {Math.round(certificateData.completionPercentage)}% Complete
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <p className="text-gray-600">Practice problems frequently asked in {companyName} interviews</p>
+          <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Practice problems frequently asked in {companyName} interviews
+          </p>
         </div>
 
         {/* Progress Tracker */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Progress</h3>
+        <div className={`${
+          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
+        } rounded-lg shadow-sm p-6 mb-6 border`}>
+          <h3 className={`text-lg font-semibold ${
+            isDark ? 'text-white' : 'text-gray-900'
+          } mb-4`}>Your Progress</h3>
           
           {/* Overall Progress */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-              <span className="text-sm text-gray-500">
+              <span className={`text-sm font-medium ${
+                isDark ? 'text-gray-300' : 'text-gray-700'
+              }`}>Overall Progress</span>
+              <span className={`text-sm ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 {companyStats.easySolved+companyStats.mediumSolved+companyStats.hardSolved} / {companyStats.totalProblems} solved
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className={`w-full ${
+              isDark ? 'bg-gray-700' : 'bg-gray-200'
+            } rounded-full h-3`}>
               <div 
-                className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
                 style={{ width: `${getProgressPercentage(companyStats.easySolved+companyStats.mediumSolved+companyStats.hardSolved, companyStats.totalProblems)}%` }}
               ></div>
             </div>
@@ -250,14 +408,22 @@ const fetchSolvedProblems = async () => {
 
           {/* Difficulty Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-green-50 rounded-lg">
+            <div className={`p-4 rounded-lg ${
+              isDark ? 'bg-green-900/20 border border-green-800' : 'bg-green-50'
+            }`}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-green-800">Easy</span>
-                <span className="text-sm text-green-600">
+                <span className={`text-sm font-medium ${
+                  isDark ? 'text-green-300' : 'text-green-800'
+                }`}>Easy</span>
+                <span className={`text-sm ${
+                  isDark ? 'text-green-400' : 'text-green-600'
+                }`}>
                   {companyStats.easySolved} / {companyStats.easyProblems}
                 </span>
               </div>
-              <div className="w-full bg-green-200 rounded-full h-2">
+              <div className={`w-full ${
+                isDark ? 'bg-green-800' : 'bg-green-200'
+              } rounded-full h-2`}>
                 <div 
                   className="bg-green-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${getProgressPercentage(companyStats.easySolved, companyStats.easyProblems)}%` }}
@@ -265,14 +431,22 @@ const fetchSolvedProblems = async () => {
               </div>
             </div>
 
-            <div className="p-4 bg-yellow-50 rounded-lg">
+            <div className={`p-4 rounded-lg ${
+              isDark ? 'bg-yellow-900/20 border border-yellow-800' : 'bg-yellow-50'
+            }`}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-yellow-800">Medium</span>
-                <span className="text-sm text-yellow-600">
+                <span className={`text-sm font-medium ${
+                  isDark ? 'text-yellow-300' : 'text-yellow-800'
+                }`}>Medium</span>
+                <span className={`text-sm ${
+                  isDark ? 'text-yellow-400' : 'text-yellow-600'
+                }`}>
                   {companyStats.mediumSolved} / {companyStats.mediumProblems}
                 </span>
               </div>
-              <div className="w-full bg-yellow-200 rounded-full h-2">
+              <div className={`w-full ${
+                isDark ? 'bg-yellow-800' : 'bg-yellow-200'
+              } rounded-full h-2`}>
                 <div 
                   className="bg-yellow-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${getProgressPercentage(companyStats.mediumSolved, companyStats.mediumProblems)}%` }}
@@ -280,14 +454,22 @@ const fetchSolvedProblems = async () => {
               </div>
             </div>
 
-            <div className="p-4 bg-red-50 rounded-lg">
+            <div className={`p-4 rounded-lg ${
+              isDark ? 'bg-red-900/20 border border-red-800' : 'bg-red-50'
+            }`}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-red-800">Hard</span>
-                <span className="text-sm text-red-600">
+                <span className={`text-sm font-medium ${
+                  isDark ? 'text-red-300' : 'text-red-800'
+                }`}>Hard</span>
+                <span className={`text-sm ${
+                  isDark ? 'text-red-400' : 'text-red-600'
+                }`}>
                   {companyStats.hardSolved} / {companyStats.hardProblems}
                 </span>
               </div>
-              <div className="w-full bg-red-200 rounded-full h-2">
+              <div className={`w-full ${
+                isDark ? 'bg-red-800' : 'bg-red-200'
+              } rounded-full h-2`}>
                 <div 
                   className="bg-red-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${getProgressPercentage(companyStats.hardSolved, companyStats.hardProblems)}%` }}
@@ -298,20 +480,32 @@ const fetchSolvedProblems = async () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className={`${
+          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
+        } rounded-lg shadow-sm p-6 mb-6 border`}>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${
+                isDark ? 'text-gray-500' : 'text-gray-400'
+              }`} />
               <input
                 type="text"
                 placeholder="Search problems..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <select
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
             >
@@ -321,7 +515,11 @@ const fetchSolvedProblems = async () => {
               <option value="Hard">Hard</option>
             </select>
             <select
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
             >
@@ -336,7 +534,11 @@ const fetchSolvedProblems = async () => {
                 setSelectedTag('');
                 setSearchTerm('');
               }}
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              className={`flex items-center justify-center px-4 py-2 border rounded-md transition-colors ${
+                isDark
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
             >
               <Filter className="h-4 w-4 mr-2" />
               Clear Filters
@@ -345,34 +547,50 @@ const fetchSolvedProblems = async () => {
         </div>
 
         {/* Problems List */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className={`${
+          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
+        } rounded-lg shadow-sm overflow-hidden border`}>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    isDark ? 'text-gray-300' : 'text-gray-500'
+                  }`}>
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    isDark ? 'text-gray-300' : 'text-gray-500'
+                  }`}>
                     Problem
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    isDark ? 'text-gray-300' : 'text-gray-500'
+                  }`}>
                     Difficulty
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    isDark ? 'text-gray-300' : 'text-gray-500'
+                  }`}>
                     Acceptance Rate
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    isDark ? 'text-gray-300' : 'text-gray-500'
+                  }`}>
                     Tags
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className={`${
+                isDark ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'
+              } divide-y`}>
                 {filteredProblems.map((problem) => (
-                  <tr key={problem._id} className="hover:bg-gray-50">
+                  <tr key={problem._id} className={
+                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                  }>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {solvedProblems.has(problem._id) ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <CheckCircle className="h-5 w-5 text-green-500" />
                       ) : (
                         <div className="h-5 w-5"></div>
                       )}
@@ -380,11 +598,16 @@ const fetchSolvedProblems = async () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         to={`/problems/${problem._id}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                        className={`font-medium flex items-center ${
+                          isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                        }`}
                       >
                         {problem.title}
                         {solvedProblems.has(problem._id) && (
-                          <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
+                          <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                            isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'
+                          }`}>
+                            <Star className="inline h-3 w-3 mr-1" />
                             Solved
                           </span>
                         )}
@@ -395,7 +618,9 @@ const fetchSolvedProblems = async () => {
                         {problem.difficulty}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      isDark ? 'text-gray-300' : 'text-gray-900'
+                    }`}>
                       {problem.acceptanceRate.toFixed(1)}%
                     </td>
                     <td className="px-6 py-4">
@@ -403,13 +628,21 @@ const fetchSolvedProblems = async () => {
                         {problem.tags.slice(0, 3).map((tag, index) => (
                           <span
                             key={index}
-                            className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              isDark 
+                                ? 'bg-blue-900/50 text-blue-300' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
                           >
                             {tag}
                           </span>
                         ))}
                         {problem.tags.length > 3 && (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            isDark 
+                              ? 'bg-gray-700 text-gray-400' 
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
                             +{problem.tags.length - 3}
                           </span>
                         )}
@@ -424,14 +657,18 @@ const fetchSolvedProblems = async () => {
 
         {/* Pagination */}
         <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+          <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             Showing page {currentPage} of {totalPages}
           </div>
           <div className="flex space-x-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-3 py-1 border rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                isDark
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
             >
               Previous
             </button>
@@ -441,10 +678,12 @@ const fetchSolvedProblems = async () => {
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-3 py-1 border rounded-md ${
+                  className={`px-3 py-1 border rounded-md transition-colors ${
                     currentPage === pageNum
                       ? 'bg-blue-600 text-white border-blue-600'
-                      : 'border-gray-300 hover:bg-gray-50'
+                      : isDark
+                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   {pageNum}
@@ -454,7 +693,11 @@ const fetchSolvedProblems = async () => {
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-3 py-1 border rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                isDark
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
             >
               Next
             </button>
@@ -462,7 +705,7 @@ const fetchSolvedProblems = async () => {
         </div>
 
         {filteredProblems.length === 0 && (
-          <div className="text-center py-12 text-gray-600">
+          <div className={`text-center py-12 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             <Building className="mx-auto h-12 w-12 mb-4 opacity-50" />
             <p>No problems found for {companyName}.</p>
           </div>

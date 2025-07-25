@@ -3,8 +3,17 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import axios from "axios"
-import { Video, Mic, MicOff, VideoOff, User, Bot, Send, Volume2, VolumeX, X } from "lucide-react"
+import { Video, Mic, MicOff, VideoOff, User, Bot, Send, RotateCcw, X } from "lucide-react"
 import { useAuth } from '../contexts/AuthContext' // Import your auth context
+
+/*
+ * AI VIDEO SETUP INSTRUCTIONS:
+ * 1. Download the video from: https://youtu.be/1bdKVv5iyEQ
+ * 2. Convert it to MP4 format
+ * 3. Place the video file in the public folder as: public/ai-avatar.mp4
+ * 4. The video will automatically play when AI is speaking and pause when finished
+ * 5. The same video plays for all domains/roles
+ */
 
 interface InterviewSession {
   sessionId: string
@@ -110,23 +119,29 @@ const Interview: React.FC = () => {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [speechEnabled, setSpeechEnabled] = useState(true)
   const [waitingForNextQuestion, setWaitingForNextQuestion] = useState(false)
+  const [isAISpeaking, setIsAISpeaking] = useState(false)
 
   // ✅ ADD MISSING STATE: Voice language
   const [voiceLanguage, setVoiceLanguage] = useState("en-US")
   
-  // ✅ SIMPLIFIED: Remove complex speech recognition state
+  // ✅ ENHANCED: Robust speech recognition state
   const [isListening, setIsListening] = useState(false)
   const [recognitionError, setRecognitionError] = useState<string | null>(null)
   const [interimTranscript, setInterimTranscript] = useState("")
   const [speechRecognitionSupported, setSpeechRecognitionSupported] = useState(false)
+  const [recognitionRestarting, setRecognitionRestarting] = useState(false)
+  const [manualStop, setManualStop] = useState(false)
+  const [submitAllowed, setSubmitAllowed] = useState(true) // ✅ NEW: Separate state for submit button
 
   const videoRef = useRef<HTMLVideoElement>(null)
+  const aiVideoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const recordingIntervalRef = useRef<number | null>(null)
   const recognitionRef = useRef<any>(null)
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null)
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
   const finalTranscriptRef = useRef<string>("")
+  const keepAliveRef = useRef<number | null>(null)
 
   // Text-to-speech function
   const speakText = (text: string) => {
@@ -149,10 +164,36 @@ const Interview: React.FC = () => {
       utterance.voice = preferredVoice
     }
 
-    utterance.onstart = () => setIsListening(true)
-    utterance.onend = () => setIsListening(false)
-    utterance.onerror = () => setIsListening(false)
+    utterance.onstart = () => {
+      setIsAISpeaking(true)
+      setIsSpeaking(true)
+      // Start AI video
+      if (aiVideoRef.current) {
+        aiVideoRef.current.play().catch(console.error)
+      }
+    }
+    
+    utterance.onend = () => {
+      setIsAISpeaking(false)
+      setIsSpeaking(false)
+      // Stop AI video
+      if (aiVideoRef.current) {
+        aiVideoRef.current.pause()
+        aiVideoRef.current.currentTime = 0
+      }
+    }
+    
+    utterance.onerror = () => {
+      setIsAISpeaking(false)
+      setIsSpeaking(false)
+      // Stop AI video on error
+      if (aiVideoRef.current) {
+        aiVideoRef.current.pause()
+        aiVideoRef.current.currentTime = 0
+      }
+    }
 
+    speechSynthesisRef.current = utterance
     window.speechSynthesis.speak(utterance)
   }
 
@@ -160,7 +201,13 @@ const Interview: React.FC = () => {
   const stopSpeaking = () => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel()
-      setIsListening(false)
+      setIsAISpeaking(false)
+      setIsSpeaking(false)
+      // Stop AI video
+      if (aiVideoRef.current) {
+        aiVideoRef.current.pause()
+        aiVideoRef.current.currentTime = 0
+      }
     }
   }
 
@@ -180,6 +227,7 @@ const Interview: React.FC = () => {
       try {
         // Stop all media and recognition
         stopSpeaking()
+        setManualStop(true)
         if (isListening) {
           stopListening()
         }
@@ -209,13 +257,16 @@ const Interview: React.FC = () => {
         setRecognitionError(null)
         setLoading(false)
         setIsUploading(false)
+        setRecognitionRestarting(false)
+        setManualStop(false)
       }
     }
   }
 
   useEffect(() => {
     return () => {
-      // Cleanup media stream
+      // Enhanced cleanup for robust speech recognition
+      setManualStop(true)
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
       }
@@ -223,7 +274,11 @@ const Interview: React.FC = () => {
         clearInterval(recordingIntervalRef.current)
       }
       if (recognitionRef.current) {
-        recognitionRef.current.stop()
+        try {
+          recognitionRef.current.stop()
+        } catch (error) {
+          console.warn("Error stopping recognition during cleanup:", error)
+        }
       }
       stopSpeaking()
     }
@@ -290,9 +345,9 @@ const Interview: React.FC = () => {
     }
   }, [session, videoOnTime, totalTime, token])
 
-  // ✅ SIMPLE: Speech recognition initialization - no complex restart logic
+  // ✅ FIXED: Robust speech recognition with proper restart mechanism
   useEffect(() => {
-    console.log("🎤 Initializing speech recognition...")
+    console.log("🎤 Initializing enhanced speech recognition...")
     
     // Check browser support
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
@@ -310,71 +365,250 @@ const Interview: React.FC = () => {
     recognition.continuous = true
     recognition.interimResults = true
     recognition.lang = voiceLanguage
+    recognition.maxAlternatives = 1
 
     recognition.onresult = (event) => {
-      console.log("🎤 Speech recognition result received")
+      console.log("🎤 Speech recognition result received, results length:", event.results.length)
       
       let finalText = ""
       let interimText = ""
 
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const transcript = event.results[i][0].transcript
+        console.log(`🎤 Result ${i}: "${transcript}", isFinal: ${event.results[i].isFinal}`)
+        
         if (event.results[i].isFinal) {
           finalText += transcript + " "
-          console.log("🎤 Final transcript:", transcript)
+          console.log("🎤 Final transcript added:", transcript)
         } else {
           interimText += transcript
         }
       }
 
       if (finalText.trim()) {
-        setCurrentAnswer((prev) => (prev + " " + finalText).trim())
+        console.log("🎤 Adding final text to answer:", finalText.trim())
+        setCurrentAnswer((prev) => {
+          const newAnswer = (prev + " " + finalText).trim()
+          console.log("🎤 New answer:", newAnswer)
+          return newAnswer
+        })
+        finalTranscriptRef.current = finalTranscriptRef.current + " " + finalText.trim()
       }
-      setInterimTranscript(interimText)
+      
+      if (interimText !== interimTranscript) {
+        console.log("🎤 Updating interim transcript:", interimText)
+        setInterimTranscript(interimText)
+      }
     }
 
     recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error)
-      if (event.error !== "aborted") {
-        setRecognitionError(`Speech error: ${event.error}`)
+      console.error("🎤 Speech recognition error:", event.error)
+      
+      if (event.error === "aborted") {
+        console.log("🎤 Speech recognition aborted (likely manual stop)")
+        setIsListening(false)
+        setRecognitionRestarting(false)
+        return
       }
+      
+      if (event.error === "no-speech") {
+        console.log("🎤 No speech detected - this is normal, continuing...")
+        // Don't treat no-speech as an error, just keep listening
+        setRecognitionError(null)
+        return
+      }
+      
+      if (event.error === "audio-capture") {
+        setRecognitionError("Microphone access denied. Please allow microphone access.")
+        setIsListening(false)
+        return
+      }
+      
+      if (event.error === "network") {
+        setRecognitionError("Network error. Please check your internet connection.")
+        setIsListening(false)
+        return
+      }
+      
+      if (event.error === "not-allowed") {
+        setRecognitionError("Microphone access not allowed. Please enable microphone permissions.")
+        setIsListening(false)
+        return
+      }
+      
+      // For other errors, show message but let onend handle restart
+      console.warn("🎤 Speech recognition error, will restart on end:", event.error)
+      setRecognitionError(`Speech error: ${event.error}. Auto-restarting...`)
     }
 
     recognition.onend = () => {
+      console.log("🎤 Speech recognition ended, micEnabled:", micEnabled, "manualStop:", manualStop)
       setIsListening(false)
+      setRecognitionRestarting(false)
+      
+      // ✅ Enable submit when recognition ends (unless mic is still enabled and will restart)
+      if (manualStop || !micEnabled) {
+        setSubmitAllowed(true)
+      }
+      
+      // Auto-restart if mic is still enabled and not manually stopped
+      if (micEnabled && !manualStop) {
+        console.log("🔄 Auto-restarting speech recognition in 100ms...")
+        setRecognitionRestarting(true)
+        
+        // Use a very short delay and direct restart
+        setTimeout(() => {
+          console.log("🔄 Attempting restart now...")
+          if (micEnabled && !manualStop && recognitionRef.current) {
+            try {
+              console.log("🔄 Calling recognition.start()...")
+              recognitionRef.current.start()
+              console.log("✅ Speech recognition restart initiated")
+            } catch (error) {
+              console.error("❌ Failed to restart speech recognition:", error)
+              setRecognitionError("Failed to restart speech recognition. Please toggle microphone.")
+              setRecognitionRestarting(false)
+              setIsListening(false)
+              setSubmitAllowed(true) // ✅ Enable submit on error
+            }
+          } else {
+            console.log("🛑 Restart cancelled - micEnabled:", micEnabled, "manualStop:", manualStop)
+            setRecognitionRestarting(false)
+            setSubmitAllowed(true) // ✅ Enable submit when restart cancelled
+          }
+        }, 100)
+      } else {
+        console.log("🛑 Not restarting - micEnabled:", micEnabled, "manualStop:", manualStop)
+      }
     }
 
     recognition.onstart = () => {
+      console.log("🎤 Speech recognition started successfully")
       setIsListening(true)
+      setSubmitAllowed(false) // ✅ Disable submit when actively listening
       setRecognitionError(null)
+      setRecognitionRestarting(false)
+      console.log("🎤 Recognition state - listening:", true, "restarting:", false)
     }
 
     recognitionRef.current = recognition
-  }, [voiceLanguage])
+  }, [voiceLanguage, micEnabled, manualStop])
 
-  // --- Replace toggleMic with this version ---
+  // ✅ NEW: Sync submit button state with mic and listening states
+  useEffect(() => {
+    // Submit is allowed when mic is disabled OR when not actively listening
+    const shouldAllowSubmit = !micEnabled || !isListening
+    console.log("🔄 Submit state sync:", {
+      micEnabled,
+      isListening,
+      shouldAllowSubmit,
+      currentSubmitAllowed: submitAllowed
+    })
+    
+    if (shouldAllowSubmit !== submitAllowed) {
+      setSubmitAllowed(shouldAllowSubmit)
+    }
+  }, [micEnabled, isListening, submitAllowed])
+
+  // ✅ FIXED: Simplified mic toggle with better state management
   const toggleMic = async () => {
     if (!micEnabled) {
-      // Enable mic and start speech recognition (no dependency on video)
+      // Enable mic and start speech recognition
+      console.log("🎤 Enabling microphone...")
       setMicEnabled(true)
+      setManualStop(false)
+      setSubmitAllowed(false) // ✅ Disable submit when mic is enabled
+      
+      // Clear any previous errors
+      setRecognitionError(null)
+      
       if (speechRecognitionSupported && recognitionRef.current) {
-        try {
-          recognitionRef.current.start()
-        } catch (error) {
-          console.error("Failed to start speech recognition:", error)
-        }
+        // Add small delay to ensure state is updated
+        setTimeout(() => {
+          startListening()
+        }, 100)
       }
     } else {
       // Disable mic and stop speech recognition
-      setMicEnabled(false)
-      if (recognitionRef.current && isListening) {
-        try {
-          recognitionRef.current.stop()
-        } catch (error) {
-          console.error("Failed to stop speech recognition:", error)
-        }
-      }
+      console.log("🎤 Disabling microphone...")
+      
+      // ✅ CRITICAL FIX: Set both states to ensure submit button is immediately enabled
       setIsListening(false)
+      setSubmitAllowed(true) // ✅ Immediately enable submit when mic is disabled
+      setMicEnabled(false)
+      setManualStop(true)
+      
+      if (recognitionRef.current && isListening) {
+        stopListening()
+      }
+      
+      setInterimTranscript("")
+      setRecognitionRestarting(false)
+      setRecognitionError(null)
+    }
+  }
+
+  // ✅ FIXED: Robust start listening function
+  const startListening = () => {
+    if (!speechRecognitionSupported) {
+      setRecognitionError("Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.")
+      return
+    }
+
+    if (!recognitionRef.current) {
+      setRecognitionError("Speech recognition is not available")
+      return
+    }
+
+    console.log("🎤 Starting speech recognition...")
+    setRecognitionError(null)
+    setInterimTranscript("")
+    setManualStop(false)
+
+    try {
+      // Stop any existing recognition first
+      if (isListening) {
+        recognitionRef.current.stop()
+        // Wait a bit before starting new one
+        setTimeout(() => {
+          if (recognitionRef.current && !manualStop) {
+            recognitionRef.current.start()
+          }
+        }, 200)
+      } else {
+        recognitionRef.current.start()
+      }
+      console.log("✅ Speech recognition start command sent")
+    } catch (error) {
+      console.error("❌ Error starting speech recognition:", error)
+      if (error instanceof Error && error.message.includes("already started")) {
+        console.log("🎤 Speech recognition already running")
+        setIsListening(true)
+      } else {
+        setRecognitionError("Failed to start speech recognition. Please try again.")
+      }
+    }
+  }
+
+  // ✅ ENHANCED: Robust stop listening function  
+  const stopListening = () => {
+    if (!recognitionRef.current) return
+
+    console.log("🎤 Stopping speech recognition...")
+    setManualStop(true)
+    setIsListening(false)
+    setSubmitAllowed(true) // ✅ Enable submit when manually stopping
+    setInterimTranscript("")
+    setRecognitionRestarting(false)
+
+    try {
+      recognitionRef.current.stop()
+      console.log("✅ Speech recognition stopped successfully")
+    } catch (error) {
+      console.error("❌ Error stopping speech recognition:", error)
+      // Force state reset even if stop fails
+      setIsListening(false)
+      setSubmitAllowed(true) // ✅ Ensure submit is enabled on error
       setInterimTranscript("")
     }
   }
@@ -467,6 +701,10 @@ const Interview: React.FC = () => {
       setScores([])
       setFinalReport(null)
       setIsListening(false)
+      
+      // Enable video by default when starting interview
+      setVideoEnabled(true)
+      
     } catch (error: any) {
       console.error("❌ Error starting interview:", error)
       console.error("❌ Error response:", error.response?.data)
@@ -479,50 +717,6 @@ const Interview: React.FC = () => {
       }
     } finally {
       setLoading(false)
-    }
-  }
-
-  // ✅ BULLETPROOF: Enhanced start listening function
-  const startListening = () => {
-    if (!speechRecognitionSupported) {
-      setRecognitionError("Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.")
-      return
-    }
-
-    if (!recognitionRef.current || !micEnabled) {
-      setRecognitionError("Please enable microphone first or speech recognition is not available")
-      return
-    }
-
-    console.log("🎤 Starting speech recognition...")
-    setRecognitionError(null)
-    setInterimTranscript("")
-    setIsListening(true)
-
-    try {
-      recognitionRef.current.start()
-    } catch (error) {
-      console.error("❌ Error starting speech recognition:", error)
-      setRecognitionError("Failed to start speech recognition. Please try again.")
-    }
-  }
-
-  // ✅ BULLETPROOF: Enhanced stop listening function  
-  const stopListening = () => {
-    if (!recognitionRef.current) return
-
-    console.log("🎤 Stopping speech recognition...")
-    setIsListening(false)
-    setInterimTranscript("")
-
-    try {
-      recognitionRef.current.stop()
-      console.log("✅ Speech recognition stopped successfully")
-    } catch (error) {
-      console.error("❌ Error stopping speech recognition:", error)
-      // Force state reset even if stop fails
-      setIsListening(false)
-      setInterimTranscript("")
     }
   }
 
@@ -720,91 +914,227 @@ const Interview: React.FC = () => {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-12">
             <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                 <Bot className="h-10 w-10 text-white" />
               </div>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">AI Interview Assistant</h1>
-            <p className="text-xl text-gray-600">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">AI Interview Assistant</h1>
+            <p className="text-xl text-gray-600 dark:text-gray-400">
               Practice technical interviews with AI-powered questions, voice interaction, and real-time feedback
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-8 max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Setup Your Interview</h2>
 
-            {recognitionError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-red-800">{recognitionError}</p>
-              </div>
-            )}
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          {/* Step 1: Job Role Selection */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">Choose Your Target Role</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { role: "Frontend Developer", icon: "🎨", color: "from-blue-500 to-cyan-500", description: "React, Vue, Angular" },
+                { role: "Backend Developer", icon: "⚙️", color: "from-green-500 to-emerald-500", description: "APIs, Databases, Server" },
+                { role: "Full Stack Developer", icon: "🚀", color: "from-purple-500 to-pink-500", description: "Frontend + Backend" },
+                { role: "Data Scientist", icon: "📊", color: "from-yellow-500 to-orange-500", description: "ML, Analytics, Python" },
+                { role: "DevOps Engineer", icon: "🔧", color: "from-red-500 to-rose-500", description: "CI/CD, Cloud, Docker" },
+                { role: "Mobile Developer", icon: "📱", color: "from-indigo-500 to-blue-500", description: "iOS, Android, React Native" },
+                { role: "Machine Learning Engineer", icon: "🤖", color: "from-teal-500 to-green-500", description: "AI, Deep Learning, Models" },
+                { role: "Product Manager", icon: "📈", color: "from-pink-500 to-purple-500", description: "Strategy, Roadmaps, Analytics" }
+              ].map((item) => (
+                <div
+                  key={item.role}
+                  onClick={() => setRole(item.role)}
+                  className={`cursor-pointer rounded-xl p-6 transition-all duration-300 transform hover:scale-105 border-2 ${
+                    role === item.role
+                      ? 'border-blue-500 shadow-lg bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                  }`}
                 >
-                  <option value="Frontend Developer">Frontend Developer</option>
-                  <option value="Backend Developer">Backend Developer</option>
-                  <option value="Full Stack Developer">Full Stack Developer</option>
-                  <option value="Data Scientist">Data Scientist</option>
-                  <option value="DevOps Engineer">DevOps Engineer</option>
-                  <option value="Mobile Developer">Mobile Developer</option>
-                  <option value="Machine Learning Engineer">Machine Learning Engineer</option>
-                  <option value="Product Manager">Product Manager</option>
-                </select>
-              </div>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${item.color} flex items-center justify-center mb-4 shadow-md`}>
+                    <span className="text-2xl">{item.icon}</span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{item.role}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
+                  {role === item.role && (
+                    <div className="mt-3 flex items-center text-blue-600 dark:text-blue-400">
+                      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full mr-2"></div>
+                      <span className="text-xs font-medium">Selected</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
-                <select
-                  value={experience}
-                  onChange={(e) => setExperience(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          {/* Step 2: Experience Level Selection */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">Select Your Experience Level</h2>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              {[
+                { level: "0", label: "Entry Level", years: "0-1 years", icon: "🌱", color: "from-green-400 to-green-500" },
+                { level: "2", label: "Junior", years: "2-3 years", icon: "🌿", color: "from-blue-400 to-blue-500" },
+                { level: "4", label: "Mid-Level", years: "4-6 years", icon: "🌳", color: "from-purple-400 to-purple-500" },
+                { level: "7", label: "Senior", years: "7+ years", icon: "🏆", color: "from-orange-400 to-orange-500" },
+                { level: "10", label: "Staff/Principal", years: "10+ years", icon: "👑", color: "from-red-400 to-red-500" }
+              ].map((item) => (
+                <div
+                  key={item.level}
+                  onClick={() => setExperience(item.level)}
+                  className={`cursor-pointer rounded-xl p-6 transition-all duration-300 transform hover:scale-105 border-2 text-center ${
+                    experience === item.level
+                      ? 'border-blue-500 shadow-lg bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                  }`}
                 >
-                  <option value="0">Entry Level (0-1 years)</option>
-                  <option value="2">Junior (2-3 years)</option>
-                  <option value="4">Mid-Level (4-6 years)</option>
-                  <option value="7">Senior (7+ years)</option>
-                  <option value="10">Staff/Principal (10+ years)</option>
-                </select>
-              </div>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${item.color} flex items-center justify-center mb-4 shadow-md mx-auto`}>
+                    <span className="text-2xl">{item.icon}</span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{item.label}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{item.years}</p>
+                  {experience === item.level && (
+                    <div className="mt-3 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full mr-2"></div>
+                      <span className="text-xs font-medium">Selected</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">🎯 Enhanced Features</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• AI speaks questions aloud with professional voice</li>
-                  <li>• Continuous speech-to-text with auto-restart</li>
-                  <li>• 10 adaptive technical questions</li>
-                  <li>• Real-time AI evaluation and feedback</li>
-                  <li>• Video presence scoring</li>
-                  <li>• Comprehensive final report with recommendations</li>
+          {/* Step 3: Interview Rules and Features */}
+          <div className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Enhanced Features Card */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 shadow-sm">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                    <span className="text-white text-xl">🎯</span>
+                  </div>
+                  <h3 className="font-semibold text-blue-900 dark:text-blue-100 text-lg">Enhanced Features</h3>
+                </div>
+                <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                  <li className="flex items-start">
+                    <span className="text-blue-600 mr-2">•</span>
+                    AI speaks questions aloud with professional voice
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-blue-600 mr-2">•</span>
+                    Continuous speech-to-text with auto-restart
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-blue-600 mr-2">•</span>
+                    10 adaptive technical questions
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-blue-600 mr-2">•</span>
+                    Real-time AI evaluation and feedback
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-blue-600 mr-2">•</span>
+                    Video presence scoring
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-blue-600 mr-2">•</span>
+                    Comprehensive final report with recommendations
+                  </li>
                 </ul>
               </div>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="font-semibold text-green-900 mb-2">💡 Tips for Success</h3>
-                <ul className="text-sm text-green-800 space-y-1">
-                  <li>• Enable camera and microphone for better scoring</li>
-                  <li>• Listen to AI questions and speak naturally</li>
-                  <li>• Speech recognition will auto-restart if it stops</li>
-                  <li>• Think out loud to show your problem-solving process</li>
-                  <li>• Maintain eye contact with the camera</li>
+              {/* Tips for Success Card */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 shadow-sm">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mr-3">
+                    <span className="text-white text-xl">💡</span>
+                  </div>
+                  <h3 className="font-semibold text-green-900 dark:text-green-100 text-lg">Tips for Success</h3>
+                </div>
+                <ul className="text-sm text-green-800 dark:text-green-200 space-y-2">
+                  <li className="flex items-start">
+                    <span className="text-green-600 mr-2">•</span>
+                    Enable camera and microphone for better scoring
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-600 mr-2">•</span>
+                    Listen to AI questions and speak naturally
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-600 mr-2">•</span>
+                    Speech recognition will auto-restart if it stops
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-600 mr-2">•</span>
+                    Think out loud to show your problem-solving process
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-600 mr-2">•</span>
+                    Maintain eye contact with the camera
+                  </li>
                 </ul>
               </div>
+            </div>
+          </div>
 
+          {recognitionError && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400 dark:text-red-300" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-red-800 dark:text-red-200">Speech Recognition Notice</h4>
+                  <p className="text-red-800 dark:text-red-200 mt-1">{recognitionError}</p>
+                  {!speechRecognitionSupported && (
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded">
+                      <div className="flex items-start space-x-2">
+                        <span className="text-blue-500 text-lg">💡</span>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Don't worry! You can still complete the interview</p>
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                            Speech-to-text is not compatible with your current device/browser. 
+                            You can type your answers manually during the interview instead.
+                          </p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 font-medium">
+                            For best speech recognition support, try using: Chrome, Edge, or Safari browsers.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Start Interview Button */}
+          <div className="text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-md mx-auto border border-gray-200 dark:border-gray-700">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Ready to Start?</h3>
+                <p className="text-gray-600 dark:text-gray-400">Selected: <span className="font-semibold text-blue-600 dark:text-blue-400">{role}</span></p>
+                <p className="text-gray-600 dark:text-gray-400">Experience: <span className="font-semibold text-blue-600 dark:text-blue-400">
+                  {experience === "0" ? "Entry Level" : 
+                   experience === "2" ? "Junior" : 
+                   experience === "4" ? "Mid-Level" : 
+                   experience === "7" ? "Senior" : "Staff/Principal"}
+                </span></p>
+              </div>
               <button
                 onClick={startInterview}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg shadow-lg transform hover:scale-[1.02]"
               >
-                {loading ? "Starting Interview..." : "Start AI Interview"}
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Starting Interview...
+                  </div>
+                ) : (
+                  "🚀 Start AI Interview"
+                )}
               </button>
             </div>
           </div>
@@ -921,6 +1251,8 @@ const Interview: React.FC = () => {
                   setTranscript("")
                   setRecognitionError(null)
                   setIsListening(false)
+                  setRecognitionRestarting(false)
+                  setManualStop(false)
                   finalTranscriptRef.current = ""
                   disableVideo()
                 }}
@@ -959,15 +1291,60 @@ const Interview: React.FC = () => {
           {/* AI Avatar */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="text-center mb-6">
-              <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                <Bot className="h-16 w-16 text-white" />
-                {isListening && (
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
-                    <Volume2 className="h-4 w-4 text-white" />
+              <div className="flex items-center justify-center mb-4">
+                <Bot className="h-8 w-8 text-gray-600 mr-2" />
+                <h2 className="text-xl font-bold text-gray-900">AI Interviewer</h2>
+              </div>
+
+              {/* AI Video/Avatar Container - Same size as user video */}
+              <div className="bg-gray-900 rounded-lg overflow-hidden mb-4 relative" style={{ height: "280px" }}>
+                {/* AI Video - plays when speaking */}
+                <video
+                  ref={aiVideoRef}
+                  loop
+                  muted={true}
+                  playsInline
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${
+                    isAISpeaking ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onError={(e) => {
+                    console.warn("AI video failed to load:", e);
+                    // Hide video and show AI icon instead if video fails
+                    setIsAISpeaking(false);
+                  }}
+                >
+                  {/* Primary video source - you need to download and place this file */}
+                  <source src="/ai-avatar.mp4" type="video/mp4" />
+                  {/* Fallback for different video formats */}
+                  <source src="/ai-avatar.webm" type="video/webm" />
+                  {/* Placeholder message when video not found */}
+                  Your browser does not support the video tag or the video file is missing.
+                </video>
+                
+                {/* AI Bot Icon - shows when not speaking, centered in rectangle */}
+                <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+                  isAISpeaking ? 'opacity-0' : 'opacity-100'
+                }`}>
+                  <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                    <Bot className="h-16 w-16 text-white" />
+                  </div>
+                </div>
+                
+                {/* Speaking indicator */}
+                {isAISpeaking && (
+                  <div className="absolute top-4 left-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+                    🎤 AI Speaking...
+                  </div>
+                )}
+
+                {/* AI Status indicator */}
+                {!isAISpeaking && (
+                  <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                    AI: Ready
                   </div>
                 )}
               </div>
-              <h2 className="text-xl font-bold text-gray-900">AI Interviewer</h2>
+              
               <p className="text-gray-600">Question {session.questionNumber} of 10</p>
               {session.difficulty && (
                 <span
@@ -990,19 +1367,11 @@ const Interview: React.FC = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => speakText(session.question)}
-                    disabled={isListening}
+                    disabled={isAISpeaking}
                     className="p-2 text-blue-600 hover:bg-blue-100 rounded-full disabled:opacity-50"
-                    title="Speak question"
+                    title="Repeat question"
                   >
-                    <Volume2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={stopSpeaking}
-                    disabled={!isListening}
-                    className="p-2 text-red-600 hover:bg-red-100 rounded-full disabled:opacity-50"
-                    title="Stop speaking"
-                  >
-                    <VolumeX className="h-4 w-4" />
+                    <RotateCcw className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -1010,10 +1379,10 @@ const Interview: React.FC = () => {
 
               {session.expectedTopics.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-800 mb-2">Expected Topics:</h4>
+                  <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Expected Topics:</h4>
                   <div className="flex flex-wrap gap-2">
                     {session.expectedTopics.map((topic, index) => (
-                      <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
                         {topic}
                       </span>
                     ))}
@@ -1084,7 +1453,7 @@ const Interview: React.FC = () => {
 
               <div className="bg-gray-900 rounded-lg overflow-hidden mb-4 relative" style={{ height: "280px" }}>
                 {videoEnabled ? (
-                  <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+                  <video ref={videoRef} autoPlay muted={false} playsInline className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <VideoOff className="h-12 w-12 text-gray-400" />
@@ -1096,40 +1465,56 @@ const Interview: React.FC = () => {
                     🎤 Listening...
                   </div>
                 )}
+
+                {/* Video mute/unmute indicator */}
+                {videoEnabled && (
+                  <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                    Video: ON
+                  </div>
+                )}
               </div>
 
               {/* ✅ SIMPLIFIED: Only video and mic toggle buttons */}
               <div className="flex justify-center space-x-4 mb-6">
                 <button
                   onClick={() => setVideoEnabled((prev) => !prev)}
-                  className={`p-3 rounded-full ${
+                  className={`p-3 rounded-full transition-all duration-200 ${
                     videoEnabled
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      ? "bg-green-600 text-white hover:bg-green-700 shadow-lg"
+                      : "bg-red-600 text-white hover:bg-red-700 shadow-lg"
                   }`}
+                  title={videoEnabled ? "Turn Off Camera" : "Turn On Camera"}
                 >
                   {videoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
                 </button>
 
-                {/* ✅ SIMPLIFIED: Single mic button that handles everything */}
+                {/* ✅ ENHANCED: Single mic button with detailed status */}
                 <button
                   onClick={toggleMic}
-                  className={`p-3 rounded-full ${
-                    micEnabled && isListening 
-                      ? "bg-green-600 text-white hover:bg-green-700" 
+                  className={`p-3 rounded-full transition-all duration-200 ${
+                    micEnabled && (isListening || recognitionRestarting)
+                      ? "bg-green-600 text-white hover:bg-green-700 shadow-lg ring-2 ring-green-300" 
                       : micEnabled 
-                        ? "bg-yellow-600 text-white hover:bg-yellow-700"
-                        : "bg-red-600 text-white hover:bg-red-700"
+                        ? "bg-yellow-600 text-white hover:bg-yellow-700 shadow-lg"
+                        : "bg-red-600 text-white hover:bg-red-700 shadow-lg"
                   }`}
                   title={
-                    micEnabled && isListening 
-                      ? "Mic ON - Speech recognition active" 
-                      : micEnabled 
-                        ? "Mic ON - Speech recognition paused"
-                        : "Mic OFF"
+                    micEnabled && recognitionRestarting
+                      ? "Mic ON - Restarting speech recognition..."
+                      : micEnabled && isListening 
+                        ? "Mic ON - Speech recognition active with auto-restart" 
+                        : micEnabled 
+                          ? "Mic ON - Speech recognition ready"
+                          : "Mic OFF"
                   }
                 >
                   {micEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+                  {/* Show restart indicator */}
+                  {recognitionRestarting && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-spin">
+                      <div className="w-1 h-1 bg-white rounded-full absolute top-0.5 left-0.5"></div>
+                    </div>
+                  )}
                 </button>
               </div>
 
@@ -1169,38 +1554,71 @@ const Interview: React.FC = () => {
                       <option value="zh-CN">Chinese</option>
                     </select>
                     
-                    {/* ✅ SIMPLIFIED: Status indicator only */}
+                    {/* ✅ ENHANCED: Detailed status indicator */}
                     <div className={`flex items-center px-3 py-1 text-sm rounded ${
-                      isListening
-                        ? "bg-green-100 text-green-700"
-                        : micEnabled
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-gray-100 text-gray-700"
+                      recognitionRestarting
+                        ? "bg-blue-100 text-blue-700"
+                        : isListening
+                          ? "bg-green-100 text-green-700"
+                          : micEnabled
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-gray-100 text-gray-700"
                     }`}>
                       <Mic className="h-4 w-4 mr-1" />
-                      {isListening ? "Listening..." : micEnabled ? "Mic Ready" : "Mic Off"}
+                      {recognitionRestarting 
+                        ? "Restarting..." 
+                        : isListening 
+                          ? "Listening..." 
+                          : micEnabled 
+                            ? "Ready" 
+                            : "Off"
+                      }
+                      {recognitionRestarting && (
+                        <div className="ml-2 w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* ✅ SIMPLIFIED: Show only active listening status */}
-                {isListening && (
+                {/* ✅ ENHANCED: Show active listening status with auto-restart indicator */}
+                {(isListening || recognitionRestarting) && (
                   <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-md">
                     <div className="flex items-center">
                       <span className="h-3 w-3 rounded-full bg-green-500 animate-pulse mr-2"></span>
                       <span className="text-sm font-medium text-green-700">
-                        🎤 Listening in {voiceLanguage.split("-")[0]} - Speak naturally
+                        {recognitionRestarting 
+                          ? "🔄 Restarting speech recognition..." 
+                          : `🎤 Listening in ${voiceLanguage.split("-")[0]} - Speak naturally`
+                        }
                       </span>
                     </div>
-                    {interimTranscript && (
+                    {interimTranscript && !recognitionRestarting && (
                       <div className="text-sm text-gray-600 mt-1 italic">"{interimTranscript}"</div>
                     )}
                   </div>
                 )}
 
                 {recognitionError && (
-                  <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
-                    <span className="text-sm text-red-700">{recognitionError}</span>
+                  <div className="mb-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <div className="flex items-start space-x-2">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-red-800">Speech Recognition Issue</h4>
+                        <p className="text-sm text-red-700 mt-1">{recognitionError}</p>
+                        {!speechRecognitionSupported && (
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                            <p className="text-xs text-yellow-800">
+                              <strong>💡 Alternative:</strong> Speech-to-text is not compatible with your device/browser. 
+                              Please type your answers directly in the text area below instead.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1214,16 +1632,18 @@ const Interview: React.FC = () => {
                 />
               </div>
 
-              {/* ✅ SIMPLIFIED: Single tip section */}
+              {/* ✅ ENHANCED: Tips section with auto-restart information */}
               <div className="text-sm text-gray-500 mb-4 p-3 bg-blue-50 rounded-lg">
-                <p className="mb-2">💡 <strong>Speech Recognition:</strong></p>
+                <p className="mb-2">💡 <strong>Enhanced Speech Recognition:</strong></p>
                 <ul className="space-y-1 text-xs">
                   {speechRecognitionSupported ? (
                     <>
                       <li>• ✅ Speech recognition is supported in your browser</li>
-                      <li>• Click the microphone button to enable/disable speech recognition</li>
-                      <li>• Speak naturally - your words will appear automatically</li>
-                      <li>• You can edit the text manually at any time</li>
+                      <li>• 🔄 Auto-restart feature: Speech will automatically restart if it stops</li>
+                      <li>• 🎯 Continuous listening: No need to manually restart after pauses</li>
+                      <li>• 🌐 Multi-language support with {voiceLanguage} selected</li>
+                      <li>• ✏️ You can edit the text manually at any time</li>
+                      <li>• 🛡️ Robust error recovery with automatic retry</li>
                     </>
                   ) : (
                     <>
@@ -1234,16 +1654,20 @@ const Interview: React.FC = () => {
                 </ul>
               </div>
 
-              {!isListening && (
-                <button
-                  onClick={() => submitAnswer(currentAnswer)}
-                  disabled={loading || !currentAnswer.trim()}
-                  className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {loading ? "Processing Answer..." : "Submit Answer & Continue"}
-                </button>
-              )}
+              <button
+                onClick={() => submitAnswer(currentAnswer)}
+                disabled={loading || !currentAnswer.trim() || !submitAllowed}
+                className={`w-full py-3 rounded-md transition-colors flex items-center justify-center ${
+                  !submitAllowed 
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                    : loading || !currentAnswer.trim()
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {loading ? "Processing Answer..." : !submitAllowed ? "Stop microphone to submit" : "Submit Answer & Continue"}
+              </button>
             </div>
           </div>
         </div>

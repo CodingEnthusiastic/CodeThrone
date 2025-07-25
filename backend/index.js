@@ -12,10 +12,13 @@ import contestRoutes from './routes/contest.js';
 import gameRoutes from './routes/game.js';
 import profileRoutes from './routes/profile.js';
 import interviewRoutes from './routes/interview.js';
+import potdRoutes from './routes/potd.js';
+import redeemRoutes from './routes/redeem.js';
 import { authenticateToken } from './middleware/auth.js';
 import { setupGameSocket } from './socket/game.js';
 import geminiRoutes from './routes/gemini.js';
 import announcementsRouter from './routes/announcements.js';
+import certificatesRouter from './routes/certificates.js';
 console.log('🚀 Starting backend server...');
 import statsRouter from './routes/stats.js';
 
@@ -87,6 +90,12 @@ console.log('✅ Game routes mounted at /api/game');
 app.use('/api/profile', profileRoutes);
 console.log('✅ Profile routes mounted at /api/profile');
 
+app.use('/api/potd', potdRoutes);
+console.log('✅ POTD routes mounted at /api/potd');
+
+app.use('/api/redeem', redeemRoutes);
+console.log('✅ Redeem routes mounted at /api/redeem');
+
 // app.use('/api/announcements', announcementRoutes);
 // console.log('✅ Announcement routes mounted at /api/announcements');
 
@@ -95,6 +104,9 @@ console.log('✅ Interview routes mounted at /api/interview');
 
 app.use('/api/announcements', announcementsRouter);
 console.log('✅ Gemini routes mounted at /api/announcements');
+
+app.use('/api/certificates', certificatesRouter);
+console.log('✅ Certificate routes mounted at /api/certificates');
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

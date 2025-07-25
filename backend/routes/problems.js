@@ -1,7 +1,7 @@
-// 
 import express from 'express';
 import Problem from '../models/Problem.js';
 import User from '../models/User.js';
+import POTDService from '../services/POTDService.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -342,6 +342,11 @@ router.post('/:id/submit', authenticateToken, async (req, res) => {
     });
     console.log('📝 Added submission to user history');
 
+    // Update user stats - always increment totalSubmissions for any submission
+    await User.findByIdAndUpdate(req.user._id, {
+      $inc: { 'stats.totalSubmissions': 1 }
+    });
+
     // Update user stats if accepted and not solved before
     if (isAccepted && !req.user.solvedProblems.includes(problem._id)) {
       const updateFields = {
@@ -355,10 +360,22 @@ router.post('/:id/submit', authenticateToken, async (req, res) => {
 
       await User.findByIdAndUpdate(req.user._id, updateFields);
       console.log('🎉 Updated user stats for first solve');
-    } else if (!isAccepted) {
-      await User.findByIdAndUpdate(req.user._id, {
-        $inc: { 'stats.totalSubmissions': 1 }
-      });
+    }
+
+    // Check if this is today's POTD and award coins (regardless of whether solved before)
+    let potdResult = null;
+    if (isAccepted) {
+      try {
+        potdResult = await POTDService.awardPOTDCoins(req.user._id, problem._id);
+        if (potdResult.awarded) {
+          console.log('🪙 POTD coins awarded:', potdResult.coinsEarned, 'Total coins:', potdResult.totalCoins);
+        } else {
+          console.log('🪙 POTD coins not awarded:', potdResult.reason);
+        }
+      } catch (error) {
+        console.error('❌ Error checking POTD coins:', error);
+        // Don't fail the submission if POTD check fails
+      }
     }
 
     res.json({
@@ -367,7 +384,8 @@ router.post('/:id/submit', authenticateToken, async (req, res) => {
       totalTests,
       testResults: testResults.slice(0, 3), // Show first 3 test results for feedback
       executionTime: testResults[0]?.executionTime || 0,
-      memory: testResults[0]?.memory || 0
+      memory: testResults[0]?.memory || 0,
+      potd: potdResult // Include POTD result in response
     });
   } catch (error) {
     console.error('❌ Submit solution error:', error);

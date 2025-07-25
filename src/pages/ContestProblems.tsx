@@ -458,8 +458,10 @@ const ContestProblems: React.FC = () => {
                             {solved ? '✓' : String.fromCharCode(65 + index)}
                           </div>
                           <div>
-                            <h3 className={`text-xl font-bold flex items-center group-hover:text-blue-600 transition-colors ${
-                              solved ? 'text-green-700' : 'text-gray-900'
+                            <h3 className={`text-xl font-bold flex items-center transition-colors ${
+                              solved 
+                                ? 'text-green-700 group-hover:text-green-600' 
+                                : 'text-gray-900 group-hover:text-blue-600'
                             }`}>
                               {problem.title}
                               {solved && <CheckCircle className="h-6 w-6 text-green-600 ml-3" />}
@@ -480,9 +482,10 @@ const ContestProblems: React.FC = () => {
                           <Button
                             variant={solved ? "success" : "outline"}
                             size="sm"
-                            className={`group-hover:bg-blue-50 group-hover:border-blue-300 ${
-                              solved ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green'
-                            }`}
+                            className={solved 
+                              ? 'bg-green-600 hover:bg-green-700 text-white' 
+                              : 'group-hover:bg-blue-50 group-hover:border-blue-300'
+                            }
                             onClick={(e) => {
                               e.stopPropagation()
                               handleProblemClick(problem._id)

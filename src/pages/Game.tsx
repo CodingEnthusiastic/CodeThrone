@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext"
 import axios from "axios"
 import {io} from "socket.io-client"
 import { Gamepad2, Users, Clock, Zap, Send, CheckCircle, XCircle, Medal, Heart, LogOut } from "lucide-react"
-import SmartCodeEditor from "../components/SmartCodeEditor"
+import CodeMirrorEditor from "../components/CodeMirrorEditor"
 
 interface GameRoom {
   _id: string
@@ -210,7 +210,7 @@ const GameStatusCard: React.FC<{
       {activeGame && (
         <div className="mt-2 space-y-1 text-sm">
           <p>Players: {activeGame.players.length}/2</p>
-          {activeGame.problem && (
+          {activeGame.problem && activeGame.players.length === 2 && (
             <p>Problem: {activeGame.problem.title}</p>
           )}
           {activeGame.players.length === 2 && (
@@ -1212,16 +1212,18 @@ const getOpponentPlayer = () => {
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
                   {activeGame.gameMode === "random" ? "Random Match" : `Room: ${activeGame.roomId}`}
                 </h1>
-                <p className="text-gray-600">
-                  Problem: {activeGame.problem?.title}
-                  {activeGame.problem && (
-                    <span
-                      className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(activeGame.problem.difficulty)}`}
-                    >
-                      {activeGame.problem.difficulty}
-                    </span>
-                  )}
-                </p>
+                {activeGame.players.length === 2 && activeGame.problem && (
+                  <p className="text-gray-600">
+                    Problem: {activeGame.problem?.title}
+                    {activeGame.problem && (
+                      <span
+                        className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(activeGame.problem.difficulty)}`}
+                      >
+                        {activeGame.problem.difficulty}
+                      </span>
+                    )}
+                  </p>
+                )}
                 <div className="flex items-center space-x-4 mt-2">
                   <span
                     className={`text-sm px-2 py-1 rounded ${
@@ -1321,55 +1323,87 @@ const getOpponentPlayer = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Problem Description */}
+            {/* Problem Description or Waiting Card */}
             {activeGame.problem && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold mb-4">Problem Description</h3>
-                <div className="prose max-w-none">
-                  <div className="mb-4">
-                    <p className="text-gray-700 whitespace-pre-wrap">{activeGame.problem.description}</p>
-                  </div>
-
-                  {activeGame.problem.examples.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="font-semibold mb-2">Examples:</h4>
-                      {activeGame.problem.examples.map((example, index) => (
-                        <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
-                          <div className="mb-2">
-                            <strong>Input:</strong>
-                            <pre className="bg-gray-100 p-2 rounded mt-1 text-sm">{example.input}</pre>
-                          </div>
-                          <div className="mb-2">
-                            <strong>Output:</strong>
-                            <pre className="bg-gray-100 p-2 rounded mt-1 text-sm">{example.output}</pre>
-                          </div>
-                          {example.explanation && (
-                            <div>
-                              <strong>Explanation:</strong>
-                              <p className="mt-1 text-sm">{example.explanation}</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6 transition-colors duration-200">
+                {/* Show waiting card if not all players have joined or game hasn't started */}
+                {(activeGame.players.length < 2 || !gameStarted) ? (
+                  <div className="text-center py-12">
+                    <div className="flex justify-center mb-6">
+                      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-400"></div>
                     </div>
-                  )}
-
-                  <div>
-                    <h4 className="font-semibold mb-2">Constraints:</h4>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{activeGame.problem.constraints}</p>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                      {activeGame.players.length < 2 ? "Waiting for Opponent" : "Preparing Game..."}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                      {activeGame.players.length < 2 
+                        ? "The problem will be revealed once both players join to ensure fair competition." 
+                        : "Game is starting soon..."}
+                    </p>
+                    <div className="bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4 max-w-sm mx-auto">
+                      <div className="flex items-center justify-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
+                        <span>Players:</span>
+                        <span className="font-semibold text-blue-600 dark:text-blue-400">{activeGame.players.length}/2</span>
+                      </div>
+                      {activeGame.gameMode === "room" && (
+                        <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                          <span>Room Code: </span>
+                          <span className="font-mono font-semibold text-purple-600 dark:text-purple-400">{activeGame.roomId}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  // Show problem description only when both players are ready
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Problem Description</h3>
+                    <div className="prose max-w-none">
+                      <div className="mb-4">
+                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{activeGame.problem.description}</p>
+                      </div>
+
+                      {activeGame.problem.examples.length > 0 && (
+                        <div className="mb-4">
+                          <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Examples:</h4>
+                          {activeGame.problem.examples.map((example, index) => (
+                            <div key={index} className="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600">
+                              <div className="mb-2">
+                                <strong className="text-gray-900 dark:text-gray-100">Input:</strong>
+                                <pre className="bg-gray-100 dark:bg-gray-900 p-2 rounded mt-1 text-sm text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">{example.input}</pre>
+                              </div>
+                              <div className="mb-2">
+                                <strong className="text-gray-900 dark:text-gray-100">Output:</strong>
+                                <pre className="bg-gray-100 dark:bg-gray-900 p-2 rounded mt-1 text-sm text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">{example.output}</pre>
+                              </div>
+                              {example.explanation && (
+                                <div>
+                                  <strong className="text-gray-900 dark:text-gray-100">Explanation:</strong>
+                                  <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{example.explanation}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div>
+                        <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Constraints:</h4>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{activeGame.problem.constraints}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Code Editor */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6 transition-colors duration-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Code Editor</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Code Editor</h3>
                 <select
                   value={language}
                   onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   disabled={gameFinished}
                 >
                   <option value="cpp">C++20</option>
@@ -1381,13 +1415,13 @@ const getOpponentPlayer = () => {
               
               <div className="mb-4">
                 <div className="relative">
-                  <SmartCodeEditor
+                  <CodeMirrorEditor
                     value={code}
                     onChange={handleCodeChange}
                     language={language}
                     disabled={gameFinished || !gameStarted}
-                    placeholder="Write your code here..."
-                    contestMode={true} // ✅ Enable contest mode restrictions for game mode
+                    contestMode={true}
+                    height="400px"
                   />
                   <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
                     Copy/Paste Disabled
@@ -1509,8 +1543,8 @@ const getOpponentPlayer = () => {
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-900 mb-2">How it works:</h3>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Easy difficulty problems</li>
-                  <li>• 30 minutes time limit</li>
+                  <li>• Random difficulty problems (Easy, Medium, Hard)</li>
+                  <li>• Dynamic time limits based on difficulty</li>
                   <li>• ELO-based rating system</li>
                   <li>• Real-time multiplayer coding</li>
                 </ul>
@@ -1593,49 +1627,132 @@ const getOpponentPlayer = () => {
         </div>
 
         {/* Game Rules */}
-        <div className="mt-12 bg-white rounded-lg shadow-sm p-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Game Rules</h3>
+        <div className="mt-12">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-8 text-center">Game Rules & Guidelines</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Winning Conditions</h4>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• First to solve the problem wins</li>
-                <li>• If no one solves: most test cases passed wins</li>
-                <li>• Equal test cases: draw</li>
-                <li>• Time limit exceeded: draw</li>
-                <li>• If a player leaves an ongoing game, the opponent wins.</li>
-              </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Winning Conditions Card */}
+            <div className="group bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl p-6 border border-green-200/50 dark:border-green-600/30 hover:shadow-lg hover:scale-105 transition-all duration-200">
+              <div className="flex items-center mb-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-green-100 dark:bg-green-800/50 rounded-full mr-3">
+                  <Medal className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <h4 className="text-lg font-bold text-green-900 dark:text-green-100">Winning Conditions</h4>
+              </div>
+              <div className="bg-white/60 dark:bg-gray-800/40 rounded-xl p-4 border border-green-200/30 dark:border-green-600/20">
+                <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>First to solve the problem wins</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>If no one solves: most test cases passed wins</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Equal test cases: draw</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Time limit exceeded: draw</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>If a player leaves: opponent wins</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">ELO Rating System</h4>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Chess-style ELO calculation</li>
-                <li>• K-factor: 32 for dynamic changes</li>
-                <li>• Rating changes based on opponent skill</li>
-                <li>• Starting rating: 1200</li>
-              </ul>
+            {/* ELO Rating System Card */}
+            <div className="group bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200/50 dark:border-blue-600/30 hover:shadow-lg hover:scale-105 transition-all duration-200">
+              <div className="flex items-center mb-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-800/50 rounded-full mr-3">
+                  <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h4 className="text-lg font-bold text-blue-900 dark:text-blue-100">ELO Rating System</h4>
+              </div>
+              <div className="bg-white/60 dark:bg-gray-800/40 rounded-xl p-4 border border-blue-200/30 dark:border-blue-600/20">
+                <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+                  <li className="flex items-start">
+                    <Zap className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Chess-style ELO calculation</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Zap className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>K-factor: 32 for dynamic changes</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Zap className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Rating changes based on opponent skill</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Zap className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Starting rating: 1200</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Time Limits</h4>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Easy problems: 30 minutes</li>
-                <li>• Medium problems: 45 minutes</li>
-                <li>• Hard problems: 60 minutes</li>
-                <li>• Timer starts when both players join</li>
-              </ul>
+            {/* Time Limits Card */}
+            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-2xl p-6 border border-orange-200/50 dark:border-orange-600/30 hover:shadow-lg hover:scale-105 transition-all duration-200">
+              <div className="flex items-center mb-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-orange-100 dark:bg-orange-800/50 rounded-full mr-3">
+                  <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <h4 className="text-lg font-bold text-orange-900 dark:text-orange-100">Time Limits</h4>
+              </div>
+              <div className="bg-white/60 dark:bg-gray-800/40 rounded-xl p-4 border border-orange-200/30 dark:border-orange-600/20">
+                <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+                  <li className="flex items-start">
+                    <Clock className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span><span className="font-medium text-green-600 dark:text-green-400">Easy</span> problems: 30 minutes</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Clock className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span><span className="font-medium text-orange-600 dark:text-orange-400">Medium</span> problems: 45 minutes</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Clock className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span><span className="font-medium text-red-600 dark:text-red-400">Hard</span> problems: 60 minutes</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Clock className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Timer starts when both players join</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Fair Play</h4>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Real-time code submission</li>
-                <li>• Automatic test case validation</li>
-                <li>• Fair matchmaking system</li>
-                <li>• Equal problem difficulty for both players</li>
-              </ul>
+            {/* Fair Play Card */}
+            <div className="group bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-2xl p-6 border border-purple-200/50 dark:border-purple-600/30 hover:shadow-lg hover:scale-105 transition-all duration-200">
+              <div className="flex items-center mb-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-purple-100 dark:bg-purple-800/50 rounded-full mr-3">
+                  <Heart className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h4 className="text-lg font-bold text-purple-900 dark:text-purple-100">Fair Play</h4>
+              </div>
+              <div className="bg-white/60 dark:bg-gray-800/40 rounded-xl p-4 border border-purple-200/30 dark:border-purple-600/20">
+                <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+                  <li className="flex items-start">
+                    <Heart className="h-4 w-4 text-purple-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Real-time code submission</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Heart className="h-4 w-4 text-purple-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Automatic test case validation</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Heart className="h-4 w-4 text-purple-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Fair matchmaking system</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Heart className="h-4 w-4 text-purple-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Equal problem difficulty for both players</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

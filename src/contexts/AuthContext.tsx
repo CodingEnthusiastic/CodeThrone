@@ -6,8 +6,27 @@ interface User {
   username: string;
   email: string;
   role: string;
+  coins?: number; // Add coins field
+  totalCoinsEarned?: number; // Add total coins earned field for future use
+  profile?: {
+    avatar?: string;
+    firstName?: string;
+    lastName?: string;
+  };
   ratings?: {
     gameRating: number;
+  };
+  stats?: {
+    problemsSolved?: {
+      total: number;
+      easy: number;
+      medium: number;
+      hard: number;
+    };
+    totalSubmissions?: number;
+    accuracy?: number;
+    currentStreak?: number;
+    maxStreak?: number;
   };
 }
 
@@ -17,6 +36,9 @@ interface AuthContextType {
   login: (username: string, password: string, role?: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
+  updateCoins: (newCoins: number) => void; // Add method to update coins directly
+  setUser: (user: User | null) => void;
   loading: boolean;
 }
 
@@ -84,6 +106,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
+  const refreshUser = async () => {
+    try {
+      const userData = await fetchUserProfile();
+      if (userData) {
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing user data:', error);
+    }
+  };
+
   const login = async (username: string, password: string, role: string = 'user') => {
     try {
       console.log('🔐 Login attempt:', { username, role });
@@ -102,13 +135,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('token', receivedToken);
         setToken(receivedToken);
         
-        const normalizedUser = {
-          ...user,
-          id: user.id || user._id,
-          _id: user._id || user.id
-        };
-        setUser(normalizedUser);
-        console.log('💾 User set in context with normalized IDs:', normalizedUser);
+        // Fetch complete user profile after login to ensure we have all data
+        try {
+          const profileResponse = await axios.get('http://localhost:5000/api/auth/me', {
+            headers: { Authorization: `Bearer ${receivedToken}` }
+          });
+          const completeUser = profileResponse.data;
+          const normalizedUser = {
+            ...completeUser,
+            id: completeUser.id || completeUser._id,
+            _id: completeUser._id || completeUser.id
+          };
+          setUser(normalizedUser);
+          console.log('💾 Complete user profile set in context:', normalizedUser);
+        } catch (profileError) {
+          // Fallback to basic user data if profile fetch fails
+          const normalizedUser = {
+            ...user,
+            id: user.id || user._id,
+            _id: user._id || user.id
+          };
+          setUser(normalizedUser);
+          console.log('💾 Basic user data set in context:', normalizedUser);
+        }
       } else {
         throw new Error('Invalid token received from server');
       }
@@ -153,6 +202,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateCoins = (newCoins: number) => {
+    if (user) {
+      setUser({ ...user, coins: newCoins });
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
@@ -161,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, refreshUser, updateCoins, setUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -106,7 +106,7 @@ const Discussion: React.FC = () => {
     if (!user || !token) return;
 
     try {
-      const response = await axios.post(
+      await axios.post(
         `http://localhost:5000/api/discussion/${discussionId}/vote`,
         { type: voteType },
         {
@@ -117,17 +117,8 @@ const Discussion: React.FC = () => {
         }
       );
 
-      setDiscussions((prev) =>
-        prev.map((discussion) =>
-          discussion._id === discussionId
-            ? {
-                ...discussion,
-                upvotes: Array(response.data.upvotes).fill(''),
-                downvotes: Array(response.data.downvotes).fill(''),
-              }
-            : discussion
-        )
-      );
+      // Refresh discussions after voting
+      fetchDiscussions();
     } catch (error) {
       console.error('Error voting:', error);
     }
@@ -139,6 +130,10 @@ const Discussion: React.FC = () => {
      discussion.content.toLowerCase().includes(searchTerm.toLowerCase())) &&
     (selectedUser ? discussion.author.username === selectedUser : true)
   );
+
+  const hasUserVoted = (votes: string[], userId: string) => {
+    return votes.some(voteId => voteId.toString() === userId);
+  };
 
   const allTags = [...new Set(discussions.flatMap((d) => d.tags))];
 
@@ -314,29 +309,39 @@ const Discussion: React.FC = () => {
                   <button
                     onClick={() => handleVote(discussion._id, 'up')}
                     disabled={!user}
-                    className="p-1 hover:bg-gray-100 rounded-full"
+                    className={`p-1 rounded-full transition-all duration-200 ${
+                      !user 
+                        ? 'bg-gray-50 cursor-not-allowed' 
+                        : user && hasUserVoted(discussion.upvotes, user.id)
+                        ? 'bg-green-500 hover:bg-green-600 shadow-sm transform hover:scale-110'
+                        : 'bg-gray-50 hover:bg-green-50 border border-green-200'
+                    }`}
                   >
                     <ThumbsUp
                       className={`h-4 w-4 ${
-                        discussion.upvotes.includes(user?.id || '') ? 'text-green-600' : ''
+                        user && hasUserVoted(discussion.upvotes, user.id) ? 'text-white' : 'text-green-600'
                       }`}
                     />
-
                   </button>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm font-medium text-gray-700 px-2 py-1 bg-gray-100 rounded-md min-w-[32px] text-center">
                     {discussion.upvotes.length - discussion.downvotes.length}
                   </span>
                   <button
                     onClick={() => handleVote(discussion._id, 'down')}
                     disabled={!user}
-                    className="p-1 hover:bg-gray-100 rounded-full"
+                    className={`p-1 rounded-full transition-all duration-200 ${
+                      !user 
+                        ? 'bg-gray-50 cursor-not-allowed' 
+                        : user && hasUserVoted(discussion.downvotes, user.id)
+                        ? 'bg-red-500 hover:bg-red-600 shadow-sm transform hover:scale-110'
+                        : 'bg-gray-50 hover:bg-red-50 border border-red-200'
+                    }`}
                   >
                     <ThumbsDown
                       className={`h-4 w-4 ${
-                        discussion.downvotes.includes(user?.id || '') ? 'text-red-600' : ''
+                        user && hasUserVoted(discussion.downvotes, user.id) ? 'text-white' : 'text-red-600'
                       }`}
                     />
-
                   </button>
                 </div>
               </div>

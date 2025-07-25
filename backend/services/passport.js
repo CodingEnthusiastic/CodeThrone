@@ -19,18 +19,46 @@ passport.use(new GoogleStrategy({
     let user = await User.findOne({ googleId: profile.id });
     if (!user) {
       // Create new user
+      const username = profile.emails?.[0]?.value?.split('@')[0] || profile.displayName;
       user = await User.create({
         googleId: profile.id,
-        username: profile.emails?.[0]?.value?.split('@')[0] || profile.displayName,
+        username: username,
         email: profile.emails?.[0]?.value,
         password: Math.random().toString(36).slice(-8), // random password, not used
         isVerified: true,
         profile: {
           firstName: profile.name?.givenName,
           lastName: profile.name?.familyName,
-          avatar: profile.photos?.[0]?.value,
+          avatar: profile.photos?.[0]?.value || `default:${username.charAt(0).toUpperCase()}`,
+          linkedIn: '',
+          github: '',
+          bio: '',
+          location: '',
+          college: '',
+          branch: '',
+          graduationYear: null
         }
       });
+    } else {
+      // Update existing user's avatar if needed
+      if (!user.profile) {
+        user.profile = {
+          firstName: profile.name?.givenName || '',
+          lastName: profile.name?.familyName || '',
+          avatar: profile.photos?.[0]?.value || `default:${user.username.charAt(0).toUpperCase()}`,
+          linkedIn: '',
+          github: '',
+          bio: '',
+          location: '',
+          college: '',
+          branch: '',
+          graduationYear: null
+        };
+        await user.save();
+      } else if (!user.profile.avatar || user.profile.avatar.trim() === '') {
+        user.profile.avatar = profile.photos?.[0]?.value || `default:${user.username.charAt(0).toUpperCase()}`;
+        await user.save();
+      }
     }
     return done(null, user);
   } catch (err) {

@@ -14,6 +14,7 @@ import Interview from './pages/Interview';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Redeem from './pages/Redeem';
 import CompanyProblems from './pages/CompanyProblems';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -55,6 +56,7 @@ const AppRoutes = () => {
             {/* <Route path="/contest/:id" element={<ProtectedRoute><Contest /></ProtectedRoute>}/> */}
             <Route path="/interview" element={<ProtectedRoute><Interview /></ProtectedRoute>} />
             <Route path="/profile/:username" element={<Profile />} />
+            <Route path="/redeem" element={<ProtectedRoute><Redeem /></ProtectedRoute>} />
             <Route path="/company/:company" element={<CompanyProblems />} />
             <Route path="/company-problems" element={<CompanyProblems />} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

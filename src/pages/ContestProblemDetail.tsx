@@ -18,7 +18,7 @@ import {
   Code,
   AlertCircle,
 } from "lucide-react"
-import SmartCodeEditor from "../components/SmartCodeEditor"
+import CodeMirrorEditor from "../components/CodeMirrorEditor"
 
 interface Problem {
   _id: string
@@ -619,14 +619,14 @@ const ContestProblemDetail: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative">
-                <SmartCodeEditor
+                <CodeMirrorEditor
                   value={code}
                   onChange={setCode}
                   language={language}
                   disabled={contest.status === "ended"}
-                  placeholder="Write your code here..."
                   className="h-96"
-                  contestMode={true} // Enable contest mode restrictions
+                  contestMode={true}
+                  height="384px"
                 />
                 <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
                   Copy/Paste Disabled

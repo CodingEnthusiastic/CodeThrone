@@ -122,18 +122,27 @@ router.get("/:id", async (req, res) => {
             else if (participant.rank === 3) ratingChange = 5
 
             user.ratings.contestRating += ratingChange
-            if (!user.contestHistory.some(h => h.contest.toString() === contest._id.toString())) {
-            // Add contest history entry
-            user.contestHistory.push({
-              contest: contest._id,
-              rank: participant.rank,
-              score: participant.score,
-              ratingChange,
-              problemsSolved: participant.submissions.filter(s => s.score > 0).length,
-              totalProblems: contest.problems.length,
-              date: contest.endTime,
-            })
-          }
+            
+            // Improved duplicate check - ensure no duplicate contest history entries
+            const existingEntry = user.contestHistory.find(h => 
+              h.contest && h.contest.toString() === contest._id.toString()
+            );
+            
+            if (!existingEntry) {
+              // Add contest history entry
+              user.contestHistory.push({
+                contest: contest._id,
+                rank: participant.rank,
+                score: participant.score,
+                ratingChange,
+                problemsSolved: participant.submissions.filter(s => s.score > 0).length,
+                totalProblems: contest.problems.length,
+                date: contest.endTime,
+              })
+              console.log(`✅ Added contest history for user ${user.username}`)
+            } else {
+              console.log(`⚠️ Contest history already exists for user ${user.username}, skipping duplicate`)
+            }
             await user.save()
             console.log(`✅ Updated rating and history for user ${user.username}: +${ratingChange}`)
           }
@@ -484,17 +493,26 @@ router.post("/admin/backfill-ended-contests", authenticateToken, requireAdmin, a
         const user = await User.findById(participant.user._id)
         if (user) {
           user.ratings.contestRating = (user.ratings.contestRating || 1200) + ratingChanges[i];
-          if (!user.contestHistory.some(h => h.contest.toString() === contest._id.toString())) {
-          user.contestHistory.push({
-            contest: contest._id,
-            rank: participant.rank,
-            score: participant.score,
-            ratingChange: ratingChanges[i],
-            problemsSolved: participant.submissions.filter(s => s.score > 0).length,
-            totalProblems: contest.problems.length,
-            date: contest.endTime,
-          })
-        }
+          
+          // Improved duplicate check - ensure no duplicate contest history entries
+          const existingEntry = user.contestHistory.find(h => 
+            h.contest && h.contest.toString() === contest._id.toString()
+          );
+          
+          if (!existingEntry) {
+            user.contestHistory.push({
+              contest: contest._id,
+              rank: participant.rank,
+              score: participant.score,
+              ratingChange: ratingChanges[i],
+              problemsSolved: participant.submissions.filter(s => s.score > 0).length,
+              totalProblems: contest.problems.length,
+              date: contest.endTime,
+            })
+            console.log(`✅ Backfilled contest history for user ${user.username}`)
+          } else {
+            console.log(`⚠️ Contest history already exists for user ${user.username}, skipping duplicate`)
+          }
           await user.save()
           updatedUsers++
         }
@@ -582,6 +600,54 @@ router.get("/:contestId/problem/:problemId", async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message })
   }
 })
+
+// Admin: Clean up duplicate contest history entries
+router.post("/admin/cleanup-duplicate-history", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    let cleanedUsers = 0;
+    let duplicatesRemoved = 0;
+    
+    // Get all users with contest history
+    const users = await User.find({ 
+      contestHistory: { $exists: true, $not: { $size: 0 } } 
+    });
+    
+    for (const user of users) {
+      const originalLength = user.contestHistory.length;
+      
+      // Remove duplicates by contest ID, keeping the first occurrence
+      const uniqueContestHistory = [];
+      const seenContests = new Set();
+      
+      for (const historyEntry of user.contestHistory) {
+        const contestId = historyEntry.contest.toString();
+        
+        if (!seenContests.has(contestId)) {
+          seenContests.add(contestId);
+          uniqueContestHistory.push(historyEntry);
+        }
+      }
+      
+      if (uniqueContestHistory.length !== originalLength) {
+        user.contestHistory = uniqueContestHistory;
+        await user.save();
+        cleanedUsers++;
+        duplicatesRemoved += (originalLength - uniqueContestHistory.length);
+        console.log(`✅ Cleaned ${originalLength - uniqueContestHistory.length} duplicates for user ${user.username}`);
+      }
+    }
+    
+    res.json({ 
+      message: `Cleanup completed. ${duplicatesRemoved} duplicate entries removed from ${cleanedUsers} users.`,
+      cleanedUsers,
+      duplicatesRemoved
+    });
+    
+  } catch (error) {
+    console.error("❌ Error cleaning up duplicate contest history:", error);
+    res.status(500).json({ message: "Error cleaning up duplicates", error: error.message });
+  }
+});
 
 export default router; 
 

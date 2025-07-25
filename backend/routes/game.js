@@ -118,34 +118,69 @@ router.post("/random", authenticateToken, async (req, res) => {
     } else {
       console.log("🆕 Creating new game...")
 
-      // Get random easy problem for random matches
-      console.log("🔍 Fetching random problem...")
-      const problems = await Problem.find({ difficulty: "Easy", isPublished: true })
-      console.log("📚 Found problems:", problems.length)
+      // Get random problem from any difficulty for random matches
+      console.log("🔍 Fetching random problem from all difficulties...")
+      const difficulties = ['Easy', 'Medium', 'Hard']
+      const randomDifficulty = difficulties[Math.floor(Math.random() * difficulties.length)]
+      console.log("🎲 Selected random difficulty:", randomDifficulty)
+      
+      const problems = await Problem.find({ difficulty: randomDifficulty, isPublished: true })
+      console.log("📚 Found problems for", randomDifficulty, ":", problems.length)
 
       if (problems.length === 0) {
-        console.log("❌ No problems found")
-        return res.status(500).json({ message: "No problems available" })
+        console.log("❌ No problems found for", randomDifficulty, ", trying all difficulties...")
+        // Fallback: get problems from any difficulty if the selected one has no problems
+        const allProblems = await Problem.find({ isPublished: true })
+        if (allProblems.length === 0) {
+          console.log("❌ No problems found at all")
+          return res.status(500).json({ message: "No problems available" })
+        }
+        const randomProblem = allProblems[Math.floor(Math.random() * allProblems.length)]
+        console.log("🎲 Fallback: Selected problem:", randomProblem.title, "Difficulty:", randomProblem.difficulty)
+        
+        // Set time limit based on selected problem's difficulty
+        const timeLimits = { Easy: 30, Medium: 45, Hard: 60 }
+        const timeLimit = timeLimits[randomProblem.difficulty] || 45
+        
+        game = new Game({
+          roomId: uuidv4(),
+          gameMode: "random",
+          problem: randomProblem._id,
+          timeLimit,
+          players: [
+            {
+              user: req.user._id,
+              ratingBefore: req.user.ratings?.gameRating || 1200,
+              testCasesPassed: 0,
+              totalTestCases: 0,
+            },
+          ],
+          status: "waiting",
+        })
+      } else {
+        const randomProblem = problems[Math.floor(Math.random() * problems.length)]
+        console.log("🎲 Selected problem:", randomProblem.title, "Difficulty:", randomDifficulty)
+        
+        // Set time limit based on difficulty
+        const timeLimits = { Easy: 30, Medium: 45, Hard: 60 }
+        const timeLimit = timeLimits[randomDifficulty] || 45
+        
+        game = new Game({
+          roomId: uuidv4(),
+          gameMode: "random",
+          problem: randomProblem._id,
+          timeLimit,
+          players: [
+            {
+              user: req.user._id,
+              ratingBefore: req.user.ratings?.gameRating || 1200,
+              testCasesPassed: 0,
+              totalTestCases: 0,
+            },
+          ],
+          status: "waiting",
+        })
       }
-
-      const randomProblem = problems[Math.floor(Math.random() * problems.length)]
-      console.log("🎲 Selected problem:", randomProblem.title)
-      
-      game = new Game({
-        roomId: uuidv4(),
-        gameMode: "random",
-        problem: randomProblem._id,
-        timeLimit: 30,
-        players: [
-          {
-            user: req.user._id,
-            ratingBefore: req.user.ratings?.gameRating || 1200,
-            testCasesPassed: 0,
-            totalTestCases: 0,
-          },
-        ],
-        status: "waiting" // ✅ Explicitly set status to waiting for single player
-      })
 
       console.log("🆕 Created new game with ID:", game.roomId)
       console.log("💾 Saving game to database...")

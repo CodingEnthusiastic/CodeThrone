@@ -45,7 +45,20 @@ router.post('/register', async (req, res) => {
       email,
       password: googleId ? undefined : password,
       role,
-      googleId: googleId || undefined
+      googleId: googleId || undefined,
+      coins: 0, // Start with 0 coins
+      profile: {
+        firstName: '',
+        lastName: '',
+        linkedIn: '',
+        github: '',
+        avatar: `default:${username.charAt(0).toUpperCase()}`,
+        bio: '',
+        location: '',
+        college: '',
+        branch: '',
+        graduationYear: null
+      }
     });
 
     console.log('💾 Saving user to database...');
@@ -165,6 +178,27 @@ router.get('/me', authenticateToken, async (req, res) => {
   
   try {
     const user = await User.findById(req.user._id).select('-password');
+    
+    // Ensure user has a profile with default avatar if needed
+    if (!user.profile) {
+      user.profile = {
+        firstName: '',
+        lastName: '',
+        linkedIn: '',
+        github: '',
+        avatar: `default:${user.username.charAt(0).toUpperCase()}`,
+        bio: '',
+        location: '',
+        college: '',
+        branch: '',
+        graduationYear: null
+      };
+      await user.save();
+    } else if (!user.profile.avatar || user.profile.avatar.trim() === '') {
+      user.profile.avatar = `default:${user.username.charAt(0).toUpperCase()}`;
+      await user.save();
+    }
+    
     console.log('✅ User data retrieved:', user.username);
     res.json(user);
   } catch (error) {

@@ -1,8 +1,27 @@
 import express from 'express';
+import multer from 'multer';
 import User from '../models/User.js';
+import Problem from '../models/Problem.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Configure multer for image uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Check if file is an image
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  },
+});
 
 // Get user profile
 router.get('/:username', async (req, res) => {
@@ -162,6 +181,21 @@ router.get('/:username', async (req, res) => {
       };
     }
     
+    // Ensure coins exist (default 0 for new users)
+    if (user.coins === undefined || user.coins === null) {
+      user.coins = 0;
+      await User.findByIdAndUpdate(user._id, { coins: 0 });
+    }
+    
+    // Set default avatar if none exists (first letter of username)
+    if (!user.profile.avatar || user.profile.avatar.trim() === '') {
+      user.profile.avatar = `default:${user.username.charAt(0).toUpperCase()}`;
+      // Save the default avatar to database
+      await User.findByIdAndUpdate(user._id, {
+        'profile.avatar': user.profile.avatar
+      });
+    }
+    
     // Ensure arrays exist
     if (!user.solvedProblems) user.solvedProblems = [];
     if (!user.gameHistory) user.gameHistory = [];
@@ -170,9 +204,13 @@ router.get('/:username', async (req, res) => {
     if (!user.recentActivities) user.recentActivities = [];
     if (!user.topicProgress) user.topicProgress = [];
     
+    // Get total problems count
+    const totalProblemsCount = await Problem.countDocuments();
+    
     console.log('📊 Final user stats:', {
       username: user.username,
       totalSolved: user.stats.problemsSolved.total,
+      totalProblemsInSystem: totalProblemsCount,
       gameRating: user.ratings.gameRating,
       contestRating: user.ratings.contestRating,
       solvedProblemsCount: user.solvedProblems.length,
@@ -180,7 +218,13 @@ router.get('/:username', async (req, res) => {
       submissionsCount: user.submissions.length
     });
     
-    res.json(user);
+    // Add total problems count to the response
+    const responseData = {
+      ...user.toObject(),
+      totalProblemsCount: totalProblemsCount
+    };
+    
+    res.json(responseData);
   } catch (error) {
     console.error('❌ Profile fetch error:', error);
     console.error('📊 Error details:', {
@@ -211,6 +255,39 @@ router.put('/update', authenticateToken, async (req, res) => {
     res.json(user);
   } catch (error) {
     console.error('❌ Profile update error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Upload profile image
+router.put('/upload-image', authenticateToken, upload.single('profileImage'), async (req, res) => {
+  console.log('📸 Profile image upload request');
+  console.log('👤 User:', req.user.username);
+  
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+
+    // Convert image to base64
+    const imageBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    
+    // Update user's avatar in profile
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { 
+        'profile.avatar': imageBase64 
+      },
+      { new: true }
+    ).select('-password');
+
+    console.log('✅ Profile image updated successfully');
+    res.json({ 
+      message: 'Profile image updated successfully',
+      avatar: user.profile.avatar 
+    });
+  } catch (error) {
+    console.error('❌ Profile image upload error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

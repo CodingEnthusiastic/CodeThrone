@@ -59,7 +59,7 @@ const DiscussionDetail: React.FC = () => {
     if (!user || !discussion || !token) return;
 
     try {
-      const response = await axios.post(`http://localhost:5000/api/discussion/${discussion._id}/vote`, {
+      await axios.post(`http://localhost:5000/api/discussion/${discussion._id}/vote`, {
         type: voteType
       }, {
         headers: {
@@ -68,14 +68,35 @@ const DiscussionDetail: React.FC = () => {
         }
       });
 
-      setDiscussion({
-        ...discussion,
-        upvotes: Array(response.data.upvotes).fill(''),
-        downvotes: Array(response.data.downvotes).fill('')
-      });
+      // Refresh the discussion data
+      fetchDiscussion();
     } catch (error) {
       console.error('Error voting:', error);
     }
+  };
+
+  const handleCommentVote = async (commentId: string, voteType: 'up' | 'down') => {
+    if (!user || !discussion || !token) return;
+
+    try {
+      await axios.post(`http://localhost:5000/api/discussion/${discussion._id}/comments/${commentId}/vote`, {
+        type: voteType
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Refresh the discussion data
+      fetchDiscussion();
+    } catch (error) {
+      console.error('Error voting on comment:', error);
+    }
+  };
+
+  const hasUserVoted = (votes: string[], userId: string) => {
+    return votes.some(voteId => voteId.toString() === userId);
   };
 
   const handleAddComment = async (e: React.FormEvent) => {
@@ -168,26 +189,38 @@ const DiscussionDetail: React.FC = () => {
             <div className="flex flex-col items-center ml-6">
               <button
                 onClick={() => handleVote('up')}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className={`p-2 rounded-full transition-all duration-200 ${
+                  !user 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : user && hasUserVoted(discussion.upvotes, user.id)
+                    ? 'bg-green-500 hover:bg-green-600 shadow-md transform hover:scale-105'
+                    : 'bg-gray-100 hover:bg-green-100 border border-green-200'
+                }`}
                 disabled={!user}
               >
                 <ThumbsUp
                   className={`h-5 w-5 ${
-                    discussion.upvotes.includes(user?.id || '') ? 'text-green-600' : 'text-gray-400'
+                    user && hasUserVoted(discussion.upvotes, user.id) ? 'text-white' : 'text-green-600'
                   }`}
                 />
               </button>
-              <span className="text-lg font-medium text-gray-600 my-2">
+              <span className="text-lg font-bold text-gray-700 my-2 px-2 py-1 bg-gray-100 rounded-md">
                 {discussion.upvotes.length - discussion.downvotes.length}
               </span>
               <button
                 onClick={() => handleVote('down')}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className={`p-2 rounded-full transition-all duration-200 ${
+                  !user 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : user && hasUserVoted(discussion.downvotes, user.id)
+                    ? 'bg-red-500 hover:bg-red-600 shadow-md transform hover:scale-105'
+                    : 'bg-gray-100 hover:bg-red-100 border border-red-200'
+                }`}
                 disabled={!user}
               >
                 <ThumbsDown
                   className={`h-5 w-5 ${
-                    discussion.downvotes.includes(user?.id || '') ? 'text-red-600' : 'text-gray-400'
+                    user && hasUserVoted(discussion.downvotes, user.id) ? 'text-white' : 'text-red-600'
                   }`}
                 />
               </button>
@@ -242,25 +275,39 @@ const DiscussionDetail: React.FC = () => {
                 
                 <div className="flex items-center space-x-2 ml-4">
                   <button
-                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    onClick={() => handleCommentVote(comment._id, 'up')}
+                    className={`p-1 rounded-full transition-all duration-200 ${
+                      !user 
+                        ? 'bg-gray-50 cursor-not-allowed' 
+                        : user && hasUserVoted(comment.upvotes, user.id)
+                        ? 'bg-green-500 hover:bg-green-600 shadow-sm transform hover:scale-110'
+                        : 'bg-gray-50 hover:bg-green-50 border border-green-200'
+                    }`}
                     disabled={!user}
                   >
                     <ThumbsUp
                       className={`h-4 w-4 ${
-                        comment.upvotes.includes(user?.id || '') ? 'text-green-600' : 'text-gray-400'
+                        user && hasUserVoted(comment.upvotes, user.id) ? 'text-white' : 'text-green-600'
                       }`}
                     />
                   </button>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm font-medium text-gray-700 px-2 py-1 bg-gray-100 rounded-md min-w-[24px] text-center">
                     {comment.upvotes.length - comment.downvotes.length}
                   </span>
                   <button
-                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    onClick={() => handleCommentVote(comment._id, 'down')}
+                    className={`p-1 rounded-full transition-all duration-200 ${
+                      !user 
+                        ? 'bg-gray-50 cursor-not-allowed' 
+                        : user && hasUserVoted(comment.downvotes, user.id)
+                        ? 'bg-red-500 hover:bg-red-600 shadow-sm transform hover:scale-110'
+                        : 'bg-gray-50 hover:bg-red-50 border border-red-200'
+                    }`}
                     disabled={!user}
                   >
                     <ThumbsDown
                       className={`h-4 w-4 ${
-                        comment.downvotes.includes(user?.id || '') ? 'text-red-600' : 'text-gray-400'
+                        user && hasUserVoted(comment.downvotes, user.id) ? 'text-white' : 'text-red-600'
                       }`}
                     />
                   </button>

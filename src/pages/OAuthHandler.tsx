@@ -27,8 +27,8 @@ const OAuthHandler = () => {
           const user = await res.json();
           setUser && setUser({ ...user, id: user._id });
           window.history.replaceState({}, document.title, window.location.pathname);
-          // Force a reload to update all UI (including Navbar)
-          window.location.replace('/');
+          // Navigate using React Router instead of forcing page reload
+          navigate('/', { replace: true });
         } catch {
           localStorage.removeItem('token');
           navigate('/login', { replace: true });

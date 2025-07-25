@@ -82,6 +82,16 @@ const userSchema = new mongoose.Schema({
     percentile: { type: Number, default: 0 } // 98 = top 2%
   },
 
+  // Coin System
+  coins: { type: Number, default: 0 },
+  
+  // Problem of the Day Tracking
+  solvedPOTD: [{
+    problemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Problem' },
+    date: { type: Date },
+    coinsEarned: { type: Number, default: 10 }
+  }],
+
   // Progress Trackers
   solvedProblems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Problem' }],
   bookmarkedProblems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Problem' }],

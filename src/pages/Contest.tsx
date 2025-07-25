@@ -41,7 +41,7 @@ const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: 
   className = "",
   onClick,
 }) => (
-  <div className={`bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 ${className}`} onClick={onClick}>
+  <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 ${className}`} onClick={onClick}>
     {children}
   </div>
 )
@@ -59,11 +59,11 @@ const CardFooter: React.FC<{ children: React.ReactNode; className?: string }> = 
 )
 
 const CardTitle: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
-  <h3 className={`text-xl font-bold leading-tight tracking-tight ${className}`}>{children}</h3>
+  <h3 className={`text-xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white ${className}`}>{children}</h3>
 )
 
 const CardDescription: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
-  <p className={`text-sm text-gray-600 leading-relaxed ${className}`}>{children}</p>
+  <p className={`text-sm text-gray-600 dark:text-gray-300 leading-relaxed ${className}`}>{children}</p>
 )
 
 // Custom Button Component
@@ -279,14 +279,14 @@ const Contest: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading contests...</p>
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Loading contests...</p>
         </div>
       </div>
     )
   }
   console.log("here");
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -295,7 +295,7 @@ const Contest: React.FC = () => {
               <Trophy className="h-12 w-12 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-700 dark:text-gray-700 mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-700 dark:text-white mb-4">
             Programming Contests
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
@@ -305,7 +305,7 @@ const Contest: React.FC = () => {
 
         {/* Filter Tabs */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-2 inline-flex space-x-2">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2 inline-flex space-x-2">
             {[
               { id: "all", label: "All Contests", icon: Trophy },
               { id: "upcoming", label: "Upcoming", icon: Calendar },
@@ -320,7 +320,7 @@ const Contest: React.FC = () => {
                   className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                     filter === tab.id
                       ? "bg-blue-600 text-white shadow-md"
-                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                      : "text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700"
                   }`}
                 >
                   <Icon className="h-4 w-4 mr-2" />
@@ -367,7 +367,7 @@ const Contest: React.FC = () => {
                 </div>
 
                 <CardHeader>
-                  <CardTitle className="text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                  <CardTitle className="text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-2">
                     {contest.name}
                   </CardTitle>
                   <CardDescription className="line-clamp-3 mt-2">
@@ -459,7 +459,7 @@ const Contest: React.FC = () => {
                   {/* Leaderboard Preview for Ended Contests */}
                   {actualStatus === "ended" && contest.participants.length > 0 && (
                     <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                         <Award className="h-4 w-4 mr-2 text-yellow-500" />
                         Top Performers
                       </h4>
@@ -480,7 +480,7 @@ const Contest: React.FC = () => {
                                 }`}>
                                   {participant.rank}
                                 </span>
-                                <span className="ml-2 text-sm font-medium text-gray-900">
+                                <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">
                                   {participant.user?.username || "Unknown"}
                                 </span>
                               </div>
@@ -574,7 +574,7 @@ const Contest: React.FC = () => {
           <div className="text-center py-16">
             <div className="bg-white rounded-xl shadow-lg p-12 max-w-md mx-auto">
               <Trophy className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No contests found</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No contests found</h3>
               <p className="text-gray-600">
                 {filter === "all" 
                   ? "There are no contests available at the moment. Check back later!" 

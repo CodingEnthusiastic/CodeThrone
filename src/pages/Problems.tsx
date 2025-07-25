@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
-import { Search, Filter, Code, CheckCircle, Clock } from 'lucide-react';
+import { Search, Filter, CheckCircle, Star, Trophy } from 'lucide-react';
 
 interface Problem {
   _id: string;
@@ -15,11 +15,19 @@ interface Problem {
   companies: string[];
 }
 
+interface POTD {
+  problem: Problem;
+  date: string;
+  solvedCount: number;
+}
+
 const Problems: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [solvedProblems, setSolvedProblems] = useState<Set<string>>(new Set());
+  const [potd, setPotd] = useState<POTD | null>(null);
+  const [hasSolvedPOTD, setHasSolvedPOTD] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState(searchParams.get('difficulty') || '');
@@ -36,8 +44,10 @@ const Problems: React.FC = () => {
     if (tags) setSelectedTag(tags);
     
     fetchProblems();
+    fetchPOTD();
     if (user) {
       fetchSolvedProblems();
+      fetchPOTDStatus();
     }
   }, [currentPage, selectedDifficulty, selectedTag, user, searchParams]);
 
@@ -69,21 +79,54 @@ const Problems: React.FC = () => {
     
     try {
       const response = await axios.get(`http://localhost:5000/api/profile/${user.username}/solved`);
-      const solved = new Set(response.data.solvedProblems.map((p: any) => p._id));
+      const solved = new Set<string>(response.data.solvedProblems.map((p: any) => p._id as string));
       setSolvedProblems(solved);
     } catch (error) {
       console.error('Error fetching solved problems:', error);
     }
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'Easy': return 'text-green-600 bg-green-100';
-      case 'Medium': return 'text-yellow-600 bg-yellow-100';
-      case 'Hard': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+  const fetchPOTD = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/potd/today');
+      setPotd(response.data);
+    } catch (error) {
+      console.error('Error fetching POTD:', error);
     }
   };
+
+  const fetchPOTDStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/potd/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setHasSolvedPOTD(response.data.hasSolvedToday);
+    } catch (error) {
+      console.error('Error fetching POTD status:', error);
+    }
+  };
+
+  // Function to refresh POTD status and user data after solving
+  const refreshAfterSolve = async () => {
+    if (user) {
+      await fetchPOTDStatus();
+      await refreshUser(); // Refresh user data to get updated coins
+      await fetchSolvedProblems(); // Refresh solved problems
+    }
+  };
+
+  // Add event listener for problem solve events
+  useEffect(() => {
+    const handleProblemSolved = () => {
+      refreshAfterSolve();
+    };
+
+    window.addEventListener('problemSolved', handleProblemSolved);
+    return () => window.removeEventListener('problemSolved', handleProblemSolved);
+  }, [user]);
 
   const filteredProblems = problems.filter(problem =>
     problem.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -106,6 +149,77 @@ const Problems: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Problems</h1>
           <p className="text-gray-600 dark:text-gray-300">Practice coding problems and improve your skills</p>
         </div>
+
+        {/* Problem of the Day */}
+        {potd && (
+          <div className="bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-orange-900/20 rounded-2xl shadow-lg border border-yellow-200/50 dark:border-yellow-600/30 p-6 mb-6 backdrop-blur-sm">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-4">
+                  <div className="flex items-center justify-center w-10 h-10 bg-yellow-100 dark:bg-yellow-800/50 rounded-full mr-3">
+                    <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400 fill-current" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-yellow-900 dark:text-yellow-100">Problem of the Day</h2>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Solve today's challenge and earn coins!</p>
+                  </div>
+                  <span className="ml-auto px-3 py-1.5 bg-yellow-200 dark:bg-yellow-700 text-yellow-800 dark:text-yellow-200 text-sm font-semibold rounded-full shadow-sm">
+                    +10 Coins
+                  </span>
+                </div>
+                
+                <div className="bg-white/60 dark:bg-gray-800/40 rounded-xl p-4 mb-4 border border-yellow-200/30 dark:border-yellow-600/20">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                    {potd.problem.title}
+                  </h3>
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-sm ${
+                      potd.problem.difficulty === 'Easy' 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-800/50 dark:text-green-200 border border-green-200 dark:border-green-600/30' 
+                        : potd.problem.difficulty === 'Medium' 
+                        ? 'bg-orange-100 text-orange-800 dark:bg-orange-800/50 dark:text-orange-200 border border-orange-200 dark:border-orange-600/30' 
+                        : 'bg-red-100 text-red-800 dark:bg-red-800/50 dark:text-red-200 border border-red-200 dark:border-red-600/30'
+                    }`}>
+                      {potd.problem.difficulty}
+                    </span>
+                    {potd.problem.tags && potd.problem.tags.slice(0, 3).map((tag: string) => (
+                      <span key={tag} className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm rounded-full border border-blue-200/50 dark:border-blue-600/30">
+                        {tag}
+                      </span>
+                    ))}
+                    {potd.problem.tags && potd.problem.tags.length > 3 && (
+                      <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 text-sm rounded-full border border-gray-200 dark:border-gray-600/30">
+                        +{potd.problem.tags.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="ml-6 flex flex-col items-end">
+                {hasSolvedPOTD ? (
+                  <div className="flex items-center px-4 py-3 bg-green-100 dark:bg-green-800/50 text-green-800 dark:text-green-200 rounded-xl font-medium shadow-sm border border-green-200 dark:border-green-600/30">
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Completed Today
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => window.open(`/problems/${potd.problem._id}`, '_blank')}
+                    className="flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 dark:from-yellow-600 dark:to-amber-600 dark:hover:from-yellow-700 dark:hover:to-amber-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    <Trophy className="h-5 w-5 mr-2" />
+                    Solve Now
+                  </button>
+                )}
+                <div className="mt-3 text-center">
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">
+                    {potd.solvedCount || 0} solved today
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
@@ -282,7 +396,7 @@ const Problems: React.FC = () => {
                   onClick={() => setCurrentPage(pageNum)}
                   className={`px-3 py-1 border rounded-md ${
                     currentPage === pageNum
-                      ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:text-gray-900 dark:border-blue-400'
+                      ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:text-white dark:border-blue-400'
                       : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100'
                   }`}
                 >

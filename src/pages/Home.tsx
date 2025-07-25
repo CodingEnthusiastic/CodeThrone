@@ -26,6 +26,8 @@ import {
   Rocket,
   Brain,
   Building2,
+  Gift,
+  Award,
 } from "lucide-react"
 import { GoMail } from "react-icons/go"
 
@@ -126,8 +128,13 @@ interface LeaderboardEntry {
   winRate: number
 }
 
+interface UserCoins {
+  coins: number
+  totalEarned: number
+}
+
 const Home: React.FC = () => {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { isDark } = useTheme()
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [contests, setContests] = useState<Contest[]>([])
@@ -136,6 +143,7 @@ const Home: React.FC = () => {
   const [topicStats, setTopicStats] = useState<TopicStats[]>([])
   const [companyStats, setCompanyStats] = useState<CompanyStats[]>([])
   const [statsLoading, setStatsLoading] = useState(true)
+  const [userCoins, setUserCoins] = useState<UserCoins>({ coins: 0, totalEarned: 0 })
   const [stats, setStats] = useState<PlatformStats>({
     totalUsers: 0,
     totalProblems: 0,
@@ -176,17 +184,22 @@ const Home: React.FC = () => {
       description: "Practice technical interviews with AI-powered questions and feedback",
       image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800",
       features: ["AI Questions", "Voice Interaction", "Real-time Feedback"],
-      gradient: "from-indigo-500 via-blue-500 to-cyan-500",
+      gradient: "from-gray-800 via-slate-800 to-gray-900",
     },
   ]
 
   useEffect(() => {
+    // Fetch data when component mounts, regardless of auth state
+    // The data fetching functions should handle auth internally
     console.log("🔄 Home useEffect triggered")
     fetchData()
     fetchTopicStats()
     fetchCompanyStats()
     fetchPlatformData()
-  }, [])
+    if (user) {
+      fetchUserCoins()
+    }
+  }, [user])
 
   // Auto-slide carousel
   useEffect(() => {
@@ -195,6 +208,25 @@ const Home: React.FC = () => {
     }, 5000)
     return () => clearInterval(timer)
   }, [carouselItems.length])
+
+  const fetchUserCoins = async () => {
+    try {
+      // Use coins directly from AuthContext user object (same as Navbar)
+      if (user) {
+        setUserCoins({
+          coins: user.coins || 0,
+          totalEarned: user.coins || 0 // Using coins as totalEarned since no separate field exists
+        })
+        console.log('💰 Updated userCoins from AuthContext:', { coins: user.coins || 0, totalEarned: user.coins || 0 })
+      } else {
+        setUserCoins({ coins: 0, totalEarned: 0 })
+        console.log('💰 No user found, setting coins to 0')
+      }
+    } catch (error) {
+      console.error('Failed to set user coins:', error)
+      setUserCoins({ coins: 0, totalEarned: 0 })
+    }
+  }
 
   const fetchPlatformData = async () => {
     try {
@@ -299,7 +331,7 @@ const Home: React.FC = () => {
     } catch (error) {
       console.error("❌ Error fetching topic stats:", error)
       // Fallback data
-      if (process.env.NODE_ENV === 'development') {
+      if (typeof window !== 'undefined') {
       setTopicStats([
         { topic: "Array", count: 245, avgAcceptanceRate: 52.3, easyCount: 89, mediumCount: 124, hardCount: 32 },
         {
@@ -618,16 +650,37 @@ const Home: React.FC = () => {
     }))
   }
 
+  const getTopCompanies = () => {
+    const companyMap = companyStats.reduce((acc, company) => {
+      acc[company.company] = company
+      return acc
+    }, {} as Record<string, CompanyStats>)
+
+    const topCompanyConfigs = [
+      { name: "Google", icon: "🏢", color: "from-blue-600 to-red-500" },
+      { name: "Microsoft", icon: "💻", color: "from-blue-600 to-cyan-500" },
+      { name: "Amazon", icon: "📦", color: "from-orange-500 to-yellow-500" },
+      { name: "Apple", icon: "🍎", color: "from-gray-800 to-gray-600" },
+      { name: "Meta", icon: "👥", color: "from-blue-600 to-purple-600" },
+      { name: "Netflix", icon: "🎬", color: "from-red-600 to-black" }
+    ]
+
+    return topCompanyConfigs.map((config) => ({
+      ...config,
+      count: companyMap[config.name]?.count || 0,
+    }))
+  }
+
   const quickStats = [
     {
       label: "Problems Solved",
-      value: user ? user.stats.problemsSolved.total + " problems" : "Sign In to Check",
+      value: user ? `${user.stats?.problemsSolved?.total || 0} problems` : "Sign In to Check",
       icon: <Code className="h-5 w-5" />,
       color: "from-blue-500 to-cyan-500",
     },
     {
       label: "Total Submissions",
-      value: user ? user.submissions.length + " submissions" : "Start Now",
+      value: user ? `${user.stats?.totalSubmissions + user.stats?.correctSubmissions || 0} submissions` : "Start Now",
       icon: <Star className="h-5 w-5" />,
       color: "from-purple-500 to-pink-500",
     },
@@ -635,89 +688,698 @@ const Home: React.FC = () => {
 
   const exploreCards = getExploreCards()
   const companies = getCompanies()
+  const topCompanies = getTopCompanies()
+
+  // Show loading spinner only if we're in the initial loading state and don't know auth status yet
+  const isInitialLoading = authLoading && user === null && !localStorage.getItem('token');
+  
+  if (isInitialLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
+      className={`min-h-screen transition-colors duration-300 relative ${
         isDark
           ? "bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900"
           : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
       }`}
     >
+      {/* Beautiful Falling White Balls Animation for Dark Mode */}
+      {isDark && (
+        <>
+          <style>{`
+            @keyframes fall {
+              0% {
+                transform: translateY(-100vh) translateX(0px);
+                opacity: 0;
+              }
+              10% {
+                opacity: 1;
+              }
+              90% {
+                opacity: 1;
+              }
+              100% {
+                transform: translateY(100vh) translateX(100px);
+                opacity: 0;
+              }
+            }
+            @keyframes float-gentle {
+              0%, 100% {
+                transform: translateY(0px) translateX(0px);
+              }
+              25% {
+                transform: translateY(-20px) translateX(10px);
+              }
+              50% {
+                transform: translateY(-10px) translateX(-5px);
+              }
+              75% {
+                transform: translateY(-30px) translateX(15px);
+              }
+            }
+            @keyframes sparkle {
+              0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+              50% { opacity: 1; transform: scale(1) rotate(180deg); }
+            }
+            @keyframes orbit {
+              0% { transform: rotate(0deg) translateX(100px) rotate(0deg); }
+              100% { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
+            }
+            @keyframes morphing-blob {
+              0%, 100% { 
+                border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+                transform: translate(0, 0) scale(1);
+              }
+              25% { 
+                border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+                transform: translate(30px, -50px) scale(1.1);
+              }
+              50% { 
+                border-radius: 50% 60% 30% 40% / 30% 40% 80% 20%;
+                transform: translate(-20px, 20px) scale(0.9);
+              }
+              75% { 
+                border-radius: 80% 20% 60% 40% / 40% 70% 30% 60%;
+                transform: translate(50px, 10px) scale(1.05);
+              }
+            }
+            @keyframes wave-motion {
+              0%, 100% { 
+                clip-path: polygon(0% 47%, 10% 48%, 33% 54%, 54% 60%, 70% 61%, 84% 59%, 100% 52%, 100% 100%, 0% 100%);
+                opacity: 0.2;
+              }
+              50% { 
+                clip-path: polygon(0% 60%, 15% 65%, 34% 66%, 51% 62%, 67% 50%, 84% 45%, 100% 46%, 100% 100%, 0% 100%);
+                opacity: 0.3;
+              }
+            }
+            @keyframes subtle-wave {
+              0%, 100% {
+                background-position: 0% 50%;
+                opacity: 0.1;
+              }
+              50% {
+                background-position: 100% 50%;
+                opacity: 0.2;
+              }
+            }
+            @keyframes text-glow {
+              0%, 100% { 
+                text-shadow: 0 0 5px rgba(59, 130, 246, 0.3), 0 0 10px rgba(59, 130, 246, 0.2);
+              }
+              50% { 
+                text-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2);
+              }
+            }
+            @keyframes premium-text-wave {
+              0%, 100% { 
+                background-position: 0% 50%;
+                text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 255, 255, 0.2);
+              }
+              25% {
+                background-position: 25% 50%;
+                text-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 0 40px rgba(255, 255, 255, 0.3);
+              }
+              50% { 
+                background-position: 100% 50%;
+                text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 50px rgba(255, 255, 255, 0.4);
+              }
+              75% {
+                background-position: 75% 50%;
+                text-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 0 40px rgba(255, 255, 255, 0.3);
+              }
+            }
+            @keyframes elegant-float {
+              0%, 100% { 
+                transform: translateY(0px) scale(1);
+                filter: brightness(1);
+              }
+              50% { 
+                transform: translateY(-5px) scale(1.02);
+                filter: brightness(1.1);
+              }
+            }
+            @keyframes gradient-text-shift {
+              0%, 100% { 
+                background-position: 0% 50%;
+              }
+              50% { 
+                background-position: 100% 50%;
+              }
+            }
+            @keyframes text-shimmer {
+              0% {
+                background-position: -200% 0;
+              }
+              100% {
+                background-position: 200% 0;
+              }
+            }
+            @keyframes particle-float {
+              0% { transform: translateY(0px) translateX(0px) rotate(0deg); opacity: 0; }
+              10% { opacity: 1; }
+              90% { opacity: 1; }
+              100% { transform: translateY(-100px) translateX(50px) rotate(360deg); opacity: 0; }
+            }
+            @keyframes gradient-shift {
+              0%, 100% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+            }
+            @keyframes card-entrance {
+              0% { 
+                opacity: 0; 
+                transform: translateY(30px) scale(0.95) rotateX(10deg);
+                filter: blur(5px);
+              }
+              100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1) rotateX(0deg);
+                filter: blur(0px);
+              }
+            }
+            @keyframes magnetic-pull {
+              0%, 100% { transform: scale(1) rotate(0deg); }
+              25% { transform: scale(1.05) rotate(1deg); }
+              50% { transform: scale(1.1) rotate(-1deg); }
+              75% { transform: scale(1.05) rotate(0.5deg); }
+            }
+            .falling-ball {
+              animation: fall linear infinite;
+            }
+            .floating-ball {
+              animation: float-gentle 4s ease-in-out infinite;
+            }
+            .sparkle-particle {
+              animation: sparkle 2s ease-in-out infinite;
+            }
+            .orbit-element {
+              animation: orbit 20s linear infinite;
+            }
+            .morphing-blob {
+              animation: morphing-blob 8s ease-in-out infinite;
+            }
+            .wave-effect {
+              animation: wave-motion 6s ease-in-out infinite;
+            }
+            .subtle-wave {
+              animation: subtle-wave 8s ease-in-out infinite;
+              background-size: 200% 200%;
+            }
+            .text-glow-effect {
+              animation: text-glow 3s ease-in-out infinite;
+            }
+            .premium-text-wave {
+              animation: premium-text-wave 6s ease-in-out infinite;
+              background-size: 200% 200%;
+            }
+            .elegant-float {
+              animation: elegant-float 4s ease-in-out infinite;
+            }
+            .gradient-text-shift {
+              animation: gradient-text-shift 4s ease-in-out infinite;
+              background-size: 200% 200%;
+            }
+            .text-shimmer {
+              background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 0) 100%
+              );
+              background-size: 200% 100%;
+              animation: text-shimmer 3s infinite;
+              -webkit-background-clip: text;
+              background-clip: text;
+            }
+            .particle-system {
+              animation: particle-float 4s ease-out infinite;
+            }
+            .gradient-animate {
+              animation: gradient-shift 4s ease infinite;
+              background-size: 400% 400%;
+            }
+            .card-animate-in {
+              animation: card-entrance 0.6s ease-out forwards;
+            }
+            .magnetic-hover:hover {
+              animation: magnetic-pull 0.6s ease-in-out;
+            }
+          `}</style>
+          
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            {/* Morphing Background Blobs */}
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 morphing-blob"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-gradient-to-br from-purple-500/10 to-pink-500/10 morphing-blob" style={{ animationDelay: '4s' }}></div>
+            
+            {/* Orbiting Elements */}
+            <div className="absolute top-1/2 left-1/2 w-2 h-2">
+              <div className="orbit-element absolute w-1 h-1 bg-white/20 rounded-full"></div>
+            </div>
+            <div className="absolute top-1/3 left-1/3 w-3 h-3">
+              <div className="orbit-element absolute w-1.5 h-1.5 bg-white/15 rounded-full" style={{ animationDelay: '10s', animationDuration: '30s' }}></div>
+            </div>
+            
+            {/* Sparkle Particles */}
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div
+                key={`sparkle-${i}`}
+                className="sparkle-particle absolute w-1 h-1 bg-white/30 rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${2 + Math.random() * 1}s`,
+                }}
+              />
+            ))}
+            
+            {/* Floating Particle System */}
+            {Array.from({ length: 25 }).map((_, i) => (
+              <div
+                key={`particle-${i}`}
+                className="particle-system absolute w-0.5 h-0.5 bg-white/20 rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  bottom: '-10px',
+                  animationDelay: `${Math.random() * 4}s`,
+                  animationDuration: `${4 + Math.random() * 2}s`,
+                }}
+              />
+            ))}
+
+            {/* Large Falling Balls */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={`large-${i}`}
+                className="falling-ball absolute w-3 h-3 bg-white/20 rounded-full blur-sm"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDuration: `${8 + Math.random() * 4}s`,
+                  animationDelay: `${Math.random() * 8}s`,
+                }}
+              />
+            ))}
+            
+            {/* Medium Falling Balls */}
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={`medium-${i}`}
+                className="falling-ball absolute w-2 h-2 bg-white/15 rounded-full blur-sm"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDuration: `${6 + Math.random() * 3}s`,
+                  animationDelay: `${Math.random() * 6}s`,
+                }}
+              />
+            ))}
+            
+            {/* Small Falling Balls */}
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={`small-${i}`}
+                className="falling-ball absolute w-1 h-1 bg-white/10 rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDuration: `${4 + Math.random() * 2}s`,
+                  animationDelay: `${Math.random() * 4}s`,
+                }}
+              />
+            ))}
+            
+            {/* Floating Ambient Balls */}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={`floating-${i}`}
+                className="floating-ball absolute w-4 h-4 bg-white/5 rounded-full blur-md"
+                style={{
+                  left: `${20 + Math.random() * 60}%`,
+                  top: `${20 + Math.random() * 60}%`,
+                  animationDelay: `${Math.random() * 4}s`,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Beautiful Light Mode Animations */}
+      {!isDark && (
+        <>
+          <style>{`
+            @keyframes light-float {
+              0%, 100% {
+                transform: translateY(0px) translateX(0px) rotate(0deg);
+                opacity: 0.6;
+              }
+              25% {
+                transform: translateY(-15px) translateX(8px) rotate(90deg);
+                opacity: 0.8;
+              }
+              50% {
+                transform: translateY(-8px) translateX(-4px) rotate(180deg);
+                opacity: 1;
+              }
+              75% {
+                transform: translateY(-25px) translateX(12px) rotate(270deg);
+                opacity: 0.7;
+              }
+            }
+            @keyframes light-sparkle {
+              0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+              50% { opacity: 0.8; transform: scale(1.2) rotate(180deg); }
+            }
+            @keyframes light-orbit {
+              0% { transform: rotate(0deg) translateX(80px) rotate(0deg); }
+              100% { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
+            }
+            @keyframes light-morph {
+              0%, 100% { 
+                border-radius: 50% 60% 40% 70% / 60% 40% 70% 50%;
+                transform: translate(0, 0) scale(1) rotate(0deg);
+              }
+              25% { 
+                border-radius: 40% 70% 60% 50% / 50% 70% 40% 60%;
+                transform: translate(20px, -30px) scale(1.05) rotate(90deg);
+              }
+              50% { 
+                border-radius: 60% 50% 40% 60% / 40% 50% 70% 30%;
+                transform: translate(-15px, 15px) scale(0.95) rotate(180deg);
+              }
+              75% { 
+                border-radius: 70% 40% 50% 60% / 50% 60% 40% 70%;
+                transform: translate(35px, 8px) scale(1.02) rotate(270deg);
+              }
+            }
+            @keyframes color-shift {
+              0%, 100% { 
+                background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+              }
+              25% { 
+                background: linear-gradient(45deg, rgba(236, 72, 153, 0.1), rgba(59, 130, 246, 0.1));
+              }
+              50% { 
+                background: linear-gradient(45deg, rgba(34, 197, 94, 0.1), rgba(236, 72, 153, 0.1));
+              }
+              75% { 
+                background: linear-gradient(45deg, rgba(251, 191, 36, 0.1), rgba(34, 197, 94, 0.1));
+              }
+            }
+            @keyframes gentle-rise {
+              0% { transform: translateY(100px) translateX(0px) rotate(0deg); opacity: 0; }
+              10% { opacity: 0.6; }
+              90% { opacity: 0.6; }
+              100% { transform: translateY(-100px) translateX(30px) rotate(360deg); opacity: 0; }
+            }
+            @keyframes light-hover-glow {
+              0%, 100% { 
+                box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1), 0 5px 15px rgba(147, 51, 234, 0.1);
+                transform: translateY(0px) scale(1);
+              }
+              50% { 
+                box-shadow: 0 20px 50px rgba(59, 130, 246, 0.2), 0 10px 25px rgba(147, 51, 234, 0.2);
+                transform: translateY(-5px) scale(1.02);
+              }
+            }
+            @keyframes light-card-shimmer {
+              0% {
+                background-position: -200% 0;
+              }
+              100% {
+                background-position: 200% 0;
+              }
+            }
+            @keyframes light-border-dance {
+              0%, 100% { 
+                border-color: rgba(59, 130, 246, 0.3);
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+              }
+              25% { 
+                border-color: rgba(147, 51, 234, 0.4);
+                box-shadow: 0 0 25px rgba(147, 51, 234, 0.15);
+              }
+              50% { 
+                border-color: rgba(236, 72, 153, 0.4);
+                box-shadow: 0 0 30px rgba(236, 72, 153, 0.2);
+              }
+              75% { 
+                border-color: rgba(34, 197, 94, 0.4);
+                box-shadow: 0 0 25px rgba(34, 197, 94, 0.15);
+              }
+            }
+            .light-floating {
+              animation: light-float 5s ease-in-out infinite;
+            }
+            .light-sparkle {
+              animation: light-sparkle 2.5s ease-in-out infinite;
+            }
+            .light-orbit {
+              animation: light-orbit 25s linear infinite;
+            }
+            .light-morph {
+              animation: light-morph 10s ease-in-out infinite;
+            }
+            .color-shift {
+              animation: color-shift 8s ease-in-out infinite;
+            }
+            .gentle-rise {
+              animation: gentle-rise 6s ease-out infinite;
+            }
+            .light-hover-glow:hover {
+              animation: light-hover-glow 0.6s ease-in-out;
+            }
+            .light-card-shimmer {
+              background: linear-gradient(
+                90deg,
+                rgba(59, 130, 246, 0) 0%,
+                rgba(59, 130, 246, 0.1) 25%,
+                rgba(147, 51, 234, 0.1) 50%,
+                rgba(236, 72, 153, 0.1) 75%,
+                rgba(59, 130, 246, 0) 100%
+              );
+              background-size: 200% 100%;
+              animation: light-card-shimmer 3s infinite;
+            }
+            .light-border-dance {
+              animation: light-border-dance 4s ease-in-out infinite;
+            }
+          `}</style>
+          
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            {/* Light Mode Morphing Blobs */}
+            <div className="absolute top-1/5 left-1/5 w-72 h-72 bg-gradient-to-br from-blue-200/20 to-purple-200/20 light-morph rounded-full blur-2xl"></div>
+            <div className="absolute bottom-1/5 right-1/5 w-56 h-56 bg-gradient-to-br from-pink-200/20 to-orange-200/20 light-morph rounded-full blur-2xl" style={{ animationDelay: '5s' }}></div>
+            <div className="absolute top-1/2 left-1/2 w-40 h-40 bg-gradient-to-br from-green-200/15 to-blue-200/15 light-morph rounded-full blur-xl" style={{ animationDelay: '2.5s' }}></div>
+            
+            {/* Additional Background Blobs */}
+            <div className="absolute top-1/4 right-1/3 w-64 h-64 bg-gradient-to-br from-cyan-200/15 to-teal-200/15 light-morph rounded-full blur-2xl" style={{ animationDelay: '7s' }}></div>
+            <div className="absolute bottom-1/3 left-1/4 w-48 h-48 bg-gradient-to-br from-yellow-200/20 to-amber-200/20 light-morph rounded-full blur-xl" style={{ animationDelay: '3.5s' }}></div>
+            <div className="absolute top-3/4 right-1/4 w-32 h-32 bg-gradient-to-br from-indigo-200/20 to-violet-200/20 light-morph rounded-full blur-lg" style={{ animationDelay: '6s' }}></div>
+            
+            {/* Orbiting Colored Elements */}
+            <div className="absolute top-1/3 left-1/2 w-3 h-3">
+              <div className="light-orbit absolute w-2 h-2 bg-gradient-to-r from-blue-400/40 to-purple-400/40 rounded-full shadow-lg"></div>
+            </div>
+            <div className="absolute top-2/3 left-1/3 w-4 h-4">
+              <div className="light-orbit absolute w-2.5 h-2.5 bg-gradient-to-r from-pink-400/40 to-orange-400/40 rounded-full shadow-lg" style={{ animationDelay: '12s', animationDuration: '35s' }}></div>
+            </div>
+            <div className="absolute top-1/6 right-1/4 w-3 h-3">
+              <div className="light-orbit absolute w-1.5 h-1.5 bg-gradient-to-r from-green-400/40 to-cyan-400/40 rounded-full shadow-lg" style={{ animationDelay: '8s', animationDuration: '20s' }}></div>
+            </div>
+            
+            {/* Colorful Sparkle Particles */}
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={`light-sparkle-${i}`}
+                className={`light-sparkle absolute w-1.5 h-1.5 rounded-full ${
+                  i % 6 === 0 ? 'bg-blue-400/60' :
+                  i % 6 === 1 ? 'bg-purple-400/60' :
+                  i % 6 === 2 ? 'bg-pink-400/60' :
+                  i % 6 === 3 ? 'bg-green-400/60' :
+                  i % 6 === 4 ? 'bg-yellow-400/60' : 'bg-cyan-400/60'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2.5}s`,
+                  animationDuration: `${2.5 + Math.random() * 1.5}s`,
+                }}
+              />
+            ))}
+            
+            {/* Gentle Rising Particles */}
+            {Array.from({ length: 25 }).map((_, i) => (
+              <div
+                key={`gentle-rise-${i}`}
+                className={`gentle-rise absolute w-1 h-1 rounded-full ${
+                  i % 6 === 0 ? 'bg-blue-300/50' :
+                  i % 6 === 1 ? 'bg-purple-300/50' :
+                  i % 6 === 2 ? 'bg-pink-300/50' :
+                  i % 6 === 3 ? 'bg-green-300/50' :
+                  i % 6 === 4 ? 'bg-yellow-300/50' : 'bg-cyan-300/50'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  bottom: '-10px',
+                  animationDelay: `${Math.random() * 6}s`,
+                  animationDuration: `${6 + Math.random() * 3}s`,
+                }}
+              />
+            ))}
+
+            {/* Large Floating Elements */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={`light-large-${i}`}
+                className={`light-floating absolute w-4 h-4 rounded-full blur-sm ${
+                  i % 4 === 0 ? 'bg-gradient-to-br from-blue-200/30 to-purple-200/30' :
+                  i % 4 === 1 ? 'bg-gradient-to-br from-pink-200/30 to-orange-200/30' :
+                  i % 4 === 2 ? 'bg-gradient-to-br from-green-200/30 to-blue-200/30' :
+                  'bg-gradient-to-br from-yellow-200/30 to-cyan-200/30'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDuration: `${5 + Math.random() * 3}s`,
+                  animationDelay: `${Math.random() * 5}s`,
+                }}
+              />
+            ))}
+            
+            {/* Medium Floating Elements */}
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div
+                key={`light-medium-${i}`}
+                className={`light-floating absolute w-2.5 h-2.5 rounded-full blur-sm ${
+                  i % 5 === 0 ? 'bg-blue-300/25' :
+                  i % 5 === 1 ? 'bg-purple-300/25' :
+                  i % 5 === 2 ? 'bg-pink-300/25' :
+                  i % 5 === 3 ? 'bg-green-300/25' : 'bg-yellow-300/25'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDuration: `${4 + Math.random() * 2}s`,
+                  animationDelay: `${Math.random() * 4}s`,
+                }}
+              />
+            ))}
+            
+            {/* Color Shifting Background Elements */}
+            <div className="absolute top-0 right-0 w-96 h-96 color-shift rounded-full blur-3xl opacity-30"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 color-shift rounded-full blur-3xl opacity-25" style={{ animationDelay: '4s' }}></div>
+            <div className="absolute top-1/2 left-0 w-60 h-60 color-shift rounded-full blur-2xl opacity-20" style={{ animationDelay: '2s' }}></div>
+            <div className="absolute bottom-1/4 right-0 w-72 h-72 color-shift rounded-full blur-3xl opacity-15" style={{ animationDelay: '6s' }}></div>
+          </div>
+        </>
+      )}
+      
       {/* Hero Section with Enhanced Carousel */}
       <div className="relative overflow-hidden">
-        <div className={`absolute inset-0 bg-gradient-to-br ${carouselItems[currentSlide].gradient}`}></div>
+        <div className={`absolute inset-0 bg-gradient-to-br ${carouselItems[currentSlide].gradient} gradient-animate`}></div>
         <div className="absolute inset-0 bg-black/20"></div>
+        
+        {/* Subtle overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30 subtle-wave"></div>
 
-        {/* Animated background elements */}
+        {/* Enhanced Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse morphing-blob"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse morphing-blob" style={{ animationDelay: '4s' }}></div>
+          <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-2xl floating-ball"></div>
+          <div className="absolute bottom-1/4 right-1/3 w-24 h-24 bg-gradient-to-br from-pink-400/10 to-orange-400/10 rounded-full blur-2xl floating-ball" style={{ animationDelay: '2s' }}></div>
         </div>
 
         <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 pb-0 pt-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[700px]">
             {/* Left Content */}
-            <div className="z-10 space-y-8">
+            <div className="z-10 space-y-8 card-animate-in">
               <div className="space-y-6">
-                <h1 className="text-5xl md:text-8xl font-bold text-white leading-[1.2]">
-                  Master
-                  <span className="block pb-3 bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent leading-[1.25]">
-                    Programming
+                <h1 className="text-5xl md:text-8xl font-bold text-white leading-[1.2] relative elegant-float">
+                  <span className="relative inline-block premium-text-wave">
+                    Master
                   </span>
-                  <span className="block text-4xl md:text-5xl mt-2">Like Never Before</span>
+                  <span className="block pb-3 relative overflow-hidden leading-[1.25]">
+                    <span className="bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent gradient-text-shift font-extrabold relative">
+                      Programming
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent text-shimmer"></div>
+                    </span>
+                  </span>
+                  <span className="block text-4xl md:text-5xl mt-2 relative">
+                    <span className="premium-text-wave">Like Never Before</span>
+                  </span>
                 </h1>
 
-                <p className="text-xl md:text-2xl text-white/90 leading-relaxed max-w-2xl">
+                <p className="text-xl md:text-2xl text-white/90 leading-relaxed max-w-2xl card-animate-in" style={{ animationDelay: '0.2s' }}>
                   Join thousands of developers mastering coding skills through our comprehensive platform featuring
-                  <span className="font-semibold text-yellow-300"> interactive problems</span>,
-                  <span className="font-semibold text-green-300"> live contests</span>, and
-                  <span className="font-semibold text-blue-300"> real-time battles</span>.
+                  <span className="font-semibold text-yellow-300 animate-pulse"> interactive problems</span>,
+                  <span className="font-semibold text-green-300 animate-pulse" style={{ animationDelay: '0.5s' }}> live contests</span>, and
+                  <span className="font-semibold text-blue-300 animate-pulse" style={{ animationDelay: '1s' }}> real-time battles</span>.
                 </p>
               </div>
 
               {!user ? (
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 card-animate-in" style={{ animationDelay: '0.4s' }}>
                   <Link
                     to="/register"
-                    className="group relative overflow-hidden bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all duration-300 inline-flex items-center justify-center shadow-2xl hover:shadow-white/25 hover:scale-105"
+                    className="group relative overflow-hidden bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all duration-300 inline-flex items-center justify-center shadow-2xl hover:shadow-white/25 hover:scale-105 magnetic-hover"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300 gradient-animate"></div>
                     <Rocket className="mr-2 h-5 w-5 group-hover:animate-bounce" />
                     Start Your Journey
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                    
+                    {/* Button glow effect */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400/50 to-purple-400/50 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500"></div>
                   </Link>
                   <Link
                     to="/problems"
-                    className="group border-2 border-white/50 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white hover:text-gray-900 transition-all duration-300 inline-flex items-center justify-center backdrop-blur-sm hover:scale-105"
+                    className="group border-2 border-white/50 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white hover:text-gray-900 transition-all duration-300 inline-flex items-center justify-center backdrop-blur-sm hover:scale-105 magnetic-hover"
                   >
                     <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
                     Explore Problems
+                    
+                    {/* Border glow effect */}
+                    <div className="absolute inset-0 rounded-2xl border-2 border-white/70 opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300"></div>
                   </Link>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 card-animate-in" style={{ animationDelay: '0.4s' }}>
                   <Link
                     to="/problems"
-                    className="group relative overflow-hidden bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all duration-300 inline-flex items-center justify-center shadow-2xl hover:shadow-white/25 hover:scale-105"
+                    className="group relative overflow-hidden bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all duration-300 inline-flex items-center justify-center shadow-2xl hover:shadow-white/25 hover:scale-105 magnetic-hover"
                   >
                     <Brain className="mr-2 h-5 w-5 group-hover:animate-pulse" />
                     Continue Learning
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                    
+                    {/* Button glow effect */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400/50 to-purple-400/50 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500"></div>
                   </Link>
                   <Link
                     to="/contest"
-                    className="group border-2 border-white/50 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white hover:text-gray-900 transition-all duration-300 inline-flex items-center justify-center backdrop-blur-sm hover:scale-105"
+                    className="group border-2 border-white/50 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white hover:text-gray-900 transition-all duration-300 inline-flex items-center justify-center backdrop-blur-sm hover:scale-105 magnetic-hover"
                   >
                     <Trophy className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
                     Join Contest
+                    
+                    {/* Border glow effect */}
+                    <div className="absolute inset-0 rounded-2xl border-2 border-white/70 opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300"></div>
                   </Link>
                 </div>
               )}
             </div>
 
             {/* Right Carousel */}
-            <div className="relative">
+            <div className="relative card-animate-in" style={{ animationDelay: '0.6s' }}>
               <div className="relative h-96 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm border border-white/20">
                 {carouselItems.map((item, index) => (
                   <div
@@ -732,9 +1394,9 @@ const Home: React.FC = () => {
                         alt={item.title}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent gradient-animate"></div>
                       <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                        <h3 className="text-3xl font-bold mb-3 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                        <h3 className="text-3xl font-bold mb-3 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent text-glow-effect">
                           {item.title}
                         </h3>
                         <p className="text-white/90 mb-4 text-lg leading-relaxed">{item.description}</p>
@@ -742,7 +1404,7 @@ const Home: React.FC = () => {
                           {item.features.map((feature, idx) => (
                             <span
                               key={idx}
-                              className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium border border-white/30"
+                              className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium border border-white/30 hover:scale-105 transition-transform duration-300"
                             >
                               {feature}
                             </span>
@@ -798,23 +1460,25 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        {/* Enhanced Explore Section */}
-        <div className="mb-20">
-          <div className="text-center mb-12">
-            <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}>
-              Master Every
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                {" "}
-                Algorithm
-              </span>
-            </h2>
-            <p className={`text-xl max-w-3xl mx-auto ${isDark ? "text-gray-300" : "text-gray-600"}`}>
-              Discover curated problem sets and learning paths designed to take you from beginner to expert
-            </p>
-          </div>
-
-          <div className="overflow-x-auto scrollbar-hide">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          {/* Enhanced Explore Section */}
+          <div className="mb-20">
+            <div className="text-center mb-12">
+              <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}>
+                Master Every
+                <span className={`bg-gradient-to-r ${
+                  isDark 
+                    ? "from-blue-600 via-purple-600 to-pink-600" 
+                    : "from-blue-500 via-purple-500 to-pink-500"
+                } bg-clip-text text-transparent`}>
+                  {" "}
+                  Algorithm
+                </span>
+              </h2>
+              <p className={`text-xl max-w-3xl mx-auto ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                Discover curated problem sets and learning paths designed to take you from beginner to expert
+              </p>
+            </div>          <div className="overflow-x-auto scrollbar-hide">
             <div className="flex gap-6 pb-4" style={{ width: "max-content" }}>
               {exploreCards.map((card, index) => (
                 <Link
@@ -822,15 +1486,15 @@ const Home: React.FC = () => {
                   to={`/problems?tags=${encodeURIComponent(card.filter)}`}
                   className={`group relative overflow-hidden rounded-3xl transition-all duration-500 flex-shrink-0 w-80 h-72 md:h-80 hover:scale-105 hover:shadow-2xl ${
                     isDark
-                      ? "bg-gray-800/50 border-gray-700/50 hover:bg-gray-800/80"
-                      : "bg-white border-gray-200 hover:bg-gray-50"
-                  } border backdrop-blur-sm`}
+                      ? "bg-gray-800/50 border-2 border-white/30 hover:bg-gray-800/80 hover:border-white/50"
+                      : "bg-white/90 border-2 border-gray-200/60 hover:bg-white hover:border-gray-300/80 shadow-lg hover:shadow-xl"
+                  } backdrop-blur-sm`}
                 >
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-20 transition-all duration-500`}
-                  ></div>
-
-                  <div className="relative p-8 h-full flex flex-col justify-between">
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 ${
+                    isDark ? "group-hover:opacity-20" : "group-hover:opacity-15"
+                  } transition-all duration-500`}
+                ></div>                  <div className="relative p-8 h-full flex flex-col justify-between">
                     <div>
                       <div
                         className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br ${card.color} text-white mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg`}
@@ -868,6 +1532,259 @@ const Home: React.FC = () => {
           </div>
         </div>
 
+        {/* Enhanced Feature Cards - Coins & Certificates with Premium Animations */}
+        {user && (
+          <div className="mb-20">
+            <div className="text-center mb-12">
+              <h2 className={`text-3xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}>
+                <span className={`${
+                  isDark 
+                    ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent animate-pulse" 
+                    : "bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent animate-pulse"
+                }`}>
+                  Unlock Your Potential
+                </span>
+              </h2>
+              <div className="flex items-center justify-center space-x-2">
+                <div className={`w-12 h-[2px] bg-gradient-to-r from-transparent ${
+                  isDark ? "via-yellow-400" : "via-blue-500"
+                } to-transparent animate-pulse`}></div>
+                <div className={`w-2 h-2 ${
+                  isDark ? "bg-yellow-400" : "bg-blue-500"
+                } rounded-full animate-bounce`}></div>
+                <div className={`w-12 h-[2px] bg-gradient-to-r from-transparent ${
+                  isDark ? "via-orange-400" : "via-purple-500"
+                } to-transparent animate-pulse`}></div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Coins & Redeem Feature with Advanced Animations */}
+              <div className={`group relative overflow-hidden rounded-3xl transition-all duration-700 hover:scale-[1.03] transform-gpu ${
+                isDark 
+                  ? "bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 border-2 border-white/30 hover:border-white/50" 
+                  : "bg-gradient-to-br from-white via-yellow-50 to-orange-50 border-2 border-black/30 hover:border-black/50"
+              } shadow-2xl hover:shadow-3xl hover:shadow-yellow-500/20`}>
+                
+                {/* Floating Animation Elements */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-yellow-400/30 to-orange-500/30 rounded-full blur-xl animate-bounce delay-100"></div>
+                  <div className="absolute top-1/2 -left-8 w-12 h-12 bg-gradient-to-br from-orange-400/20 to-red-500/20 rounded-full blur-lg animate-pulse delay-300"></div>
+                  <div className="absolute bottom-4 right-1/3 w-8 h-8 bg-gradient-to-br from-yellow-300/40 to-orange-400/40 rounded-full blur-md animate-ping delay-500"></div>
+                </div>
+
+                {/* Animated Background Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 via-orange-500/5 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 animate-pulse"></div>
+                
+                {/* Animated Border Glow */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-yellow-400/50 via-orange-500/50 to-red-500/50 opacity-0 group-hover:opacity-20 blur-xl transition-all duration-700"></div>
+                
+                <div className="relative p-8 z-10">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        {/* Coin Icon with Advanced Animation */}
+                        <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 transform-gpu">
+                          <span className="text-2xl animate-bounce">🪙</span>
+                        </div>
+                        {/* Floating Notification Badge */}
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+                          <span className="text-xs text-white font-bold animate-bounce delay-200">!</span>
+                        </div>
+                        {/* Ripple Effect */}
+                        <div className="absolute inset-0 rounded-2xl bg-yellow-400/30 animate-ping opacity-0 group-hover:opacity-100"></div>
+                      </div>
+                      <div className="transform transition-all duration-500 group-hover:translate-x-2">
+                        <h3 className={`text-2xl font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"} group-hover:text-yellow-600 transition-colors duration-300`}>
+                          You have{" "}
+                          <span className="relative inline-block">
+                            <span className="text-yellow-500 font-extrabold text-3xl animate-pulse">
+                              {userCoins.coins}
+                            </span>
+                            {/* Glowing effect on coins number */}
+                            <div className="absolute inset-0 text-yellow-500 font-extrabold text-3xl animate-ping opacity-0 group-hover:opacity-30"></div>
+                          </span>{" "}
+                          coins
+                        </h3>
+                        <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"} transition-all duration-300 group-hover:text-yellow-600`}>
+                          Total earned: {userCoins.totalEarned} coins
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className={`text-lg mb-6 ${isDark ? "text-gray-300" : "text-gray-700"} ${isDark ? "group-hover:text-gray-200" : "group-hover:text-gray-600"} transition-colors duration-300`}>
+                    Redeem your hard-earned coins for amazing rewards! Get exclusive merchandise, gift cards, and premium features.
+                  </p>
+
+                  {/* Animated Reward Grid */}
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    {[
+                      { name: "T-Shirts", cost: "500", color: "blue", delay: "0" },
+                      { name: "Gift Cards", cost: "2000", color: "green", delay: "100" },
+                      { name: "Headphones", cost: "1200", color: "purple", delay: "200" }
+                    ].map((item, index) => (
+                      <div 
+                        key={index}
+                        className={`text-center p-3 rounded-lg transition-all duration-500 hover:scale-110 hover:rotate-2 transform-gpu ${
+                          isDark ? "bg-gray-700/50 hover:bg-gray-700 border border-white/20 hover:border-white/40" : "bg-white/70 hover:bg-white border border-black/20 hover:border-black/40"
+                        } hover:shadow-xl`}
+                        style={{ animationDelay: `${item.delay}ms` }}
+                      >
+                        <div className={`text-lg font-bold animate-pulse ${
+                          isDark 
+                            ? `text-${item.color}-400` 
+                            : `text-${item.color}-600`
+                        }`}>
+                          {item.name}
+                        </div>
+                        <div className={`text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                          {item.cost} coins
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Premium Animated Button */}
+                  <Link
+                    to="/redeem"
+                    className="w-full relative overflow-hidden bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-500 flex items-center justify-center group/button shadow-2xl hover:shadow-3xl transform hover:scale-105"
+                  >
+                    {/* Button ripple effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent translate-x-[-100%] group-hover/button:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
+                    
+                    <span className="mr-2 animate-bounce">🎁</span>
+                    <span className="relative z-10">Redeem Now</span>
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover/button:translate-x-2 transition-transform duration-300" />
+                    
+                    {/* Button glow effect */}
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-400 opacity-0 group-hover/button:opacity-30 blur-xl transition-opacity duration-500"></div>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Company Certificates Feature with Premium Animations */}
+              <div className={`group relative overflow-hidden rounded-3xl transition-all duration-700 hover:scale-[1.03] transform-gpu ${
+                isDark 
+                  ? "bg-gradient-to-br from-gray-800 via-blue-900/20 to-purple-900/20 border-2 border-white/30 hover:border-white/50" 
+                  : "bg-gradient-to-br from-white via-blue-50 to-purple-50 border-2 border-black/30 hover:border-black/50"
+              } shadow-2xl hover:shadow-3xl hover:shadow-blue-500/20`}>
+                
+                {/* Floating Animation Elements */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div className="absolute top-4 right-8 w-12 h-12 bg-gradient-to-br from-blue-400/30 to-purple-500/30 rounded-full blur-lg animate-float"></div>
+                  <div className="absolute bottom-8 left-4 w-8 h-8 bg-gradient-to-br from-purple-400/20 to-indigo-500/20 rounded-full blur-md animate-bounce delay-700"></div>
+                  <div className="absolute top-1/2 right-4 w-6 h-6 bg-gradient-to-br from-blue-300/40 to-cyan-400/40 rounded-full blur-sm animate-ping delay-1000"></div>
+                </div>
+
+                {/* Animated Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                
+                {/* Trophy Animation Styles */}
+                <style>{`
+                  @keyframes float {
+                    0%, 100% { transform: translateY(0px) rotate(0deg); }
+                    25% { transform: translateY(-10px) rotate(2deg); }
+                    50% { transform: translateY(-5px) rotate(-1deg); }
+                    75% { transform: translateY(-15px) rotate(1deg); }
+                  }
+                  .animate-float {
+                    animation: float 4s ease-in-out infinite;
+                  }
+                  @keyframes trophy-glow {
+                    0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+                    50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.6), 0 0 60px rgba(147, 51, 234, 0.3); }
+                  }
+                  .trophy-glow {
+                    animation: trophy-glow 2s ease-in-out infinite;
+                  }
+                `}</style>
+                
+                <div className="relative p-8 z-10">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        {/* Trophy Icon with Advanced Animation */}
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-all duration-500 transform-gpu trophy-glow">
+                          <Trophy className="h-8 w-8 text-white animate-pulse" />
+                        </div>
+                        {/* Star Badge with Rotation */}
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-spin">
+                          <Star className="h-3 w-3 text-white" />
+                        </div>
+                        {/* Orbital Rings */}
+                        <div className="absolute inset-0 rounded-2xl border-2 border-blue-400/30 animate-ping opacity-0 group-hover:opacity-100"></div>
+                        <div className="absolute inset-[-4px] rounded-2xl border border-purple-400/20 animate-pulse opacity-0 group-hover:opacity-100"></div>
+                      </div>
+                      <div className="transform transition-all duration-500 group-hover:translate-x-2">
+                        <h3 className={`text-2xl font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"} group-hover:text-blue-600 transition-colors duration-300`}>
+                          Earn{" "}
+                          <span className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent animate-pulse font-extrabold">
+                            Certificates
+                          </span>
+                        </h3>
+                        <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"} transition-all duration-300 group-hover:text-blue-600`}>
+                          Complete company-specific problems
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className={`text-lg mb-6 ${isDark ? "text-gray-300" : "text-gray-700"} ${isDark ? "group-hover:text-gray-200" : "group-hover:text-gray-600"} transition-colors duration-300`}>
+                    Solve 100% of problems from top tech companies and earn professional certificates to boost your portfolio!
+                  </p>
+
+                  {/* Animated Company Grid */}
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    {topCompanies.slice(0, 4).map((company, index) => (
+                      <Link
+                        key={company.name}
+                        to={`/company/${company.name}`}
+                        className={`group/company p-3 rounded-lg transition-all duration-500 hover:scale-105 transform-gpu ${
+                          isDark ? "bg-gray-700/50 hover:bg-gray-700 border-2 border-white/20 hover:border-white/40" : "bg-white/70 hover:bg-white border-2 border-black/20 hover:border-black/40"
+                        } hover:shadow-xl hover:border-blue-300`}
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 bg-gradient-to-br ${company.color} rounded-lg flex items-center justify-center text-white font-bold text-lg group-hover/company:rotate-12 group-hover/company:scale-110 transition-all duration-500 shadow-lg`}>
+                            <span className="animate-pulse">{company.icon}</span>
+                          </div>
+                          <div className="transform transition-all duration-300 group-hover/company:translate-x-1">
+                            <div className={`font-semibold ${isDark ? "text-white" : "text-gray-900"} ${isDark ? "group-hover/company:text-blue-400" : "group-hover/company:text-blue-600"} transition-colors duration-300`}>
+                              {company.name}
+                            </div>
+                            <div className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"} ${isDark ? "group-hover/company:text-blue-300" : "group-hover/company:text-blue-500"} transition-colors duration-300`}>
+                              {company.count} problems
+                            </div>
+                          </div>
+                        </div>
+                        {/* Hover glow effect */}
+                        <div className="absolute inset-0 rounded-lg bg-blue-400/10 opacity-0 group-hover/company:opacity-100 transition-opacity duration-300"></div>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Premium Animated Button */}
+                  <Link
+                    to="/problems?company=all"
+                    className="w-full relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-500 flex items-center justify-center group/button shadow-2xl hover:shadow-3xl transform hover:scale-105"
+                  >
+                    {/* Button wave effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover/button:translate-x-[100%] transition-transform duration-1000 skew-x-12"></div>
+                    
+                    <Building2 className="mr-2 h-5 w-5 animate-bounce" />
+                    <span className="relative z-10">Explore All Companies</span>
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover/button:translate-x-2 transition-transform duration-300" />
+                    
+                    {/* Button particles effect */}
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 group-hover/button:opacity-20 blur-xl transition-opacity duration-500"></div>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Enhanced Announcements & Contests Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-20">
           {/* Announcements */}
@@ -888,8 +1805,8 @@ const Home: React.FC = () => {
                     to={`/announcements/${announcement._id}`}
                     className={`group relative overflow-hidden p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] block ${
                       isDark
-                        ? "bg-gradient-to-r from-orange-900/20 to-red-900/20 border-orange-500/30 hover:bg-orange-900/30"
-                        : "bg-gradient-to-r from-orange-50 to-red-50 border-orange-200 hover:bg-orange-100"
+                        ? "bg-gradient-to-r from-orange-900/20 to-red-900/20 border-2 border-white/20 hover:bg-orange-900/30 hover:border-white/40"
+                        : "bg-gradient-to-r from-orange-50 to-red-50 border-2 border-black/20 hover:bg-orange-100 hover:border-black/40"
                     } border-l-4 border-l-orange-500 hover:shadow-lg`}
                   >
                     <div className="flex items-start justify-between">
@@ -965,8 +1882,8 @@ const Home: React.FC = () => {
           {/* Upcoming Contests */}
           <div
             className={`relative overflow-hidden rounded-3xl p-8 transition-all duration-300 ${
-              isDark ? "bg-gray-800/50 border-gray-700/50" : "bg-white border-gray-200"
-            } border backdrop-blur-sm hover:shadow-2xl`}
+              isDark ? "bg-gray-800/50 border-2 border-white/30 hover:border-white/50" : "bg-white border-2 border-black/30 hover:border-black/50"
+            } backdrop-blur-sm hover:shadow-2xl`}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl"></div>
             <div className="relative">
@@ -994,9 +1911,9 @@ const Home: React.FC = () => {
                       key={contest._id}
                       className={`group relative overflow-hidden p-6 rounded-2xl transition-all duration-300 hover:scale-105 ${
                         isDark
-                          ? "bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-500/30"
-                          : "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200"
-                      } border hover:shadow-lg`}
+                          ? "bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-2 border-white/20 hover:border-white/40"
+                          : "bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-black/20 hover:border-black/40"
+                      } hover:shadow-lg`}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
@@ -1047,11 +1964,162 @@ const Home: React.FC = () => {
           </div>
         </div>
 
+        {/* Learn and Upskill Section */}
+        <div
+          className={`relative overflow-hidden rounded-3xl p-12 mb-20 ${
+            isDark ? "bg-gray-800/50 border-2 border-white/30" : "bg-white border-2 border-black/30"
+          } backdrop-blur-sm`}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-red-500/5"></div>
+          <div className="relative">
+            <div className="text-center mb-12">
+              <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${isDark ? "text-white" : "text-gray-900"}`}>
+                Learn and
+                <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent">
+                  {" "}
+                  Upskill
+                </span>
+              </h2>
+              <p className={`text-xl max-w-3xl mx-auto ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                Master essential skills with our curated learning paths and comprehensive tutorials
+              </p>
+            </div>
+
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-6 pb-4" style={{ width: "max-content" }}>
+                {[
+                  {
+                    title: "Data Structures & Algorithms",
+                    description: "Master the fundamentals of DSA with comprehensive tutorials and practice problems",
+                    link: "https://www.youtube.com/watch?v=y3OOaXrFy-Q&list=PLQEaRBV9gAFu4ovJ41PywklqI7IyXwr01",
+                    image: "https://tse3.mm.bing.net/th/id/OIP.IodRARzhZ9CBPYBS2_9LEgHaEK?pid=Api&P=0&h=180",
+                    color: "from-blue-500 to-indigo-600",
+                    icon: "🧮"
+                  },
+                  {
+                    title: "System Design",
+                    description: "Learn how to design scalable systems and architect robust applications",
+                    link: "https://www.youtube.com/watch?v=AK0hu0Zxua4&list=PLQEaRBV9gAFvzp6XhcNFpk1WdOcyVo9qT",
+                    image: "https://tse2.mm.bing.net/th/id/OIP.0iCWYNiceXNXodc6dWCZewHaDe?pid=Api&P=0&h=180",
+                    color: "from-green-500 to-emerald-600",
+                    icon: "🏗️"
+                  },
+                  {
+                    title: "Full Stack Development",
+                    description: "Build complete web applications from frontend to backend with modern technologies",
+                    link: "https://www.youtube.com/watch?v=tVzUXW6siu0&list=PLu0W_9lII9agq5TrH9XLIKQvv0iaF2X3w&pp=0gcJCV8EOCosWNin",
+                    image: "https://i.ytimg.com/vi/tVzUXW6siu0/hqdefault.jpg?sqp=-oaymwEXCOADEI4CSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLBenW1M30gqWfrb8bLNydwUJiebEA",
+                    color: "from-purple-500 to-violet-600",
+                    icon: "💻"
+                  },
+                  {
+                    title: "Spring Boot",
+                    description: "Master Java Spring Boot framework for enterprise application development",
+                    link: "https://www.youtube.com/watch?v=Zxwq3aW9ctU&list=PLsyeobzWxl7qbKoSgR5ub6jolI8-ocxCF",
+                    image: "https://i.ytimg.com/vi/Zxwq3aW9ctU/hqdefault.jpg?sqp=-oaymwEXCOADEI4CSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLBPvSBVpeCabK8qzRMBY6XNM4VRSw",
+                    color: "from-orange-500 to-red-600",
+                    icon: "🌱"
+                  },
+                  {
+                    title: "Generative AI",
+                    description: "Explore the cutting-edge world of AI and machine learning technologies",
+                    link: "https://www.youtube.com/watch?v=WOyZid8OkkI&list=PLd7PleJR_EFfRYiLdagOsv4FczMl1Cxt_",
+                    image: "https://i.ytimg.com/vi/WOyZid8OkkI/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAr8shMX8h7efRCCis0s5kBP0Iugw",
+                    color: "from-cyan-500 to-blue-600",
+                    icon: "🤖"
+                  }
+                ].map((topic, index) => (
+                  <a
+                    key={index}
+                    href={topic.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`group relative overflow-hidden rounded-3xl transition-all duration-500 flex-shrink-0 w-80 h-96 hover:scale-105 hover:shadow-2xl ${
+                      isDark
+                        ? "bg-gray-800/80 border-2 border-gray-600/50 hover:bg-gray-700/90 hover:border-gray-500/70"
+                        : "bg-white/95 border-2 border-gray-200/60 hover:bg-white hover:border-gray-300/80 shadow-lg hover:shadow-2xl light-hover-glow light-border-dance"
+                    } backdrop-blur-sm shadow-lg`}
+                  >
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${topic.color} opacity-0 ${
+                        isDark ? "group-hover:opacity-15" : "group-hover:opacity-12"
+                      } transition-all duration-500`}
+                    ></div>
+
+                    {/* Light mode shimmer effect */}
+                    {!isDark && (
+                      <div className="absolute inset-0 light-card-shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+                    )}
+
+                    <div className="relative h-full flex flex-col">
+                      {/* Image Section */}
+                      <div className="relative h-48 overflow-hidden rounded-t-3xl">
+                        <img
+                          src={topic.image}
+                          alt={topic.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className={`absolute inset-0 ${
+                          isDark 
+                            ? "bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" 
+                            : "bg-gradient-to-t from-black/60 via-transparent to-transparent"
+                        }`}></div>
+                        
+                        {/* Topic Icon */}
+                        <div className="absolute top-4 right-4">
+                          <div className={`w-12 h-12 bg-gradient-to-br ${topic.color} rounded-2xl flex items-center justify-center text-white text-xl group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-lg ${
+                            !isDark ? "group-hover:shadow-xl group-hover:shadow-blue-200/50" : ""
+                          }`}>
+                            {topic.icon}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Content Section */}
+                      <div className={`flex-1 p-6 flex flex-col justify-between ${
+                        isDark ? "bg-gray-800/90" : "bg-white/95 group-hover:bg-white"
+                      } rounded-b-3xl transition-all duration-300`}>
+                        <div>
+                          <h3
+                            className={`text-xl font-bold mb-3 transition-all duration-300 ${
+                              isDark ? "text-gray-100 group-hover:text-yellow-400" : "text-gray-900 group-hover:text-yellow-500"
+                            }`}
+                          >
+                            {topic.title}
+                          </h3>
+                          <p className={`text-sm leading-relaxed ${
+                            isDark ? "text-gray-300" : "text-gray-600"
+                          }`}>
+                            {topic.description}
+                          </p>
+                        </div>
+
+                        {/* Call to Action */}
+                        <div className="mt-4">
+                          <div className={`inline-flex items-center px-4 py-2 rounded-xl bg-gradient-to-r ${topic.color} text-white font-medium text-sm shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 ${
+                            !isDark ? "group-hover:shadow-blue-300/50" : ""
+                          }`}>
+                            <span className="mr-2">Start Learning</span>
+                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hover Glow Effect */}
+                    <div className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${topic.color} opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500`}></div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Enhanced Company Interview Practice */}
         <div
           className={`relative overflow-hidden rounded-3xl p-12 mb-20 ${
-            isDark ? "bg-gray-800/50 border-gray-700/50" : "bg-white border-gray-200"
-          } border backdrop-blur-sm`}
+            isDark ? "bg-gray-800/50 border-2 border-white/30" : "bg-white border-2 border-black/30"
+          } backdrop-blur-sm`}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-blue-500/5 to-cyan-500/5"></div>
           <div className="relative">
@@ -1076,8 +2144,8 @@ const Home: React.FC = () => {
                     to={`/company/${encodeURIComponent(company.name)}`}
                     className={`group relative overflow-hidden rounded-3xl transition-all duration-500 flex-shrink-0 w-80 h-[480px] hover:scale-105 hover:shadow-2xl ${
                       isDark
-                        ? `bg-gradient-to-br ${company.darkBgGradient} border ${company.darkBorderColor} hover:bg-gray-800/80`
-                        : `bg-gradient-to-br ${company.bgGradient} border ${company.borderColor} hover:bg-gray-50`
+                        ? `bg-gradient-to-br ${company.darkBgGradient} border-2 border-white/30 hover:bg-gray-800/80 hover:border-white/50`
+                        : `bg-gradient-to-br ${company.bgGradient} border-2 border-black/30 hover:bg-gray-50 hover:border-black/50`
                     } backdrop-blur-sm`}
                   >
                     <div
@@ -1214,8 +2282,8 @@ const Home: React.FC = () => {
         {/* Enhanced Features Section */}
         <div
           className={`relative overflow-hidden rounded-3xl p-12 mb-20 ${
-            isDark ? "bg-gray-800/50 border-gray-700/50" : "bg-white border-gray-200"
-          } border backdrop-blur-sm`}
+            isDark ? "bg-gray-800/50 border-2 border-white/30" : "bg-white border-2 border-black/30"
+          } backdrop-blur-sm`}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5"></div>
           <div className="relative">
@@ -1273,9 +2341,9 @@ const Home: React.FC = () => {
                   to={feature.link}
                   className={`group relative overflow-hidden p-8 rounded-3xl transition-all duration-500 hover:scale-105 hover:shadow-2xl ${
                     isDark
-                      ? "bg-gray-800/50 border-gray-700/50 hover:bg-gray-800/80"
-                      : "bg-white border-gray-200 hover:bg-gray-50"
-                  } border backdrop-blur-sm`}
+                      ? "bg-gray-800/50 border-2 border-white/30 hover:bg-gray-800/80 hover:border-white/50"
+                      : "bg-white border-2 border-black/30 hover:bg-gray-50 hover:border-black/50"
+                  } backdrop-blur-sm`}
                 >
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${feature.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}

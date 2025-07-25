@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Code, Menu, X, User, LogOut, Shield, Moon, Sun } from 'lucide-react';
+import { Code, Menu, X, User, LogOut, Shield, Moon, Sun, Coins } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -103,20 +103,42 @@ const Navbar: React.FC = () => {
             </button>
 
             {user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              <div className="flex items-center space-x-4">
+                {/* Coins Display - Clickable */}
+                <Link 
+                  to="/redeem"
+                  className="flex items-center space-x-1 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1 rounded-full border border-yellow-200 dark:border-yellow-800 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors cursor-pointer"
                 >
-                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {user.username.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {user.username}
+                  <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                  <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
+                    {user.coins || 0}
                   </span>
-                </button>
+                </Link>
+
+                <div className="relative">
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    {user.profile?.avatar && !user.profile.avatar.startsWith('default:') ? (
+                      <img
+                        src={user.profile.avatar}
+                        alt={user.username}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {user.profile?.avatar?.startsWith('default:') 
+                            ? user.profile.avatar.replace('default:', '') 
+                            : user.username.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {user.username}
+                    </span>
+                  </button>
 
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border border-gray-200 dark:border-gray-700">
@@ -147,6 +169,7 @@ const Navbar: React.FC = () => {
                     </button>
                   </div>
                 )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center space-x-2">
