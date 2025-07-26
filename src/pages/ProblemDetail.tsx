@@ -102,11 +102,13 @@ const ProblemDetail: React.FC = () => {
   const [isAiMaximized, setIsAiMaximized] = useState(false);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
   // Auto-scroll chat to bottom in minimised mode when new answer appears
-  useEffect(() => {
-    if (!isAiMaximized && chatHistoryRef.current) {
+useEffect(() => {
+  if (chatHistoryRef.current) {
+    setTimeout(() => {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
-    }
-  }, [chatHistory, aiResponse, isAiMaximized]);
+    }, 0);
+  }
+}, [chatHistory, aiResponse, isAiMaximized]);
   const [allChatHistory, setAllChatHistory] = useState<{sessionId: string, problemId: string, problemTitle: string, date: string, lastMessage: string, messageCount: number, updatedAt: string}[]>([]);
   const [selectedHistorySession, setSelectedHistorySession] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
