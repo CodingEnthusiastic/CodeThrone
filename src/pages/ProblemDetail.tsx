@@ -98,6 +98,50 @@ const ProblemDetail: React.FC = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState<{prompt: string, response: string}[]>([]);
+
+  // Predefined quick prompts for better user experience
+  const quickPrompts = [
+    "What's the optimal approach to solve this problem?",
+    "What data structures should I use?",
+    "Can you explain the algorithm with time complexity?",
+    "What are the edge cases I should consider?",
+    "How can I optimize my solution?",
+    "Explain the problem with an example",
+    "What are common mistakes to avoid?"
+  ];
+
+  // Generate contextual prompts based on problem
+  const getContextualPrompts = () => {
+    if (!problem) return quickPrompts;
+    
+    const contextualPrompts = [...quickPrompts];
+    
+    // Add difficulty-specific prompts
+    if (problem.difficulty === 'Hard') {
+      contextualPrompts.push("Break down this complex problem into smaller subproblems");
+      contextualPrompts.push("What advanced algorithms are applicable here?");
+    } else if (problem.difficulty === 'Easy') {
+      contextualPrompts.push("What's the simplest approach to solve this?");
+    }
+    
+    // Add tag-specific prompts
+    if (problem.tags?.includes('Dynamic Programming')) {
+      contextualPrompts.push("How can I identify the DP pattern here?");
+      contextualPrompts.push("What's the recurrence relation?");
+    }
+    if (problem.tags?.includes('Graph')) {
+      contextualPrompts.push("Should I use DFS or BFS for this graph problem?");
+    }
+    if (problem.tags?.includes('Tree')) {
+      contextualPrompts.push("What tree traversal method should I use?");
+    }
+    if (problem.tags?.includes('Array')) {
+      contextualPrompts.push("Are there any array manipulation techniques I should consider?");
+    }
+    
+    return contextualPrompts;
+  };
 
   // Copy to clipboard function
   const copyToClipboard = async (text: string) => {
@@ -186,12 +230,29 @@ const ProblemDetail: React.FC = () => {
       return;
     }
 
+    if (!problem) {
+      alert('Problem data not loaded yet. Please wait.');
+      return;
+    }
+
     setAiLoading(true);
     setAiResponse('');
 
     try {
+      // Send comprehensive problem data to AI
+      const problemData = {
+        title: problem.title,
+        description: problem.description,
+        difficulty: problem.difficulty,
+        tags: problem.tags,
+        companies: problem.companies,
+        constraints: problem.constraints,
+        examples: problem.examples
+      };
+
       const res = await axios.post(`${API_URL}/gemini`, {
         prompt: aiPrompt,
+        problemData: problemData, // Send complete problem context
         context: problem?.description || ''
       }, {
         headers: {
@@ -201,6 +262,15 @@ const ProblemDetail: React.FC = () => {
       });
 
       setAiResponse(res.data.reply || 'No response received.');
+      
+      // Add to chat history
+      setChatHistory(prev => [...prev, {
+        prompt: aiPrompt,
+        response: res.data.reply || 'No response received.'
+      }]);
+      
+      // Clear the prompt input
+      setAiPrompt('');
     } catch (error) {
       console.error('AI Error:', error);
       setAiResponse('Something went wrong while generating the response.');
@@ -780,48 +850,120 @@ const ProblemDetail: React.FC = () => {
                         <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100 flex items-center">
                           <Bot className="h-5 w-5 mr-2 text-indigo-500" />
                           AI Assistant
+                          <span className="ml-2 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded-full">
+                            Problem-Aware
+                          </span>
                         </h3>
+
+                        {/* Quick Prompts */}
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Quick questions:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {getContextualPrompts().slice(0, 8).map((prompt, index) => (
+                              <button
+                                key={index}
+                                onClick={() => setAiPrompt(prompt)}
+                                disabled={aiLoading}
+                                className="text-xs px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-full transition-colors disabled:opacity-50"
+                              >
+                                {prompt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         <div className="space-y-3 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                          <input
-                            type="text"
-                            value={aiPrompt}
-                            onChange={(e) => setAiPrompt(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && !aiLoading && generateResponse()}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-                            placeholder="Ask something about the problem..."
-                            disabled={aiLoading}
-                          />
-                          <button
-                            onClick={generateResponse}
-                            disabled={aiLoading || !aiPrompt.trim()}
-                            className="w-full px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                          >
-                            {aiLoading ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Thinking...
-                              </>
-                            ) : (
-                              <>
-                                <Send className="h-4 w-4 mr-2" />
-                                Ask AI
-                              </>
-                            )}
-                          </button>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={aiPrompt}
+                              onChange={(e) => setAiPrompt(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && !aiLoading && generateResponse()}
+                              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                              placeholder="Ask about algorithms, approach, complexity, hints..."
+                              disabled={aiLoading}
+                            />
+                            <button
+                              onClick={generateResponse}
+                              disabled={aiLoading || !aiPrompt.trim()}
+                              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            >
+                              {aiLoading ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              ) : (
+                                <Send className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                          
+                          {aiLoading && (
+                            <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                              <div className="inline-flex items-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                                AI is analyzing the problem and generating response...
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {aiResponse && (
+                      {/* Chat History and Current Response */}
+                      {(chatHistory.length > 0 || aiResponse) && (
                         <div className="mb-6">
                           <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100 flex items-center">
-                            <Bot className="h-5 w-5 mr-2 text-purple-500" />
-                            AI Response
+                            <MessageSquare className="h-5 w-5 mr-2 text-purple-500" />
+                            AI Chat History
                           </h3>
-                          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                            <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                              {aiResponse}
-                            </div>
+                          <div className="space-y-4 max-h-96 overflow-y-auto">
+                            {/* Previous chat history */}
+                            {chatHistory.map((chat, index) => (
+                              <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div className="mb-2">
+                                  <div className="flex items-center mb-1">
+                                    <User className="h-4 w-4 mr-2 text-blue-500" />
+                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">You asked:</span>
+                                  </div>
+                                  <p className="text-sm text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                                    {chat.prompt}
+                                  </p>
+                                </div>
+                                <div>
+                                  <div className="flex items-center mb-1">
+                                    <Bot className="h-4 w-4 mr-2 text-purple-500" />
+                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">AI responded:</span>
+                                  </div>
+                                  <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                                    {chat.response}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            
+                            {/* Current response (if any and not in history yet) */}
+                            {aiResponse && !chatHistory.some(chat => chat.response === aiResponse) && (
+                              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div className="flex items-center mb-2">
+                                  <Bot className="h-4 w-4 mr-2 text-purple-500" />
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Latest AI Response:</span>
+                                </div>
+                                <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                                  {aiResponse}
+                                </div>
+                              </div>
+                            )}
                           </div>
+                          
+                          {chatHistory.length > 0 && (
+                            <button
+                              onClick={() => {
+                                setChatHistory([]);
+                                setAiResponse('');
+                              }}
+                              className="mt-3 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                            >
+                              Clear chat history
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
