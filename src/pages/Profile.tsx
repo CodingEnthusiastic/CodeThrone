@@ -1498,6 +1498,7 @@ const Profile: React.FC = () => {
                         ).values()
                       );
                       
+                      
                       return uniqueContests
                         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                         .slice(0, 5)
