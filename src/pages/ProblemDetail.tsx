@@ -700,7 +700,7 @@ const ProblemDetail: React.FC = () => {
               </>
             )}
           </div>
-          <div className="absolute inset-x-0 bottom-4 flex justify-center">
+          <div className="w-80 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col relative">
             <button
               aria-label="Add New Chat"
               onClick={startNewChat}
@@ -735,7 +735,7 @@ const ProblemDetail: React.FC = () => {
                   title="Start New Chat"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  New Chat
+                  New Chats
                 </button>
                 <button
                   onClick={toggleAiMaximized}
