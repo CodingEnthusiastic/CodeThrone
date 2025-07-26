@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
 import { Search, Filter, Code, CheckCircle, Clock, Building, ArrowLeft, Award, Download, Trophy, Star } from 'lucide-react';
 import Certificate from '../components/Certificate';
+import { API_URL, SOCKET_URL } from "../config/api";
 
 interface Problem {
   _id: string;
@@ -92,7 +93,7 @@ const CompanyProblems: React.FC = () => {
     setLoading(true);
     
     const response = await axios.get(
-      `http://localhost:5000/api/problems/company/${encodeURIComponent(companyName)}`, {
+      `${API_URL}/problems/company/${encodeURIComponent(companyName)}`, {
         params: {
           page: currentPage,
           limit: 20,
@@ -139,7 +140,7 @@ const checkCertificateEligibility = async () => {
     if (!token) return;
 
     const response = await axios.get(
-      `http://localhost:5000/api/certificates/company/${encodeURIComponent(companyName)}/check`,
+      `${API_URL}/certificates/company/${encodeURIComponent(companyName)}/check`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
@@ -158,7 +159,7 @@ const generateCertificate = async () => {
     if (!token) return;
 
     const response = await axios.post(
-      `http://localhost:5000/api/certificates/company/${encodeURIComponent(companyName)}/generate`,
+      `${API_URL}/certificates/company/${encodeURIComponent(companyName)}/generate`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -206,7 +207,7 @@ const fetchSolvedProblems = async () => {
   if (!user) return;
   
   try {
-    const response = await axios.get(`http://localhost:5000/api/profile/${user.username}/solved`);
+    const response = await axios.get(`${API_URL}/profile/${user.username}/solved`);
     const solvedIds = response.data.solvedProblems.map((p: any) => p._id);
     updateSolvedStats(solvedIds);
     console.log('✅ Solved problems fetched:', solvedIds.length);

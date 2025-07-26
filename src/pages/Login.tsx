@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Code, AlertCircle, Eye, EyeOff, Shield, User } from 'lucide-react';
+import { API_URL, SOCKET_URL } from "../config/api";
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -159,7 +160,7 @@ const Login: React.FC = () => {
             <div>
               <button
                 type="button"
-                onClick={() => window.location.href = 'http://localhost:5000/api/auth/google'}
+                onClick={() => window.location.href = `${API_URL}/auth/google`}
                 className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 mt-2"
               >
                 <svg className="h-5 w-5 mr-2" viewBox="0 0 48 48">

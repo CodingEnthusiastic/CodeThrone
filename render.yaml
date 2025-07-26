@@ -1,0 +1,42 @@
+services:
+  # Full-stack service - serves both backend API and frontend
+  - type: web
+    name: codestar-fullstack
+    env: node
+    plan: starter
+    buildCommand: |
+      echo "📦 Installing root dependencies..."
+      npm install
+      echo "🏗️ Building frontend..."
+      npm run build
+      echo "📁 Listing build output..."
+      ls -la dist/
+      echo "📦 Installing backend dependencies..."
+      cd backend && npm install
+      echo "✅ Build complete!"
+    startCommand: node backend/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false  # Set this in Render dashboard
+      - key: JWT_SECRET
+        sync: false  # Set this in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false  # Set this in Render dashboard
+      - key: JUDGE0_API_KEY_1
+        sync: false  # Set this in Render dashboard
+      - key: JUDGE0_API_KEY_2
+        sync: false  # Set this in Render dashboard
+      - key: JUDGE0_API_KEY_3
+        sync: false  # Set this in Render dashboard
+      - key: JUDGE0_API_KEY_4
+        sync: false  # Set this in Render dashboard
+      - key: JUDGE0_API_KEY_5
+        sync: false  # Set this in Render dashboard
+      - key: GOOGLE_CLIENT_ID
+        sync: false  # Set this in Render dashboard
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false  # Set this in Render dashboard

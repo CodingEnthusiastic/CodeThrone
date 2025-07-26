@@ -8,6 +8,8 @@ import axios from "axios"
 import { Trophy, Clock, Users, Calendar, Star, Play, Award, Eye, Timer, MapPin } from "lucide-react"
 // import { useParams } from "react-router-dom"
 // import Contest from "./Contest"
+import { API_URL, SOCKET_URL } from "../config/api";
+
 interface Contest {
   _id: string
   name: string
@@ -142,7 +144,7 @@ const Contest: React.FC = () => {
 
   const fetchContests = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/contests")
+      const response = await axios.get(`${API_URL}/contests`)
       // Update contest statuses based on current time
       const updatedContests = response.data.map((contest: Contest) => ({
         ...contest,
@@ -174,7 +176,7 @@ const Contest: React.FC = () => {
   const registerForContest = async (contestId: string) => {
     if (!user) return
     try {
-      await axios.post(`http://localhost:5000/api/contests/${contestId}/register`, {}, {
+      await axios.post(`${API_URL}/contests/${contestId}/register`, {}, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       })
       fetchContests()

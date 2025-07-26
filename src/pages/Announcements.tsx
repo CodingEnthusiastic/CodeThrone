@@ -6,6 +6,7 @@ import { Link } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import axios from "axios"
 import { Search, Plus, Megaphone, AlertCircle, Info, CheckCircle, Calendar, User } from "lucide-react"
+import { API_URL, SOCKET_URL } from "../config/api";
 
 interface Announcement {
   _id: string
@@ -47,7 +48,7 @@ const Announcements: React.FC = () => {
       if (sortBy) params.append("sortBy", sortBy)
 
       const token = localStorage.getItem("token")
-      const response = await axios.get(`http://localhost:5000/api/announcements?${params}`, {
+      const response = await axios.get(`${API_URL}/announcements?${params}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       setAnnouncements(response.data)
@@ -65,7 +66,7 @@ const Announcements: React.FC = () => {
     try {
       const token = localStorage.getItem("token")
       const response = await axios.post(
-        "http://localhost:5000/api/announcements",
+        `${API_URL}/announcements`,
         {
           title: newAnnouncement.title,
           content: newAnnouncement.content,

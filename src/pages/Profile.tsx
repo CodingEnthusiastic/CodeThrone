@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { User, Github, Linkedin, Trophy, Code, TrendingUp, Award, Star, Target, Zap, Activity, CheckCircle } from 'lucide-react';
-
+import { API_URL, SOCKET_URL } from "../config/api";
 // Animated Counter Component
 const AnimatedCounter: React.FC<{ end: number; duration?: number; prefix?: string; suffix?: string }> = ({ 
   end, 
@@ -274,7 +274,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
   const fetchLeaderboard = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/stats/global-leaderboard');
+      const response = await axios.get(`${API_URL}/stats/global-leaderboard`);
       setLeaderboard(response.data);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
@@ -289,7 +289,7 @@ const Profile: React.FC = () => {
     setError(null);
     
     try {
-      const response = await axios.get(`http://localhost:5000/api/profile/${username}`);
+      const response = await axios.get(`${API_URL}/profile/${username}`);
       console.log('✅ Profile data received:', response.data);
       
       const profileData = response.data;
@@ -374,8 +374,8 @@ const Profile: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       console.log('🔄 Updating profile...', editForm);
-      
-      const response = await axios.put('http://localhost:5000/api/profile/update', {
+
+      const response = await axios.put(`${API_URL}/profile/update`, {
         profile: {
           ...editForm,
           graduationYear: editForm.graduationYear ? parseInt(editForm.graduationYear) : null
@@ -422,7 +422,7 @@ const Profile: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put('http://localhost:5000/api/profile/upload-image', formData, {
+      const response = await axios.put(`${API_URL}/profile/upload-image`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Search, Filter, CheckCircle, Star, Trophy } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 interface Problem {
   _id: string;
@@ -64,7 +65,7 @@ const Problems: React.FC = () => {
       if (selectedDifficulty) params.append('difficulty', selectedDifficulty);
       if (selectedTag) params.append('tags', selectedTag);
 
-      const response = await axios.get(`http://localhost:5000/api/problems?${params}`);
+      const response = await axios.get(`${API_URL}/problems?${params}`);
       setProblems(response.data.problems);
       setTotalPages(response.data.totalPages);
     } catch (error) {
@@ -78,7 +79,7 @@ const Problems: React.FC = () => {
     if (!user) return;
     
     try {
-      const response = await axios.get(`http://localhost:5000/api/profile/${user.username}/solved`);
+      const response = await axios.get(`${API_URL}/profile/${user.username}/solved`);
       const solved = new Set<string>(response.data.solvedProblems.map((p: any) => p._id as string));
       setSolvedProblems(solved);
     } catch (error) {
@@ -88,7 +89,7 @@ const Problems: React.FC = () => {
 
   const fetchPOTD = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/potd/today');
+      const response = await axios.get(`${API_URL}/potd/today`);
       setPotd(response.data);
     } catch (error) {
       console.error('Error fetching POTD:', error);
@@ -98,7 +99,7 @@ const Problems: React.FC = () => {
   const fetchPOTDStatus = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/potd/status', {
+      const response = await axios.get(`${API_URL}/potd/status`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

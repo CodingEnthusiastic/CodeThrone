@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { API_URL, SOCKET_URL } from "../config/api";
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const OAuthHandler = () => {
       // Use async IIFE to avoid race conditions
       (async () => {
         try {
-          const res = await fetch('http://localhost:5000/api/auth/me', {
+          const res = await fetch(`${API_URL}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (!res.ok) throw new Error('Failed to fetch user');

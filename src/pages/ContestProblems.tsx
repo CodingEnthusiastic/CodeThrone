@@ -6,6 +6,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import axios from "axios"
 import { Trophy, Users, BookOpen, Award, Code, CheckCircle, ArrowLeft, Timer, Play } from "lucide-react"
+import { API_URL, SOCKET_URL } from "../config/api";
 
 interface Contest {
   _id: string
@@ -156,7 +157,7 @@ const ContestProblems: React.FC = () => {
   const fetchContestProblems = async () => {
     try {
       console.log("🔍 Fetching contest problems for:", contestId)
-      const response = await axios.get(`http://localhost:5000/api/contests/${contestId}/problems`)
+      const response = await axios.get(`${API_URL}/contests/${contestId}/problems`)
       console.log("✅ Contest problems fetched:", response.data)
       setContest(response.data)
     } catch (error) {
@@ -173,7 +174,7 @@ const ContestProblems: React.FC = () => {
     try {
       console.log("📚 Fetching editorials for contest problems")
       const editorialPromises = contest.problems.map((problem) =>
-        axios.get(`http://localhost:5000/api/problems/${problem._id}/editorial`),
+        axios.get(`${API_URL}/problems/${problem._id}/editorial`),
       )
 
       const responses = await Promise.all(editorialPromises)

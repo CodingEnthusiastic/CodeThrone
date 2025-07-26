@@ -6,7 +6,7 @@ import axios from "axios"
 import { Video, Mic, MicOff, VideoOff, User, Bot, Send, RotateCcw, X } from "lucide-react"
 import { useAuth } from '../contexts/AuthContext' // Import your auth context
 import { useTheme } from '../contexts/ThemeContext' // Import theme context
-
+import { API_URL, SOCKET_URL } from "../config/api";
 /*
  * AI VIDEO SETUP INSTRUCTIONS:
  * 1. Download the video from: https://youtu.be/1bdKVv5iyEQ
@@ -326,7 +326,7 @@ const Interview: React.FC = () => {
     if (session && startTime && token) {
       const interval = setInterval(async () => {
         try {
-          await axios.post("http://localhost:5000/api/interview/update-timing", {
+          await axios.post(`${API_URL}/interview/update-timing`, {
             sessionId: session.sessionId,
             videoOnTime,
             totalTime,
@@ -686,7 +686,7 @@ const Interview: React.FC = () => {
 
     try {
       console.log('📡 Making request with token:', token.substring(0, 20) + '...');
-      const response = await axios.post("http://localhost:5000/api/interview/start", {
+      const response = await axios.post(`${API_URL}/interview/start`, {
         role,
         experience,
       }, {
@@ -746,7 +746,7 @@ const Interview: React.FC = () => {
 
     try {
       console.log('📡 Submitting answer with token:', token.substring(0, 20) + '...');
-      const response = await axios.post("http://localhost:5000/api/interview/answer", {
+      const response = await axios.post(`${API_URL}/interview/answer`, {
         sessionId: session.sessionId,
         answer,
         questionNumber: session.questionNumber,
@@ -808,7 +808,7 @@ const Interview: React.FC = () => {
 
     try {
       console.log('📡 Getting next question with token:', token.substring(0, 20) + '...');
-      const response = await axios.post("http://localhost:5000/api/interview/answer", {
+      const response = await axios.post(`${API_URL}/interview/answer`, {
         sessionId: session.sessionId,
         answer: currentAnswer || "No additional response",
         questionNumber: session.questionNumber,
@@ -852,7 +852,7 @@ const Interview: React.FC = () => {
     console.log("📊 Generating final report...")
     try {
       console.log('📡 Generating report with token:', token.substring(0, 20) + '...');
-      const response = await axios.post("http://localhost:5000/api/interview/generate-report", {
+      const response = await axios.post(`${API_URL}/interview/generate-report`, {
         sessionId: session.sessionId,
       }, {
         headers: {

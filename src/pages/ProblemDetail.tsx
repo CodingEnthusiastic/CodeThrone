@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Play, Send, Clock, MemoryStick as Memory, CheckCircle, XCircle, BookOpen, Video, Code, FileText, MessageSquare, Bot, Eye, Calendar, User, Coins, Copy } from 'lucide-react';
 import CodeMirrorEditor from '../components/CodeMirrorEditor';
+import { API_URL, SOCKET_URL } from "../config/api";
 
 interface Problem {
   _id: string;
@@ -163,7 +164,7 @@ const ProblemDetail: React.FC = () => {
 
   const fetchProblem = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/problems/${id}`);
+      const response = await axios.get(`${API_URL}/problems/${id}`);
       setProblem(response.data);
       // setCode(getDefaultCode(language));
       setCode(response.data.codeTemplates?.[language] || '');
@@ -189,7 +190,7 @@ const ProblemDetail: React.FC = () => {
     setAiResponse('');
 
     try {
-      const res = await axios.post('http://localhost:5000/api/gemini', {
+      const res = await axios.post(`${API_URL}/gemini`, {
         prompt: aiPrompt,
         context: problem?.description || ''
       }, {
@@ -212,7 +213,7 @@ const ProblemDetail: React.FC = () => {
     if (!user || !id || !token) return;
     
     try {
-      const response = await axios.get(`http://localhost:5000/api/profile/${user.username}/solved`, {
+      const response = await axios.get(`${API_URL}/profile/${user.username}/solved`, {
         headers: {
           'Authorization': `Bearer ${token}`, // ✅ Add auth header
           'Content-Type': 'application/json'
@@ -227,7 +228,7 @@ const ProblemDetail: React.FC = () => {
 
   const fetchEditorial = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/problems/${id}/editorial`);
+      const response = await axios.get(`${API_URL}/problems/${id}/editorial`);
       setEditorial(response.data.editorial);
     } catch (error) {
       console.error('Error fetching editorial:', error);
@@ -238,7 +239,7 @@ const ProblemDetail: React.FC = () => {
     if (!user || !token) return;
     
     try {
-      const response = await axios.get(`http://localhost:5000/api/problems/${id}/submissions`, {
+      const response = await axios.get(`${API_URL}/problems/${id}/submissions`, {
         headers: {
           'Authorization': `Bearer ${token}`, // ✅ Add auth header
           'Content-Type': 'application/json'
@@ -252,7 +253,7 @@ const ProblemDetail: React.FC = () => {
 
   const fetchSolutions = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/problems/${id}/solutions`);
+      const response = await axios.get(`${API_URL}/problems/${id}/solutions`);
       setSolutions(response.data.solutions);
     } catch (error) {
       console.error('Error fetching solutions:', error);
@@ -287,7 +288,7 @@ const ProblemDetail: React.FC = () => {
     
     try {
       console.log('🔑 Running code with token:', token.substring(0, 20) + '...');
-      const response = await axios.post(`http://localhost:5000/api/problems/${id}/run`, {
+      const response = await axios.post(`${API_URL}/problems/${id}/run`, {
         code,
         language
       }, {
@@ -333,7 +334,7 @@ const ProblemDetail: React.FC = () => {
     
     try {
       console.log('🔑 Submitting solution with token:', token.substring(0, 20) + '...');
-      const response = await axios.post(`http://localhost:5000/api/problems/${id}/submit`, {
+      const response = await axios.post(`${API_URL}/problems/${id}/submit`, {
         code,
         language
       }, {

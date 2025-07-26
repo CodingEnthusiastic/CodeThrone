@@ -1,0 +1,11 @@
+{
+  "name": "deploy-check",
+  "version": "1.0.0",
+  "scripts": {
+    "deploy:build": "npm install && npm run build && cd backend && npm install",
+    "deploy:start": "cd backend && npm start",
+    "deploy:test": "cd backend && npm run start",
+    "validate:frontend": "npm run build",
+    "validate:backend": "cd backend && npm install && node --check index.js"
+  }
+}

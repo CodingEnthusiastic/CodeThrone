@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
+import { API_URL, SOCKET_URL } from "../config/api";
 import {
   Search,
   Plus,
@@ -58,7 +59,7 @@ const Discussion: React.FC = () => {
       if (sortBy) params.append('sortBy', sortBy);
 
       const response = await axios.get(
-        `http://localhost:5000/api/discussion?${params}`
+        `${API_URL}/discussion?${params}`
       );
 
       setDiscussions(response.data.discussions);
@@ -82,7 +83,7 @@ const Discussion: React.FC = () => {
     if (!user || !token) return;
 
     try {
-      const response = await axios.post('http://localhost:5000/api/discussion', {
+      const response = await axios.post(`${API_URL}/discussion`, {
         title: newDiscussion.title,
         content: newDiscussion.content,
         tags: newDiscussion.tags
@@ -109,7 +110,7 @@ const Discussion: React.FC = () => {
 
     try {
       await axios.post(
-        `http://localhost:5000/api/discussion/${discussionId}/vote`,
+        `${API_URL}/discussion/${discussionId}/vote`,
         { type: voteType },
         {
           headers: {

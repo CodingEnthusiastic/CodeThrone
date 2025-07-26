@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import CodeMirrorEditor from "../components/CodeMirrorEditor"
+import { API_URL, SOCKET_URL } from "../config/api";
 
 interface Problem {
   _id: string
@@ -229,7 +230,7 @@ const ContestProblemDetail: React.FC = () => {
   const fetchProblem = async () => {
     try {
       console.log("🔍 Fetching problem details for:", problemId)
-      const response = await axios.get(`http://localhost:5000/api/problems/${problemId}`)
+      const response = await axios.get(`${API_URL}/problems/${problemId}`)
       console.log("✅ Problem details fetched:", response.data)
       setProblem(response.data)
       if (response.data?.codeTemplates) {
@@ -243,7 +244,7 @@ const ContestProblemDetail: React.FC = () => {
   const fetchContest = async () => {
     try {
       console.log("🔍 Fetching contest info for:", contestId)
-      const response = await axios.get(`http://localhost:5000/api/contests/${contestId}/problem/${problemId}`)
+      const response = await axios.get(`${API_URL}/contests/${contestId}/problem/${problemId}`)
       console.log("✅ Contest info fetched:", response.data)
 
       // Handle the response structure properly
@@ -306,7 +307,7 @@ const ContestProblemDetail: React.FC = () => {
     setRunResult(null)
 
     try {
-      const response = await axios.post(`http://localhost:5000/api/problems/${problemId}/run`, {
+      const response = await axios.post(`${API_URL}/problems/${problemId}/run`, {
         code,
         language,
       }, {
@@ -366,7 +367,7 @@ const ContestProblemDetail: React.FC = () => {
     try {
       console.log('🧪 Submitting code for contest problem...');
       console.log('📡 Making API call to submit problem solution...');
-      const response = await axios.post(`http://localhost:5000/api/problems/${problemId}/submit`, {
+      const response = await axios.post(`${API_URL}/problems/${problemId}/submit`, {
         code,
         language,
       }, {
@@ -390,7 +391,7 @@ const ContestProblemDetail: React.FC = () => {
         });
         try {
           const contestResponse = await axios.post(
-            `http://localhost:5000/api/contests/${contestId}/submit/${problemId}`,
+            `${API_URL}/contests/${contestId}/submit/${problemId}`,
             {
               score: 100, // Base score, will be calculated dynamically on backend
               timeSubmitted: new Date().toISOString(),

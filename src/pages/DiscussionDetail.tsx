@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { ThumbsUp, ThumbsDown, MessageSquare, Send, Pin, Lock } from 'lucide-react';
+import { API_URL, SOCKET_URL } from "../config/api";
 
 interface Comment {
   _id: string;
@@ -46,7 +47,7 @@ const DiscussionDetail: React.FC = () => {
 
   const fetchDiscussion = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/discussion/${id}`);
+      const response = await axios.get(`${API_URL}/discussion/${id}`);
       setDiscussion(response.data);
     } catch (error) {
       console.error('Error fetching discussion:', error);
@@ -59,7 +60,7 @@ const DiscussionDetail: React.FC = () => {
     if (!user || !discussion || !token) return;
 
     try {
-      await axios.post(`http://localhost:5000/api/discussion/${discussion._id}/vote`, {
+      await axios.post(`${API_URL}/discussion/${discussion._id}/vote`, {
         type: voteType
       }, {
         headers: {
@@ -79,7 +80,7 @@ const DiscussionDetail: React.FC = () => {
     if (!user || !discussion || !token) return;
 
     try {
-      await axios.post(`http://localhost:5000/api/discussion/${discussion._id}/comments/${commentId}/vote`, {
+      await axios.post(`${API_URL}/discussion/${discussion._id}/comments/${commentId}/vote`, {
         type: voteType
       }, {
         headers: {
@@ -104,7 +105,7 @@ const DiscussionDetail: React.FC = () => {
     if (!user || !discussion || !newComment.trim() || !token) return;
 
     try {
-      const response = await axios.post(`http://localhost:5000/api/discussion/${discussion._id}/comments`, {
+      const response = await axios.post(`${API_URL}/discussion/${discussion._id}/comments`, {
         content: newComment
       }, {
         headers: {

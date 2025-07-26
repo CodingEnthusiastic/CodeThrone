@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ShoppingCart, Coins, Gift, Truck, MapPin, Phone, User, CheckCircle, Star } from 'lucide-react';
+import { API_URL, SOCKET_URL } from "../config/api";
 
 interface RedeemItem {
   _id: string;
@@ -61,7 +62,7 @@ const Redeem: React.FC = () => {
 
   const fetchRedeemItems = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/redeem/items', {
+      const response = await axios.get(`${API_URL}/redeem/items`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -181,7 +182,7 @@ const Redeem: React.FC = () => {
         deliveryAddress
       };
 
-      await axios.post('http://localhost:5000/api/redeem/order', orderData, {
+      await axios.post(`${API_URL}/redeem/order`, orderData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

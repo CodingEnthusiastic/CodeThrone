@@ -6,6 +6,8 @@ import { useParams, Link } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import axios from "axios"
 import { ArrowLeft, Calendar, User, AlertCircle, Info, CheckCircle, Megaphone, Edit, Trash2, Share2, Bookmark } from 'lucide-react'
+import { API_URL, SOCKET_URL } from "../config/api";
+
 
 interface Announcement {
   _id: string
@@ -50,7 +52,7 @@ const AnnounceDetail: React.FC = () => {
 
   const fetchAnnouncement = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/announcements/${id}`)
+      const response = await axios.get(`${API_URL}/announcements/${id}`)
       setAnnouncement(response.data)
       setEditForm({
         title: response.data.title,
@@ -71,7 +73,7 @@ const AnnounceDetail: React.FC = () => {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await axios.put(`http://localhost:5000/api/announcements/${announcement._id}`, editForm, {
+      const response = await axios.put(`${API_URL}/announcements/${announcement._id}`, editForm, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -89,7 +91,7 @@ const AnnounceDetail: React.FC = () => {
     if (window.confirm("Are you sure you want to delete this announcement?")) {
       try {
         const token = localStorage.getItem("token")
-        await axios.delete(`http://localhost:5000/api/announcements/${announcement._id}`, {
+        await axios.delete(`${API_URL}/announcements/${announcement._id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

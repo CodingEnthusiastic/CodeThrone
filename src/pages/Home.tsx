@@ -30,6 +30,7 @@ import {
   Award,
 } from "lucide-react"
 import { GoMail } from "react-icons/go"
+import { API_URL, SOCKET_URL } from "../config/api"
 
 interface Announcement {
   _id: string
@@ -286,8 +287,8 @@ const Home: React.FC = () => {
     console.log("📡 Fetching home page data...")
     try {
       const [announcementsRes, contestsRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/announcements"),
-        axios.get("http://localhost:5000/api/contests"),
+        axios.get(`${API_URL}/announcements`),
+        axios.get(`${API_URL}/contests`),
       ])
       console.log("✅ Home data fetched successfully")
 
@@ -308,7 +309,7 @@ const Home: React.FC = () => {
   const fetchTopicStats = async () => {
     console.log("📊 Fetching topic statistics...")
     try {
-      const response = await axios.get("http://localhost:5000/api/problems/topic-stats")
+      const response = await axios.get(`${API_URL}/problems/topic-stats`)
     if (!response.data) {
       throw new Error('No data received from server');
     }
@@ -359,7 +360,7 @@ const Home: React.FC = () => {
   const fetchCompanyStats = async () => {
     console.log("🏢 Fetching company statistics...")
     try {
-      const response = await axios.get("http://localhost:5000/api/problems/company")
+      const response = await axios.get(`${API_URL}/problems/company`)
       setCompanyStats(response.data)
       console.log("✅ Company stats fetched:", response.data.length, "companies")
     } catch (error) {

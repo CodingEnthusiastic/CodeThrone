@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import axios, { AxiosError } from 'axios';
+import { API_URL, SOCKET_URL } from "../../config/api";
+
 import { 
   Plus, 
   Edit, 
@@ -151,16 +153,16 @@ const AdminDashboard: React.FC = () => {
     try {
       console.log('📡 Making API calls to fetch admin data...');
       const [problemsRes, contestsRes, discussionsRes, announcementsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/problems', {
+        axios.get(`${API_URL}/problems`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }),
-        axios.get('http://localhost:5000/api/contests', {
+        axios.get(`${API_URL}/contests`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }),
-        axios.get('http://localhost:5000/api/discussion', {
+        axios.get(`${API_URL}/discussion`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }),
-        axios.get('http://localhost:5000/api/announcements', {
+        axios.get(`${API_URL}/announcements`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
@@ -216,9 +218,9 @@ const AdminDashboard: React.FC = () => {
         alert('Please login again.');
         return;
       }
-      
-      const response = await axios.post('http://localhost:5000/api/problems', problemData, {
-        headers: { 
+
+      const response = await axios.post(`${API_URL}/problems`, problemData, {
+        headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
@@ -287,9 +289,9 @@ const AdminDashboard: React.FC = () => {
         alert('Please login again.');
         return;
       }
-      
-      const response = await axios.post('http://localhost:5000/api/contests', newContest, {
-        headers: { 
+
+      const response = await axios.post(`${API_URL}/contests`, newContest, {
+        headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
@@ -362,7 +364,7 @@ const AdminDashboard: React.FC = () => {
         return;
       }
       
-      const response = await axios.post('http://localhost:5000/api/announcements', announcementData, {
+      const response = await axios.post(`${API_URL}/announcements`, announcementData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -405,7 +407,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this problem?')) return;
     
     try {
-      await axios.delete(`http://localhost:5000/api/problems/${problemId}`, {
+      await axios.delete(`${API_URL}/problems/${problemId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       console.log('✅ Problem deleted successfully');
@@ -422,7 +424,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this contest?')) return;
     
     try {
-      await axios.delete(`http://localhost:5000/api/contests/${contestId}`, {
+      await axios.delete(`${API_URL}/contests/${contestId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       console.log('✅ Contest deleted successfully');
@@ -439,7 +441,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this announcement?')) return;
     
     try {
-      await axios.delete(`http://localhost:5000/api/announcements/${announcementId}`, {
+      await axios.delete(`${API_URL}/announcements/${announcementId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       console.log('✅ Announcement deleted successfully');
@@ -456,7 +458,7 @@ const AdminDashboard: React.FC = () => {
   if (!confirm('Are you sure you want to delete this discussion?')) return;
 
   try {
-    await axios.delete(`http://localhost:5000/api/discussion/${discussionId}`, {
+    await axios.delete(`${API_URL}/discussion/${discussionId}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     console.log('✅ Discussion deleted successfully');
