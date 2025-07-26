@@ -17,6 +17,7 @@ import redeemRoutes from './routes/redeem.js';
 import { authenticateToken } from './middleware/auth.js';
 import { setupGameSocket } from './socket/game.js';
 import geminiRoutes from './routes/gemini.js';
+import chatRoutes from './routes/chat.js';
 import announcementsRouter from './routes/announcements.js';
 import certificatesRouter from './routes/certificates.js';
 console.log('🚀 Starting backend server...');
@@ -128,6 +129,9 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/gemini', geminiRoutes);
+
+app.use('/api/chat', chatRoutes);
+console.log('✅ Chat routes mounted at /api/chat');
 
 // app.use('/api/stats', statsRouter); 
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
-import { Play, Send, Clock, MemoryStick as Memory, CheckCircle, XCircle, BookOpen, Video, Code, FileText, MessageSquare, Bot, Eye, Calendar, User, Copy, Maximize2, Minimize2, History, Plus } from 'lucide-react';
+import { Play, Send, Clock, MemoryStick as Memory, CheckCircle, XCircle, BookOpen, Video, Code, FileText, MessageSquare, Bot, Eye, Calendar, User, Copy, Maximize2, Minimize2, History, Plus, ArrowLeft } from 'lucide-react';
 import CodeMirrorEditor from '../components/CodeMirrorEditor';
 import { API_URL } from "../config/api";
 
@@ -100,8 +100,10 @@ const ProblemDetail: React.FC = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<{prompt: string, response: string}[]>([]);
   const [isAiMaximized, setIsAiMaximized] = useState(false);
-  const [allChatHistory, setAllChatHistory] = useState<{date: string, problemTitle: string, problemId: string, chats: {prompt: string, response: string}[]}[]>([]);
-  const [selectedHistorySession, setSelectedHistorySession] = useState<number | null>(null);
+  const [allChatHistory, setAllChatHistory] = useState<{sessionId: string, problemId: string, problemTitle: string, date: string, lastMessage: string, messageCount: number, updatedAt: string}[]>([]);
+  const [selectedHistorySession, setSelectedHistorySession] = useState<string | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Predefined quick prompts for better user experience
   const quickPrompts = [
@@ -146,52 +148,91 @@ const ProblemDetail: React.FC = () => {
     return contextualPrompts;
   };
 
-  // Load chat history from localStorage
+  // Load chat history from database
   useEffect(() => {
-    const savedHistory = localStorage.getItem(`chatHistory_${user?.username}`);
-    if (savedHistory) {
-      try {
-        setAllChatHistory(JSON.parse(savedHistory));
-      } catch (error) {
-        console.error('Error loading chat history:', error);
-      }
+    if (user) {
+      loadUserChatHistory();
     }
   }, [user]);
 
-  // Save current session to chat history
-  const saveCurrentSession = () => {
-    if (chatHistory.length > 0 && problem && user) {
-      const newSession = {
-        date: new Date().toISOString(),
-        problemTitle: problem.title,
-        problemId: problem._id,
-        chats: [...chatHistory]
-      };
+  // Generate unique session ID
+  const generateSessionId = () => {
+    return `${problem?._id}_${user?.username}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
 
-      const updatedHistory = [newSession, ...allChatHistory];
-      setAllChatHistory(updatedHistory);
-      localStorage.setItem(`chatHistory_${user.username}`, JSON.stringify(updatedHistory));
+  // Initialize session when problem loads
+  useEffect(() => {
+    if (problem && user && !currentSessionId) {
+      setCurrentSessionId(generateSessionId());
+    }
+  }, [problem, user]);
+
+  // Load user's chat history from database
+  const loadUserChatHistory = async () => {
+    try {
+      setLoadingHistory(true);
+      const response = await axios.get(`${API_URL}/chat/history`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setAllChatHistory(response.data);
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Save chat message to database
+  const saveChatMessage = async (prompt: string, response: string) => {
+    try {
+      const sessionId = currentSessionId || generateSessionId();
+      if (!currentSessionId) {
+        setCurrentSessionId(sessionId);
+      }
+
+      await axios.post(`${API_URL}/chat/save`, {
+        sessionId,
+        problemId: problem?._id,
+        problemTitle: problem?.title,
+        prompt,
+        response
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      // Refresh history to show new message
+      loadUserChatHistory();
+    } catch (error) {
+      console.error('Error saving chat message:', error);
     }
   };
 
   // Load a previous chat session
-  const loadChatSession = (sessionIndex: number) => {
-    const session = allChatHistory[sessionIndex];
-    if (session) {
-      setChatHistory(session.chats);
-      setSelectedHistorySession(sessionIndex);
-      setAiResponse(session.chats[session.chats.length - 1]?.response || '');
+  const loadChatSession = async (sessionId: string) => {
+    try {
+      setLoadingHistory(true);
+      const response = await axios.get(`${API_URL}/chat/session/${sessionId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      const session = response.data;
+      setChatHistory(session.messages || []);
+      setSelectedHistorySession(sessionId);
+      setCurrentSessionId(sessionId);
+      setAiResponse(session.messages?.length > 0 ? session.messages[session.messages.length - 1].response : '');
+    } catch (error) {
+      console.error('Error loading chat session:', error);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
   // Clear current chat and start fresh
   const startNewChat = () => {
-    if (chatHistory.length > 0) {
-      saveCurrentSession();
-    }
     setChatHistory([]);
     setAiResponse('');
     setSelectedHistorySession(null);
+    setCurrentSessionId(generateSessionId());
   };
 
   // Toggle AI maximized view
@@ -326,6 +367,9 @@ const ProblemDetail: React.FC = () => {
       };
       
       setChatHistory(prev => [...prev, newChatEntry]);
+      
+      // Save to database
+      await saveChatMessage(aiPrompt, res.data.reply || 'No response received.');
       
       // Clear the prompt input
       setAiPrompt('');
@@ -617,34 +661,43 @@ const ProblemDetail: React.FC = () => {
 
           {/* Chat History List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {allChatHistory.map((session, index) => (
-              <button
-                key={index}
-                onClick={() => loadChatSession(index)}
-                className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                  selectedHistorySession === index
-                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600'
-                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
-              >
-                <div className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                  {session.problemTitle}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {new Date(session.date).toLocaleDateString()} • {session.chats.length} messages
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-300 mt-1 truncate">
-                  {session.chats[0]?.prompt || 'No messages'}
-                </div>
-              </button>
-            ))}
-            
-            {allChatHistory.length === 0 && (
+            {loadingHistory ? (
               <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                <History className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No chat history yet</p>
-                <p className="text-xs">Start chatting to see your history here</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300 mx-auto mb-2"></div>
+                <p>Loading chat history...</p>
               </div>
+            ) : (
+              <>
+                {allChatHistory.map((session) => (
+                  <button
+                    key={session.sessionId}
+                    onClick={() => loadChatSession(session.sessionId)}
+                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      selectedHistorySession === session.sessionId
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600'
+                        : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <div className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                      {session.problemTitle}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {new Date(session.date).toLocaleDateString()} • {session.messageCount} messages
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-1 truncate">
+                      {session.lastMessage}
+                    </div>
+                  </button>
+                ))}
+                
+                {allChatHistory.length === 0 && (
+                  <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <History className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No chat history yet</p>
+                    <p className="text-xs">Start chatting to see your history here</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -655,6 +708,13 @@ const ProblemDetail: React.FC = () => {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
+                <button
+                  onClick={toggleAiMaximized}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors mr-3"
+                  title="Back to Problem"
+                >
+                  <ArrowLeft className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
                 <Bot className="h-6 w-6 mr-3 text-indigo-500" />
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -666,13 +726,23 @@ const ProblemDetail: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={toggleAiMaximized}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                title="Minimize AI Assistant"
-              >
-                <Minimize2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={startNewChat}
+                  className="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                  title="Start New Chat"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Chat
+                </button>
+                <button
+                  onClick={toggleAiMaximized}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Minimize AI Assistant"
+                >
+                  <Minimize2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
             </div>
           </div>
 
