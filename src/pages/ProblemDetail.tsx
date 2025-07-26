@@ -101,14 +101,21 @@ const ProblemDetail: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<{prompt: string, response: string}[]>([]);
   const [isAiMaximized, setIsAiMaximized] = useState(false);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
-  // Auto-scroll chat to bottom in minimised mode when new answer appears
-useEffect(() => {
-  if (chatHistoryRef.current) {
-    setTimeout(() => {
+  // Auto-scroll chat to bottom in both minimized and maximized mode when new answer appears
+  useEffect(() => {
+    if (chatHistoryRef.current) {
+      requestAnimationFrame(() => {
+        chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
+      });
+    }
+  }, [chatHistory, aiResponse, isAiMaximized]);
+
+  // Manual scroll to bottom handler
+  const scrollChatToBottom = () => {
+    if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
-    }, 0);
-  }
-}, [chatHistory, aiResponse, isAiMaximized]);
+    }
+  };
   const [allChatHistory, setAllChatHistory] = useState<{sessionId: string, problemId: string, problemTitle: string, date: string, lastMessage: string, messageCount: number, updatedAt: string}[]>([]);
   const [selectedHistorySession, setSelectedHistorySession] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
@@ -1159,7 +1166,113 @@ useEffect(() => {
               )}
 
               {activeTab === 'chatai' && (
-                <div>
+                <div className={`relative transition-colors duration-300 ${isAiMaximized ? 'min-h-[80vh]' : ''} ${isAiMaximized ? (document.body.classList.contains('dark') ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900' : 'bg-gradient-to-br from-gray-50 via-white to-gray-100') : ''}`}> 
+                  {/* Animated backgrounds for maximized AI chat */}
+                  {isAiMaximized && (
+                    <>
+                      <style>{`
+                        @keyframes galaxy-drift {
+                          0%, 100% { transform: translateX(0px) translateY(0px) rotate(0deg); opacity: 0.8; }
+                          25% { transform: translateX(30px) translateY(-20px) rotate(90deg); opacity: 1; }
+                          50% { transform: translateX(-15px) translateY(25px) rotate(180deg); opacity: 0.6; }
+                          75% { transform: translateX(40px) translateY(10px) rotate(270deg); opacity: 0.9; }
+                        }
+                        @keyframes stellar-twinkle {
+                          0%, 100% { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
+                          25% { opacity: 0.8; transform: scale(1.2) rotate(90deg); }
+                          50% { opacity: 1; transform: scale(1) rotate(180deg); }
+                          75% { opacity: 0.5; transform: scale(1.1) rotate(270deg); }
+                        }
+                        @keyframes cosmic-float {
+                          0% { transform: translateY(100vh) translateX(0px) rotate(0deg); opacity: 0; }
+                          10% { opacity: 0.6; }
+                          90% { opacity: 0.6; }
+                          100% { transform: translateY(-100px) translateX(50px) rotate(360deg); opacity: 0; }
+                        }
+                        @keyframes nebula-pulse {
+                          0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.1; }
+                          50% { transform: scale(1.1) rotate(180deg); opacity: 0.3; }
+                        }
+                        @keyframes aurora-glow {
+                          0%, 100% { background: linear-gradient(45deg, rgba(59,130,246,0.1), rgba(147,51,234,0.1)); transform: scale(1) rotate(0deg); }
+                          33% { background: linear-gradient(45deg, rgba(236,72,153,0.1), rgba(59,130,246,0.1)); transform: scale(1.1) rotate(120deg); }
+                          66% { background: linear-gradient(45deg, rgba(34,197,94,0.1), rgba(236,72,153,0.1)); transform: scale(0.9) rotate(240deg); }
+                        }
+                        .galaxy-drift { animation: galaxy-drift 8s ease-in-out infinite; }
+                        .stellar-twinkle { animation: stellar-twinkle 3s ease-in-out infinite; }
+                        .cosmic-float { animation: cosmic-float 12s linear infinite; }
+                        .nebula-pulse { animation: nebula-pulse 15s ease-in-out infinite; }
+                        .aurora-glow { animation: aurora-glow 12s ease-in-out infinite; }
+                      `}</style>
+                      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                        {/* Nebula/Aurora backgrounds */}
+                        <div className="absolute top-1/4 left-1/6 w-96 h-96 bg-gradient-to-br from-purple-900/20 to-blue-900/20 nebula-pulse rounded-full blur-3xl"></div>
+                        <div className="absolute bottom-1/4 right-1/6 w-80 h-80 bg-gradient-to-br from-indigo-900/20 to-violet-900/20 nebula-pulse rounded-full blur-3xl" style={{ animationDelay: '7s' }}></div>
+                        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-br from-cyan-900/15 to-teal-900/15 nebula-pulse rounded-full blur-2xl" style={{ animationDelay: '3s' }}></div>
+                        {/* Aurora for light mode */}
+                        <div className="absolute top-1/5 left-1/4 w-80 h-80 aurora-glow rounded-full blur-3xl opacity-40"></div>
+                        <div className="absolute bottom-1/4 right-1/3 w-96 h-96 aurora-glow rounded-full blur-3xl opacity-30" style={{ animationDelay: '4s' }}></div>
+                        <div className="absolute top-2/3 left-1/6 w-64 h-64 aurora-glow rounded-full blur-2xl opacity-35" style={{ animationDelay: '8s' }}></div>
+                        {/* Galaxy stars */}
+                        {Array.from({ length: 40 }).map((_, i) => (
+                          <div
+                            key={`galaxy-star-${i}`}
+                            className={`stellar-twinkle absolute ${
+                              i % 8 === 0 ? 'w-1 h-1 bg-blue-300' :
+                              i % 8 === 1 ? 'w-0.5 h-0.5 bg-purple-300' :
+                              i % 8 === 2 ? 'w-1.5 h-1.5 bg-cyan-300' :
+                              i % 8 === 3 ? 'w-0.5 h-0.5 bg-white' :
+                              i % 8 === 4 ? 'w-1 h-1 bg-indigo-300' :
+                              i % 8 === 5 ? 'w-0.5 h-0.5 bg-violet-300' :
+                              i % 8 === 6 ? 'w-1 h-1 bg-teal-300' : 'w-0.5 h-0.5 bg-pink-300'
+                            } rounded-full`}
+                            style={{
+                              left: `${Math.random() * 100}%`,
+                              top: `${Math.random() * 100}%`,
+                              animationDelay: `${Math.random() * 3}s`,
+                              animationDuration: `${3 + Math.random() * 2}s`,
+                            }}
+                          />
+                        ))}
+                        {/* Cosmic shooting stars */}
+                        {Array.from({ length: 8 }).map((_, i) => (
+                          <div
+                            key={`cosmic-star-${i}`}
+                            className={`cosmic-float absolute w-2 h-2 ${
+                              i % 4 === 0 ? 'bg-gradient-to-r from-blue-400 to-cyan-400' :
+                              i % 4 === 1 ? 'bg-gradient-to-r from-purple-400 to-pink-400' :
+                              i % 4 === 2 ? 'bg-gradient-to-r from-indigo-400 to-blue-400' :
+                              'bg-gradient-to-r from-violet-400 to-purple-400'
+                            } rounded-full blur-sm`}
+                            style={{
+                              left: `${Math.random() * 100}%`,
+                              animationDelay: `${Math.random() * 12}s`,
+                              animationDuration: `${12 + Math.random() * 8}s`,
+                            }}
+                          />
+                        ))}
+                        {/* Floating galaxy particles */}
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <div
+                            key={`galaxy-particle-${i}`}
+                            className={`galaxy-drift absolute ${
+                              i % 5 === 0 ? 'w-3 h-3 bg-blue-500/30' :
+                              i % 5 === 1 ? 'w-2 h-2 bg-purple-500/30' :
+                              i % 5 === 2 ? 'w-2.5 h-2.5 bg-cyan-500/30' :
+                              i % 5 === 3 ? 'w-2 h-2 bg-indigo-500/30' :
+                              'w-3 h-3 bg-violet-500/30'
+                            } rounded-full blur-sm`}
+                            style={{
+                              left: `${Math.random() * 100}%`,
+                              top: `${Math.random() * 100}%`,
+                              animationDuration: `${8 + Math.random() * 4}s`,
+                              animationDelay: `${Math.random() * 8}s`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
                   {!token ? (
                     <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                       <Bot className="h-16 w-16 mx-auto mb-4 opacity-50" />
@@ -1177,14 +1290,28 @@ useEffect(() => {
                               Problem-Aware
                             </span>
                           </div>
-                          <button
-                            onClick={toggleAiMaximized}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-1"
-                            title="Maximize AI Assistant"
-                          >
-                            <Maximize2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                            <span className="text-xs font-medium">Maximize</span>
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                if (chatHistoryRef.current) {
+                                  chatHistoryRef.current.scrollTo({ top: chatHistoryRef.current.scrollHeight, behavior: 'smooth' });
+                                }
+                              }}
+                              className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors flex items-center gap-1"
+                              title="Scroll to Bottom"
+                            >
+                              <ArrowLeft style={{ transform: 'rotate(-90deg)' }} className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                              <span className="text-xs font-medium">Bottom</span>
+                            </button>
+                            <button
+                              onClick={toggleAiMaximized}
+                              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-1"
+                              title="Maximize AI Assistant"
+                            >
+                              <Maximize2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                              <span className="text-xs font-medium">Maximize</span>
+                            </button>
+                          </div>
                         </h3>
 
                         {/* Quick Prompts */}
@@ -1246,7 +1373,7 @@ useEffect(() => {
                             <MessageSquare className="h-5 w-5 mr-2 text-purple-500" />
                             AI Chat History
                           </h3>
-                          <div ref={chatHistoryRef} className="space-y-4 max-h-96 overflow-y-auto">
+                          <div ref={chatHistoryRef} className="space-y-4 max-h-96 overflow-y-auto relative">
                             {/* Previous chat history */}
                             {chatHistory.map((chat, index) => (
                               <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -1286,15 +1413,28 @@ useEffect(() => {
                           </div>
                           
                           {chatHistory.length > 0 && (
-                            <button
-                              onClick={() => {
-                                setChatHistory([]);
-                                setAiResponse('');
-                              }}
-                              className="mt-3 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-                            >
-                              Clear chat history
-                            </button>
+                            <div className="flex gap-2 mt-3">
+                              <button
+                                onClick={() => {
+                                  if (chatHistoryRef.current) {
+                                    chatHistoryRef.current.scrollTo({ top: chatHistoryRef.current.scrollHeight, behavior: 'smooth' });
+                                  }
+                                }}
+                                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors px-3 py-1 rounded bg-blue-100 dark:bg-blue-900/20"
+                              >
+                                <ArrowLeft style={{ transform: 'rotate(-90deg)' }} className="h-4 w-4 inline mr-1" />
+                                Scroll to Bottom
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setChatHistory([]);
+                                  setAiResponse('');
+                                }}
+                                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors px-3 py-1 rounded bg-gray-100 dark:bg-gray-800"
+                              >
+                                Clear chat history
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}
