@@ -228,8 +228,11 @@ router.get('/google/callback',
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
-    // Redirect to correct frontend port
-    res.redirect('http://localhost:5173/oauth?token=' + encodeURIComponent(token));
+    // Redirect to frontend (production or development)
+    const frontendUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://codethrone.netlify.app'
+      : 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/oauth?token=${encodeURIComponent(token)}`);
     // Or: res.json({ token, user });
   }
 );
