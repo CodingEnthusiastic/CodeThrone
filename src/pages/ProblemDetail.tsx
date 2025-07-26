@@ -1177,10 +1177,11 @@ const ProblemDetail: React.FC = () => {
                           </div>
                           <button
                             onClick={toggleAiMaximized}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-1"
                             title="Maximize AI Assistant"
                           >
-                            <Maximize2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />Maximize
+                            <Maximize2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            <span className="text-xs font-medium">Maximize</span>
                           </button>
                         </h3>
 
