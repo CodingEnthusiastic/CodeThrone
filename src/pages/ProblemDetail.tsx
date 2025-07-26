@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
-import { Play, Send, Clock, MemoryStick as Memory, CheckCircle, XCircle, BookOpen, Video, Code, FileText, MessageSquare, Bot, Eye, Calendar, User, Coins, Copy } from 'lucide-react';
+import { Play, Send, Clock, MemoryStick as Memory, CheckCircle, XCircle, BookOpen, Video, Code, FileText, MessageSquare, Bot, Eye, Calendar, User, Copy, Maximize2, Minimize2, History, Plus } from 'lucide-react';
 import CodeMirrorEditor from '../components/CodeMirrorEditor';
-import { API_URL, SOCKET_URL } from "../config/api";
+import { API_URL } from "../config/api";
 
 interface Problem {
   _id: string;
@@ -99,6 +99,9 @@ const ProblemDetail: React.FC = () => {
   const [aiResponse, setAiResponse] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<{prompt: string, response: string}[]>([]);
+  const [isAiMaximized, setIsAiMaximized] = useState(false);
+  const [allChatHistory, setAllChatHistory] = useState<{date: string, problemTitle: string, problemId: string, chats: {prompt: string, response: string}[]}[]>([]);
+  const [selectedHistorySession, setSelectedHistorySession] = useState<number | null>(null);
 
   // Predefined quick prompts for better user experience
   const quickPrompts = [
@@ -141,6 +144,59 @@ const ProblemDetail: React.FC = () => {
     }
     
     return contextualPrompts;
+  };
+
+  // Load chat history from localStorage
+  useEffect(() => {
+    const savedHistory = localStorage.getItem(`chatHistory_${user?.username}`);
+    if (savedHistory) {
+      try {
+        setAllChatHistory(JSON.parse(savedHistory));
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+      }
+    }
+  }, [user]);
+
+  // Save current session to chat history
+  const saveCurrentSession = () => {
+    if (chatHistory.length > 0 && problem && user) {
+      const newSession = {
+        date: new Date().toISOString(),
+        problemTitle: problem.title,
+        problemId: problem._id,
+        chats: [...chatHistory]
+      };
+
+      const updatedHistory = [newSession, ...allChatHistory];
+      setAllChatHistory(updatedHistory);
+      localStorage.setItem(`chatHistory_${user.username}`, JSON.stringify(updatedHistory));
+    }
+  };
+
+  // Load a previous chat session
+  const loadChatSession = (sessionIndex: number) => {
+    const session = allChatHistory[sessionIndex];
+    if (session) {
+      setChatHistory(session.chats);
+      setSelectedHistorySession(sessionIndex);
+      setAiResponse(session.chats[session.chats.length - 1]?.response || '');
+    }
+  };
+
+  // Clear current chat and start fresh
+  const startNewChat = () => {
+    if (chatHistory.length > 0) {
+      saveCurrentSession();
+    }
+    setChatHistory([]);
+    setAiResponse('');
+    setSelectedHistorySession(null);
+  };
+
+  // Toggle AI maximized view
+  const toggleAiMaximized = () => {
+    setIsAiMaximized(!isAiMaximized);
   };
 
   // Copy to clipboard function
@@ -264,10 +320,12 @@ const ProblemDetail: React.FC = () => {
       setAiResponse(res.data.reply || 'No response received.');
       
       // Add to chat history
-      setChatHistory(prev => [...prev, {
+      const newChatEntry = {
         prompt: aiPrompt,
         response: res.data.reply || 'No response received.'
-      }]);
+      };
+      
+      setChatHistory(prev => [...prev, newChatEntry]);
       
       // Clear the prompt input
       setAiPrompt('');
@@ -527,6 +585,188 @@ const ProblemDetail: React.FC = () => {
           <div className="text-6xl mb-4">🔍</div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Problem not found</h2>
           <p className="text-gray-600 dark:text-gray-400">The problem you're looking for doesn't exist or has been removed.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Maximized AI View
+  if (isAiMaximized) {
+    return (
+      <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex">
+        {/* Sidebar for Chat History */}
+        <div className="w-80 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                <History className="h-5 w-5 mr-2 text-blue-500" />
+                Chat History
+              </h2>
+              <button
+                onClick={startNewChat}
+                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                title="Start New Chat"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Problem: <span className="font-medium text-gray-900 dark:text-white">{problem.title}</span>
+            </div>
+          </div>
+
+          {/* Chat History List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {allChatHistory.map((session, index) => (
+              <button
+                key={index}
+                onClick={() => loadChatSession(index)}
+                className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                  selectedHistorySession === index
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600'
+                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                <div className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                  {session.problemTitle}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {new Date(session.date).toLocaleDateString()} • {session.chats.length} messages
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300 mt-1 truncate">
+                  {session.chats[0]?.prompt || 'No messages'}
+                </div>
+              </button>
+            ))}
+            
+            {allChatHistory.length === 0 && (
+              <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                <History className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No chat history yet</p>
+                <p className="text-xs">Start chatting to see your history here</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Bot className="h-6 w-6 mr-3 text-indigo-500" />
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    AI Assistant - {problem.title}
+                  </h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Difficulty: <span className="font-medium">{problem.difficulty}</span> • 
+                    Tags: {problem.tags?.join(', ') || 'None'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={toggleAiMaximized}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title="Minimize AI Assistant"
+              >
+                <Minimize2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Prompts */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Quick questions:</p>
+            <div className="flex flex-wrap gap-2">
+              {getContextualPrompts().slice(0, 10).map((prompt, index) => (
+                <button
+                  key={index}
+                  onClick={() => setAiPrompt(prompt)}
+                  disabled={aiLoading}
+                  className="text-sm px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors disabled:opacity-50"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {chatHistory.map((chat, index) => (
+              <div key={index} className="space-y-3">
+                {/* User Message */}
+                <div className="flex justify-end">
+                  <div className="max-w-2xl bg-blue-600 text-white p-3 rounded-lg">
+                    <div className="flex items-center mb-1">
+                      <User className="h-4 w-4 mr-2" />
+                      <span className="text-sm font-medium">You</span>
+                    </div>
+                    <p className="text-sm">{chat.prompt}</p>
+                  </div>
+                </div>
+                
+                {/* AI Response */}
+                <div className="flex justify-start">
+                  <div className="max-w-3xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg">
+                    <div className="flex items-center mb-1">
+                      <Bot className="h-4 w-4 mr-2 text-indigo-500" />
+                      <span className="text-sm font-medium">AI Assistant</span>
+                    </div>
+                    <div className="text-sm whitespace-pre-wrap break-words">{chat.response}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {chatHistory.length === 0 && (
+              <div className="text-center text-gray-500 dark:text-gray-400 py-12">
+                <Bot className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
+                <p>Ask me anything about this coding problem!</p>
+              </div>
+            )}
+          </div>
+
+          {/* Input Area */}
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && !aiLoading && generateResponse()}
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                placeholder="Ask about algorithms, approach, complexity, hints..."
+                disabled={aiLoading}
+              />
+              <button
+                onClick={generateResponse}
+                disabled={aiLoading || !aiPrompt.trim()}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
+              >
+                {aiLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send
+                  </>
+                )}
+              </button>
+            </div>
+            
+            {aiLoading && (
+              <div className="mt-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div className="inline-flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                  AI is analyzing the problem and generating response...
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -847,12 +1087,21 @@ const ProblemDetail: React.FC = () => {
                   ) : (
                     <div className="prose max-w-none">
                       <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100 flex items-center">
-                          <Bot className="h-5 w-5 mr-2 text-indigo-500" />
-                          AI Assistant
-                          <span className="ml-2 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded-full">
-                            Problem-Aware
-                          </span>
+                        <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100 flex items-center justify-between">
+                          <div className="flex items-center">
+                            <Bot className="h-5 w-5 mr-2 text-indigo-500" />
+                            AI Assistant
+                            <span className="ml-2 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded-full">
+                              Problem-Aware
+                            </span>
+                          </div>
+                          <button
+                            onClick={toggleAiMaximized}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            title="Maximize AI Assistant"
+                          >
+                            <Maximize2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          </button>
                         </h3>
 
                         {/* Quick Prompts */}
