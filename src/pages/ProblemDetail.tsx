@@ -100,6 +100,13 @@ const ProblemDetail: React.FC = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<{prompt: string, response: string}[]>([]);
   const [isAiMaximized, setIsAiMaximized] = useState(false);
+  const chatHistoryRef = useRef<HTMLDivElement>(null);
+  // Auto-scroll chat to bottom in minimised mode when new answer appears
+  useEffect(() => {
+    if (!isAiMaximized && chatHistoryRef.current) {
+      chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
+    }
+  }, [chatHistory, aiResponse, isAiMaximized]);
   const [allChatHistory, setAllChatHistory] = useState<{sessionId: string, problemId: string, problemTitle: string, date: string, lastMessage: string, messageCount: number, updatedAt: string}[]>([]);
   const [selectedHistorySession, setSelectedHistorySession] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
@@ -1173,7 +1180,7 @@ const ProblemDetail: React.FC = () => {
                             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                             title="Maximize AI Assistant"
                           >
-                            <Maximize2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            <Maximize2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />Maximize
                           </button>
                         </h3>
 
@@ -1236,7 +1243,7 @@ const ProblemDetail: React.FC = () => {
                             <MessageSquare className="h-5 w-5 mr-2 text-purple-500" />
                             AI Chat History
                           </h3>
-                          <div className="space-y-4 max-h-96 overflow-y-auto">
+                          <div ref={chatHistoryRef} className="space-y-4 max-h-96 overflow-y-auto">
                             {/* Previous chat history */}
                             {chatHistory.map((chat, index) => (
                               <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
