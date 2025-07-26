@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
 import {
   Search,
@@ -30,6 +31,7 @@ interface Discussion {
 
 const Discussion: React.FC = () => {
   const { user, token } = useAuth(); // ✅ Get token from auth context
+  const { isDark } = useTheme();
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -146,12 +148,271 @@ const Discussion: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className={`min-h-screen transition-colors duration-300 relative ${
+      isDark
+        ? "bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900"
+        : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
+    }`}>
+      {/* Galaxy Stars Animation for Dark Mode */}
+      {isDark && (
+        <>
+          <style>{`
+            @keyframes galaxy-drift {
+              0%, 100% {
+                transform: translateX(0px) translateY(0px) rotate(0deg);
+                opacity: 0.8;
+              }
+              25% {
+                transform: translateX(30px) translateY(-20px) rotate(90deg);
+                opacity: 1;
+              }
+              50% {
+                transform: translateX(-15px) translateY(25px) rotate(180deg);
+                opacity: 0.6;
+              }
+              75% {
+                transform: translateX(40px) translateY(10px) rotate(270deg);
+                opacity: 0.9;
+              }
+            }
+            @keyframes stellar-twinkle {
+              0%, 100% { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
+              25% { opacity: 0.8; transform: scale(1.2) rotate(90deg); }
+              50% { opacity: 1; transform: scale(1) rotate(180deg); }
+              75% { opacity: 0.5; transform: scale(1.1) rotate(270deg); }
+            }
+            @keyframes cosmic-float {
+              0% { transform: translateY(100vh) translateX(0px) rotate(0deg); opacity: 0; }
+              10% { opacity: 0.6; }
+              90% { opacity: 0.6; }
+              100% { transform: translateY(-100px) translateX(50px) rotate(360deg); opacity: 0; }
+            }
+            @keyframes nebula-pulse {
+              0%, 100% { 
+                transform: scale(1) rotate(0deg);
+                opacity: 0.1;
+              }
+              50% { 
+                transform: scale(1.1) rotate(180deg);
+                opacity: 0.3;
+              }
+            }
+            .galaxy-drift {
+              animation: galaxy-drift 8s ease-in-out infinite;
+            }
+            .stellar-twinkle {
+              animation: stellar-twinkle 3s ease-in-out infinite;
+            }
+            .cosmic-float {
+              animation: cosmic-float 12s linear infinite;
+            }
+            .nebula-pulse {
+              animation: nebula-pulse 15s ease-in-out infinite;
+            }
+          `}</style>
+          
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            {/* Nebula backgrounds */}
+            <div className="absolute top-1/4 left-1/6 w-96 h-96 bg-gradient-to-br from-purple-900/20 to-blue-900/20 nebula-pulse rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/4 right-1/6 w-80 h-80 bg-gradient-to-br from-indigo-900/20 to-violet-900/20 nebula-pulse rounded-full blur-3xl" style={{ animationDelay: '7s' }}></div>
+            <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-br from-cyan-900/15 to-teal-900/15 nebula-pulse rounded-full blur-2xl" style={{ animationDelay: '3s' }}></div>
+            
+            {/* Galaxy stars */}
+            {Array.from({ length: 50 }).map((_, i) => (
+              <div
+                key={`galaxy-star-${i}`}
+                className={`stellar-twinkle absolute ${
+                  i % 8 === 0 ? 'w-1 h-1 bg-blue-300' :
+                  i % 8 === 1 ? 'w-0.5 h-0.5 bg-purple-300' :
+                  i % 8 === 2 ? 'w-1.5 h-1.5 bg-cyan-300' :
+                  i % 8 === 3 ? 'w-0.5 h-0.5 bg-white' :
+                  i % 8 === 4 ? 'w-1 h-1 bg-indigo-300' :
+                  i % 8 === 5 ? 'w-0.5 h-0.5 bg-violet-300' :
+                  i % 8 === 6 ? 'w-1 h-1 bg-teal-300' : 'w-0.5 h-0.5 bg-pink-300'
+                } rounded-full`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${3 + Math.random() * 2}s`,
+                }}
+              />
+            ))}
+            
+            {/* Cosmic shooting stars */}
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={`cosmic-star-${i}`}
+                className={`cosmic-float absolute w-2 h-2 ${
+                  i % 4 === 0 ? 'bg-gradient-to-r from-blue-400 to-cyan-400' :
+                  i % 4 === 1 ? 'bg-gradient-to-r from-purple-400 to-pink-400' :
+                  i % 4 === 2 ? 'bg-gradient-to-r from-indigo-400 to-blue-400' :
+                  'bg-gradient-to-r from-violet-400 to-purple-400'
+                } rounded-full blur-sm`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 12}s`,
+                  animationDuration: `${12 + Math.random() * 8}s`,
+                }}
+              />
+            ))}
+
+            {/* Floating galaxy particles */}
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div
+                key={`galaxy-particle-${i}`}
+                className={`galaxy-drift absolute ${
+                  i % 5 === 0 ? 'w-3 h-3 bg-blue-500/30' :
+                  i % 5 === 1 ? 'w-2 h-2 bg-purple-500/30' :
+                  i % 5 === 2 ? 'w-2.5 h-2.5 bg-cyan-500/30' :
+                  i % 5 === 3 ? 'w-2 h-2 bg-indigo-500/30' :
+                  'w-3 h-3 bg-violet-500/30'
+                } rounded-full blur-sm`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDuration: `${8 + Math.random() * 4}s`,
+                  animationDelay: `${Math.random() * 8}s`,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Light Mode Celestial Animation */}
+      {!isDark && (
+        <>
+          <style>{`
+            @keyframes light-constellation {
+              0%, 100% {
+                transform: translateY(0px) translateX(0px) rotate(0deg);
+                opacity: 0.4;
+              }
+              25% {
+                transform: translateY(-10px) translateX(15px) rotate(90deg);
+                opacity: 0.7;
+              }
+              50% {
+                transform: translateY(5px) translateX(-8px) rotate(180deg);
+                opacity: 0.9;
+              }
+              75% {
+                transform: translateY(-20px) translateX(20px) rotate(270deg);
+                opacity: 0.5;
+              }
+            }
+            @keyframes light-sparkle-dance {
+              0%, 100% { opacity: 0.2; transform: scale(0.8) rotate(0deg); }
+              50% { opacity: 0.8; transform: scale(1.3) rotate(180deg); }
+            }
+            @keyframes light-stardust {
+              0% { transform: translateY(100px) translateX(0px) rotate(0deg); opacity: 0; }
+              10% { opacity: 0.5; }
+              90% { opacity: 0.5; }
+              100% { transform: translateY(-100px) translateX(40px) rotate(360deg); opacity: 0; }
+            }
+            @keyframes aurora-glow {
+              0%, 100% { 
+                background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+                transform: scale(1) rotate(0deg);
+              }
+              33% { 
+                background: linear-gradient(45deg, rgba(236, 72, 153, 0.1), rgba(59, 130, 246, 0.1));
+                transform: scale(1.1) rotate(120deg);
+              }
+              66% { 
+                background: linear-gradient(45deg, rgba(34, 197, 94, 0.1), rgba(236, 72, 153, 0.1));
+                transform: scale(0.9) rotate(240deg);
+              }
+            }
+            .light-constellation {
+              animation: light-constellation 7s ease-in-out infinite;
+            }
+            .light-sparkle-dance {
+              animation: light-sparkle-dance 2.8s ease-in-out infinite;
+            }
+            .light-stardust {
+              animation: light-stardust 9s linear infinite;
+            }
+            .aurora-glow {
+              animation: aurora-glow 12s ease-in-out infinite;
+            }
+          `}</style>
+          
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            {/* Aurora backgrounds */}
+            <div className="absolute top-1/5 left-1/4 w-80 h-80 aurora-glow rounded-full blur-3xl opacity-40"></div>
+            <div className="absolute bottom-1/4 right-1/3 w-96 h-96 aurora-glow rounded-full blur-3xl opacity-30" style={{ animationDelay: '4s' }}></div>
+            <div className="absolute top-2/3 left-1/6 w-64 h-64 aurora-glow rounded-full blur-2xl opacity-35" style={{ animationDelay: '8s' }}></div>
+            
+            {/* Constellation stars */}
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div
+                key={`constellation-${i}`}
+                className={`light-sparkle-dance absolute ${
+                  i % 7 === 0 ? 'w-1.5 h-1.5 bg-blue-400/60' :
+                  i % 7 === 1 ? 'w-1 h-1 bg-purple-400/60' :
+                  i % 7 === 2 ? 'w-1.5 h-1.5 bg-pink-400/60' :
+                  i % 7 === 3 ? 'w-1 h-1 bg-indigo-400/60' :
+                  i % 7 === 4 ? 'w-1.5 h-1.5 bg-cyan-400/60' :
+                  i % 7 === 5 ? 'w-1 h-1 bg-violet-400/60' : 'w-1.5 h-1.5 bg-teal-400/60'
+                } rounded-full`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2.8}s`,
+                  animationDuration: `${2.8 + Math.random() * 1.5}s`,
+                }}
+              />
+            ))}
+            
+            {/* Stardust particles */}
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={`stardust-${i}`}
+                className={`light-stardust absolute w-1 h-1 ${
+                  i % 5 === 0 ? 'bg-blue-300/50' :
+                  i % 5 === 1 ? 'bg-purple-300/50' :
+                  i % 5 === 2 ? 'bg-pink-300/50' :
+                  i % 5 === 3 ? 'bg-cyan-300/50' : 'bg-indigo-300/50'
+                } rounded-full`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 9}s`,
+                  animationDuration: `${9 + Math.random() * 4}s`,
+                }}
+              />
+            ))}
+
+            {/* Floating constellation elements */}
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={`light-float-${i}`}
+                className={`light-constellation absolute ${
+                  i % 4 === 0 ? 'w-3 h-3 bg-gradient-to-br from-blue-200/40 to-purple-200/40' :
+                  i % 4 === 1 ? 'w-2.5 h-2.5 bg-gradient-to-br from-pink-200/40 to-cyan-200/40' :
+                  i % 4 === 2 ? 'w-3 h-3 bg-gradient-to-br from-indigo-200/40 to-violet-200/40' :
+                  'w-2.5 h-2.5 bg-gradient-to-br from-teal-200/40 to-blue-200/40'
+                } rounded-full blur-sm`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDuration: `${7 + Math.random() * 3}s`,
+                  animationDelay: `${Math.random() * 7}s`,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      
+      <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">Discussion Forum</h1>
-            <p className="text-gray-600">Ask questions, share knowledge, and connect with the community</p>
+            <h1 className={`text-3xl font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}>Discussion Forum</h1>
+            <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>Ask questions, share knowledge, and connect with the community</p>
           </div>
           {user && (
             <button
@@ -355,6 +616,7 @@ const Discussion: React.FC = () => {
             <p>No discussions found.</p>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

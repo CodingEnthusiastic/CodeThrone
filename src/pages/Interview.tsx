@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import { Video, Mic, MicOff, VideoOff, User, Bot, Send, RotateCcw, X } from "lucide-react"
 import { useAuth } from '../contexts/AuthContext' // Import your auth context
+import { useTheme } from '../contexts/ThemeContext' // Import theme context
 
 /*
  * AI VIDEO SETUP INSTRUCTIONS:
@@ -100,6 +101,7 @@ declare global {
 
 const Interview: React.FC = () => {
   const { token, user } = useAuth()
+  const { isDark } = useTheme()
   const [session, setSession] = useState<InterviewSession | null>(null)
   const [videoEnabled, setVideoEnabled] = useState(false)
   const [micEnabled, setMicEnabled] = useState(false)
@@ -914,7 +916,323 @@ const Interview: React.FC = () => {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className={`min-h-screen transition-colors duration-300 relative ${
+        isDark
+          ? "bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900"
+          : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
+      }`}>
+        {/* AI Cosmic Animation for Dark Mode */}
+        {isDark && (
+          <>
+            <style>{`
+              @keyframes ai-neural-pulse {
+                0%, 100% {
+                  transform: translateX(0px) translateY(0px) scale(1) rotate(0deg);
+                  opacity: 0.6;
+                }
+                25% {
+                  transform: translateX(20px) translateY(-15px) scale(1.1) rotate(90deg);
+                  opacity: 1;
+                }
+                50% {
+                  transform: translateX(-10px) translateY(20px) scale(0.9) rotate(180deg);
+                  opacity: 0.8;
+                }
+                75% {
+                  transform: translateX(30px) translateY(5px) scale(1.05) rotate(270deg);
+                  opacity: 0.9;
+                }
+              }
+              @keyframes ai-data-stream {
+                0% { transform: translateY(-100px) translateX(0px) rotate(0deg); opacity: 0; }
+                10% { opacity: 0.8; }
+                90% { opacity: 0.8; }
+                100% { transform: translateY(100vh) translateX(25px) rotate(360deg); opacity: 0; }
+              }
+              @keyframes neural-network {
+                0%, 100% { 
+                  opacity: 0.4;
+                  transform: scale(1) rotate(0deg);
+                }
+                50% { 
+                  opacity: 1;
+                  transform: scale(1.1) rotate(180deg);
+                }
+              }
+              @keyframes ai-constellation {
+                0% { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+                100% { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+              }
+              @keyframes quantum-field {
+                0%, 100% { 
+                  background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+                  transform: scale(1) rotate(0deg);
+                }
+                33% { 
+                  background: linear-gradient(45deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1));
+                  transform: scale(1.1) rotate(120deg);
+                }
+                66% { 
+                  background: linear-gradient(45deg, rgba(139, 92, 246, 0.1), rgba(16, 185, 129, 0.1));
+                  transform: scale(0.9) rotate(240deg);
+                }
+              }
+              @keyframes ai-circuit-flow {
+                0% { transform: translateX(-100px) translateY(0px) rotate(0deg); opacity: 0; }
+                10% { opacity: 0.7; }
+                90% { opacity: 0.7; }
+                100% { transform: translateX(100vw) translateY(20px) rotate(360deg); opacity: 0; }
+              }
+              .ai-neural-pulse {
+                animation: ai-neural-pulse 7s ease-in-out infinite;
+              }
+              .ai-data-stream {
+                animation: ai-data-stream 9s linear infinite;
+              }
+              .neural-network {
+                animation: neural-network 3s ease-in-out infinite;
+              }
+              .ai-constellation {
+                animation: ai-constellation 25s linear infinite;
+              }
+              .quantum-field {
+                animation: quantum-field 14s ease-in-out infinite;
+              }
+              .ai-circuit-flow {
+                animation: ai-circuit-flow 10s linear infinite;
+              }
+            `}</style>
+            
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+              {/* Quantum field backgrounds */}
+              <div className="absolute top-1/4 left-1/5 w-96 h-96 quantum-field rounded-full blur-3xl"></div>
+              <div className="absolute bottom-1/3 right-1/4 w-80 h-80 quantum-field rounded-full blur-3xl" style={{ animationDelay: '5s' }}></div>
+              <div className="absolute top-2/3 left-1/3 w-64 h-64 quantum-field rounded-full blur-2xl" style={{ animationDelay: '10s' }}></div>
+              
+              {/* AI Neural Network Nodes */}
+              {Array.from({ length: 35 }).map((_, i) => (
+                <div
+                  key={`neural-node-${i}`}
+                  className={`neural-network absolute ${
+                    i % 7 === 0 ? 'w-2 h-2 bg-blue-400 rounded-full' :
+                    i % 7 === 1 ? 'w-1.5 h-1.5 bg-purple-400 rounded-full' :
+                    i % 7 === 2 ? 'w-2 h-2 bg-cyan-400 rounded-full' :
+                    i % 7 === 3 ? 'w-1 h-1 bg-green-400 rounded-full' :
+                    i % 7 === 4 ? 'w-1.5 h-1.5 bg-teal-400 rounded-full' :
+                    i % 7 === 5 ? 'w-2 h-2 bg-indigo-400 rounded-full' :
+                    'w-1.5 h-1.5 bg-violet-400 rounded-full'
+                  }`}
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 3}s`,
+                    animationDuration: `${3 + Math.random() * 2}s`,
+                  }}
+                />
+              ))}
+              
+              {/* AI Data Streams */}
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div
+                  key={`data-stream-${i}`}
+                  className={`ai-data-stream absolute w-1 h-6 ${
+                    i % 4 === 0 ? 'bg-gradient-to-b from-blue-400 to-transparent' :
+                    i % 4 === 1 ? 'bg-gradient-to-b from-purple-400 to-transparent' :
+                    i % 4 === 2 ? 'bg-gradient-to-b from-cyan-400 to-transparent' :
+                    'bg-gradient-to-b from-green-400 to-transparent'
+                  }`}
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 9}s`,
+                    animationDuration: `${9 + Math.random() * 4}s`,
+                  }}
+                />
+              ))}
+
+              {/* AI Circuit Flow */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={`circuit-flow-${i}`}
+                  className={`ai-circuit-flow absolute w-1 h-1 ${
+                    i % 4 === 0 ? 'bg-blue-400' :
+                    i % 4 === 1 ? 'bg-purple-400' :
+                    i % 4 === 2 ? 'bg-cyan-400' : 'bg-green-400'
+                  } rounded-full`}
+                  style={{
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 10}s`,
+                    animationDuration: `${10 + Math.random() * 5}s`,
+                  }}
+                />
+              ))}
+
+              {/* AI Constellation Orbiters */}
+              <div className="absolute top-1/4 left-1/4 w-4 h-4">
+                <div className="ai-constellation w-2 h-2 bg-blue-400 rounded-full neural-network"></div>
+              </div>
+              <div className="absolute top-3/4 right-1/3 w-4 h-4">
+                <div className="ai-constellation w-2 h-2 bg-purple-400 rounded-full neural-network" style={{ animationDelay: '8s' }}></div>
+              </div>
+              <div className="absolute top-1/2 left-2/3 w-4 h-4">
+                <div className="ai-constellation w-2 h-2 bg-cyan-400 rounded-full neural-network" style={{ animationDelay: '12s' }}></div>
+              </div>
+
+              {/* AI Neural Pulse Elements */}
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div
+                  key={`ai-pulse-${i}`}
+                  className={`ai-neural-pulse absolute ${
+                    i % 4 === 0 ? 'w-4 h-4 bg-gradient-to-br from-blue-500/40 to-cyan-500/40' :
+                    i % 4 === 1 ? 'w-3 h-3 bg-gradient-to-br from-purple-500/40 to-violet-500/40' :
+                    i % 4 === 2 ? 'w-3.5 h-3.5 bg-gradient-to-br from-green-500/40 to-teal-500/40' :
+                    'w-4 h-4 bg-gradient-to-br from-indigo-500/40 to-purple-500/40'
+                  } rounded-full blur-sm`}
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDuration: `${7 + Math.random() * 3}s`,
+                    animationDelay: `${Math.random() * 7}s`,
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Light Mode AI Animation */}
+        {!isDark && (
+          <>
+            <style>{`
+              @keyframes light-ai-float {
+                0%, 100% {
+                  transform: translateY(0px) translateX(0px) rotate(0deg);
+                  opacity: 0.5;
+                }
+                25% {
+                  transform: translateY(-10px) translateX(12px) rotate(90deg);
+                  opacity: 0.8;
+                }
+                50% {
+                  transform: translateY(6px) translateX(-8px) rotate(180deg);
+                  opacity: 1;
+                }
+                75% {
+                  transform: translateY(-15px) translateX(18px) rotate(270deg);
+                  opacity: 0.6;
+                }
+              }
+              @keyframes light-data-particle {
+                0% { transform: translateY(-30px) translateX(0px) rotate(0deg); opacity: 0; }
+                10% { opacity: 0.6; }
+                90% { opacity: 0.6; }
+                100% { transform: translateY(100vh) translateX(20px) rotate(360deg); opacity: 0; }
+              }
+              @keyframes ai-aurora {
+                0%, 100% { 
+                  background: linear-gradient(45deg, rgba(59, 130, 246, 0.12), rgba(147, 51, 234, 0.12));
+                  transform: scale(1) rotate(0deg);
+                }
+                33% { 
+                  background: linear-gradient(45deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.12));
+                  transform: scale(1.05) rotate(120deg);
+                }
+                66% { 
+                  background: linear-gradient(45deg, rgba(139, 92, 246, 0.12), rgba(16, 185, 129, 0.12));
+                  transform: scale(0.95) rotate(240deg);
+                }
+              }
+              @keyframes light-neural-glow {
+                0%, 100% { 
+                  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3), 0 0 20px rgba(147, 51, 234, 0.2);
+                  opacity: 0.5; 
+                }
+                50% { 
+                  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(147, 51, 234, 0.4);
+                  opacity: 1; 
+                }
+              }
+              .light-ai-float {
+                animation: light-ai-float 6s ease-in-out infinite;
+              }
+              .light-data-particle {
+                animation: light-data-particle 8s linear infinite;
+              }
+              .ai-aurora {
+                animation: ai-aurora 11s ease-in-out infinite;
+              }
+              .light-neural-glow {
+                animation: light-neural-glow 2.8s ease-in-out infinite;
+              }
+            `}</style>
+            
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+              {/* AI Aurora backgrounds */}
+              <div className="absolute top-1/5 left-1/3 w-96 h-96 ai-aurora rounded-full blur-3xl"></div>
+              <div className="absolute bottom-1/4 right-1/5 w-80 h-80 ai-aurora rounded-full blur-3xl" style={{ animationDelay: '4s' }}></div>
+              <div className="absolute top-2/3 left-1/6 w-64 h-64 ai-aurora rounded-full blur-2xl" style={{ animationDelay: '8s' }}></div>
+              
+              {/* Light Neural Network Nodes */}
+              {Array.from({ length: 25 }).map((_, i) => (
+                <div
+                  key={`light-neural-${i}`}
+                  className={`light-neural-glow absolute ${
+                    i % 6 === 0 ? 'w-2 h-2 bg-blue-400/60 rounded-full' :
+                    i % 6 === 1 ? 'w-1.5 h-1.5 bg-purple-400/60 rounded-full' :
+                    i % 6 === 2 ? 'w-2 h-2 bg-cyan-400/60 rounded-full' :
+                    i % 6 === 3 ? 'w-1 h-1 bg-green-400/60 rounded-full' :
+                    i % 6 === 4 ? 'w-1.5 h-1.5 bg-teal-400/60 rounded-full' :
+                    'w-2 h-2 bg-indigo-400/60 rounded-full'
+                  }`}
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 2.8}s`,
+                    animationDuration: `${2.8 + Math.random() * 1.5}s`,
+                  }}
+                />
+              ))}
+              
+              {/* Light Data Particles */}
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div
+                  key={`light-data-${i}`}
+                  className={`light-data-particle absolute w-1 h-1 ${
+                    i % 5 === 0 ? 'bg-blue-300/50' :
+                    i % 5 === 1 ? 'bg-purple-300/50' :
+                    i % 5 === 2 ? 'bg-cyan-300/50' :
+                    i % 5 === 3 ? 'bg-green-300/50' : 'bg-teal-300/50'
+                  } rounded-full`}
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 8}s`,
+                    animationDuration: `${8 + Math.random() * 3}s`,
+                  }}
+                />
+              ))}
+
+              {/* Light AI Float Elements */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={`light-ai-${i}`}
+                  className={`light-ai-float absolute ${
+                    i % 4 === 0 ? 'w-3 h-3 bg-gradient-to-br from-blue-200/50 to-purple-200/50' :
+                    i % 4 === 1 ? 'w-2.5 h-2.5 bg-gradient-to-br from-cyan-200/50 to-teal-200/50' :
+                    i % 4 === 2 ? 'w-3 h-3 bg-gradient-to-br from-green-200/50 to-blue-200/50' :
+                    'w-2.5 h-2.5 bg-gradient-to-br from-indigo-200/50 to-violet-200/50'
+                  } rounded-full blur-sm`}
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDuration: `${6 + Math.random() * 2}s`,
+                    animationDelay: `${Math.random() * 6}s`,
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
+        
+        <div className="relative z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-12">
             <div className="flex justify-center mb-6">
@@ -1139,137 +1457,452 @@ const Interview: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-    )
-  }
-
-  if (session.isComplete && finalReport) {
-    const finalScore = finalReport.overallScore
-    const scoreBand = getScoreBand(finalScore)
-
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">Interview Complete! 🎉</h1>
-              <div className="text-6xl font-bold mb-4">
-                <span className={scoreBand.color}>{finalScore}</span>
-              </div>
-              <div className="text-xl font-semibold mb-4">
-                <span className={scoreBand.color}>{scoreBand.band}</span>
-              </div>
-              <div
-                className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getRecommendationColor(finalReport.recommendation)}`}
-              >
-                Recommendation: {finalReport.recommendation.toUpperCase()}
-              </div>
-            </div>
-
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4">Summary</h3>
-              <p className="text-gray-700">{finalReport.summary}</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Technical Skills</span>
-                    <span className="text-blue-600 font-bold">{finalReport.technicalSkills.score}/10</span>
-                  </div>
-                  <p className="text-sm text-gray-600">{finalReport.technicalSkills.feedback}</p>
-                </div>
-
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Communication</span>
-                    <span className="text-green-600 font-bold">{finalReport.communication.score}/10</span>
-                  </div>
-                  <p className="text-sm text-gray-600">{finalReport.communication.feedback}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Problem Solving</span>
-                    <span className="text-purple-600 font-bold">{finalReport.problemSolving.score}/10</span>
-                  </div>
-                  <p className="text-sm text-gray-600">{finalReport.problemSolving.feedback}</p>
-                </div>
-
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Video Presence</span>
-                    <span className="text-orange-600 font-bold">{finalReport.videoPresence.score}/10</span>
-                  </div>
-                  <p className="text-sm text-gray-600">{finalReport.videoPresence.feedback}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="p-4 bg-green-50 rounded-lg">
-                <h4 className="font-semibold text-green-900 mb-3">Strengths</h4>
-                <ul className="space-y-1">
-                  {finalReport.strengths.map((strength, index) => (
-                    <li key={index} className="text-sm text-green-800">
-                      • {strength}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="p-4 bg-yellow-50 rounded-lg">
-                <h4 className="font-semibold text-yellow-900 mb-3">Areas for Improvement</h4>
-                <ul className="space-y-1">
-                  {finalReport.areasForImprovement.map((area, index) => (
-                    <li key={index} className="text-sm text-yellow-800">
-                      • {area}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="p-4 bg-blue-50 rounded-lg mb-8">
-              <h4 className="font-semibold text-blue-900 mb-3">Detailed Feedback</h4>
-              <p className="text-blue-800 text-sm">{finalReport.detailedFeedback}</p>
-            </div>
-
-            <div className="text-center">
-              <button
-                onClick={() => {
-                  setSession(null)
-                  setScores([])
-                  setVideoOnTime(0)
-                  setTotalTime(0)
-                  setStartTime(null)
-                  setFinalReport(null)
-                  setCurrentAnswer("")
-                  setTranscript("")
-                  setRecognitionError(null)
-                  setIsListening(false)
-                  setRecognitionRestarting(false)
-                  setManualStop(false)
-                  finalTranscriptRef.current = ""
-                  disableVideo()
-                }}
-                className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Start New Interview
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className={`min-h-screen transition-colors duration-300 relative ${
+      isDark
+        ? "bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900"
+        : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
+    }`}>
+      {/* AI Cosmic Animation for Dark Mode */}
+      {isDark && (
+        <>
+          <style>{`
+            @keyframes ai-neural-pulse {
+              0%, 100% {
+                transform: translateX(0px) translateY(0px) scale(1) rotate(0deg);
+                opacity: 0.6;
+              }
+              25% {
+                transform: translateX(20px) translateY(-15px) scale(1.1) rotate(90deg);
+                opacity: 1;
+              }
+              50% {
+                transform: translateX(-10px) translateY(20px) scale(0.9) rotate(180deg);
+                opacity: 0.8;
+              }
+              75% {
+                transform: translateX(30px) translateY(5px) scale(1.05) rotate(270deg);
+                opacity: 0.9;
+              }
+            }
+            @keyframes ai-data-stream {
+              0% { transform: translateY(-100px) translateX(0px) rotate(0deg); opacity: 0; }
+              10% { opacity: 0.8; }
+              90% { opacity: 0.8; }
+              100% { transform: translateY(100vh) translateX(25px) rotate(360deg); opacity: 0; }
+            }
+            @keyframes neural-network {
+              0%, 100% { 
+                opacity: 0.4;
+                transform: scale(1) rotate(0deg);
+              }
+              50% { 
+                opacity: 1;
+                transform: scale(1.1) rotate(180deg);
+              }
+            }
+            @keyframes ai-constellation {
+              0% { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+              100% { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+            }
+            @keyframes quantum-field {
+              0%, 100% { 
+                background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+                transform: scale(1) rotate(0deg);
+              }
+              33% { 
+                background: linear-gradient(45deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1));
+                transform: scale(1.1) rotate(120deg);
+              }
+              66% { 
+                background: linear-gradient(45deg, rgba(139, 92, 246, 0.1), rgba(16, 185, 129, 0.1));
+                transform: scale(0.9) rotate(240deg);
+              }
+            }
+            @keyframes ai-circuit-flow {
+              0% { transform: translateX(-100px) translateY(0px) rotate(0deg); opacity: 0; }
+              10% { opacity: 0.7; }
+              90% { opacity: 0.7; }
+              100% { transform: translateX(100vw) translateY(20px) rotate(360deg); opacity: 0; }
+            }
+            .ai-neural-pulse {
+              animation: ai-neural-pulse 7s ease-in-out infinite;
+            }
+            .ai-data-stream {
+              animation: ai-data-stream 9s linear infinite;
+            }
+            .neural-network {
+              animation: neural-network 3s ease-in-out infinite;
+            }
+            .ai-constellation {
+              animation: ai-constellation 25s linear infinite;
+            }
+            .quantum-field {
+              animation: quantum-field 14s ease-in-out infinite;
+            }
+            .ai-circuit-flow {
+              animation: ai-circuit-flow 10s linear infinite;
+            }
+          `}</style>
+          
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            {/* Quantum field backgrounds */}
+            <div className="absolute top-1/4 left-1/5 w-96 h-96 quantum-field rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/3 right-1/4 w-80 h-80 quantum-field rounded-full blur-3xl" style={{ animationDelay: '5s' }}></div>
+            <div className="absolute top-2/3 left-1/3 w-64 h-64 quantum-field rounded-full blur-2xl" style={{ animationDelay: '10s' }}></div>
+            
+            {/* AI Neural Network Nodes */}
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div
+                key={`neural-node-${i}`}
+                className={`neural-network absolute ${
+                  i % 7 === 0 ? 'w-2 h-2 bg-blue-400 rounded-full' :
+                  i % 7 === 1 ? 'w-1.5 h-1.5 bg-purple-400 rounded-full' :
+                  i % 7 === 2 ? 'w-2 h-2 bg-cyan-400 rounded-full' :
+                  i % 7 === 3 ? 'w-1 h-1 bg-green-400 rounded-full' :
+                  i % 7 === 4 ? 'w-1.5 h-1.5 bg-teal-400 rounded-full' :
+                  i % 7 === 5 ? 'w-2 h-2 bg-indigo-400 rounded-full' :
+                  'w-1.5 h-1.5 bg-violet-400 rounded-full'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${3 + Math.random() * 2}s`,
+                }}
+              />
+            ))}
+            
+            {/* AI Data Streams */}
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={`data-stream-${i}`}
+                className={`ai-data-stream absolute w-1 h-6 ${
+                  i % 4 === 0 ? 'bg-gradient-to-b from-blue-400 to-transparent' :
+                  i % 4 === 1 ? 'bg-gradient-to-b from-purple-400 to-transparent' :
+                  i % 4 === 2 ? 'bg-gradient-to-b from-cyan-400 to-transparent' :
+                  'bg-gradient-to-b from-green-400 to-transparent'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 9}s`,
+                  animationDuration: `${9 + Math.random() * 4}s`,
+                }}
+              />
+            ))}
+
+            {/* AI Circuit Flow */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={`circuit-flow-${i}`}
+                className={`ai-circuit-flow absolute w-1 h-1 ${
+                  i % 4 === 0 ? 'bg-blue-400' :
+                  i % 4 === 1 ? 'bg-purple-400' :
+                  i % 4 === 2 ? 'bg-cyan-400' : 'bg-green-400'
+                } rounded-full`}
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 10}s`,
+                  animationDuration: `${10 + Math.random() * 5}s`,
+                }}
+              />
+            ))}
+
+            {/* AI Constellation Orbiters */}
+            <div className="absolute top-1/4 left-1/4 w-4 h-4">
+              <div className="ai-constellation w-2 h-2 bg-blue-400 rounded-full neural-network"></div>
+            </div>
+            <div className="absolute top-3/4 right-1/3 w-4 h-4">
+              <div className="ai-constellation w-2 h-2 bg-purple-400 rounded-full neural-network" style={{ animationDelay: '8s' }}></div>
+            </div>
+            <div className="absolute top-1/2 left-2/3 w-4 h-4">
+              <div className="ai-constellation w-2 h-2 bg-cyan-400 rounded-full neural-network" style={{ animationDelay: '12s' }}></div>
+            </div>
+
+            {/* AI Neural Pulse Elements */}
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={`ai-pulse-${i}`}
+                className={`ai-neural-pulse absolute ${
+                  i % 4 === 0 ? 'w-4 h-4 bg-gradient-to-br from-blue-500/40 to-cyan-500/40' :
+                  i % 4 === 1 ? 'w-3 h-3 bg-gradient-to-br from-purple-500/40 to-violet-500/40' :
+                  i % 4 === 2 ? 'w-3.5 h-3.5 bg-gradient-to-br from-green-500/40 to-teal-500/40' :
+                  'w-4 h-4 bg-gradient-to-br from-indigo-500/40 to-purple-500/40'
+                } rounded-full blur-sm`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDuration: `${7 + Math.random() * 3}s`,
+                  animationDelay: `${Math.random() * 7}s`,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Light Mode AI Animation */}
+      {!isDark && (
+        <>
+          <style>{`
+            @keyframes light-ai-float {
+              0%, 100% {
+                transform: translateY(0px) translateX(0px) rotate(0deg);
+                opacity: 0.5;
+              }
+              25% {
+                transform: translateY(-10px) translateX(12px) rotate(90deg);
+                opacity: 0.8;
+              }
+              50% {
+                transform: translateY(6px) translateX(-8px) rotate(180deg);
+                opacity: 1;
+              }
+              75% {
+                transform: translateY(-15px) translateX(18px) rotate(270deg);
+                opacity: 0.6;
+              }
+            }
+            @keyframes light-data-particle {
+              0% { transform: translateY(-30px) translateX(0px) rotate(0deg); opacity: 0; }
+              10% { opacity: 0.6; }
+              90% { opacity: 0.6; }
+              100% { transform: translateY(100vh) translateX(20px) rotate(360deg); opacity: 0; }
+            }
+            @keyframes ai-aurora {
+              0%, 100% { 
+                background: linear-gradient(45deg, rgba(59, 130, 246, 0.12), rgba(147, 51, 234, 0.12));
+                transform: scale(1) rotate(0deg);
+              }
+              33% { 
+                background: linear-gradient(45deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.12));
+                transform: scale(1.05) rotate(120deg);
+              }
+              66% { 
+                background: linear-gradient(45deg, rgba(139, 92, 246, 0.12), rgba(16, 185, 129, 0.12));
+                transform: scale(0.95) rotate(240deg);
+              }
+            }
+            @keyframes light-neural-glow {
+              0%, 100% { 
+                box-shadow: 0 0 10px rgba(59, 130, 246, 0.3), 0 0 20px rgba(147, 51, 234, 0.2);
+                opacity: 0.5; 
+              }
+              50% { 
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(147, 51, 234, 0.4);
+                opacity: 1; 
+              }
+            }
+            .light-ai-float {
+              animation: light-ai-float 6s ease-in-out infinite;
+            }
+            .light-data-particle {
+              animation: light-data-particle 8s linear infinite;
+            }
+            .ai-aurora {
+              animation: ai-aurora 11s ease-in-out infinite;
+            }
+            .light-neural-glow {
+              animation: light-neural-glow 2.8s ease-in-out infinite;
+            }
+          `}</style>
+          
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            {/* AI Aurora backgrounds */}
+            <div className="absolute top-1/5 left-1/3 w-96 h-96 ai-aurora rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/4 right-1/5 w-80 h-80 ai-aurora rounded-full blur-3xl" style={{ animationDelay: '4s' }}></div>
+            <div className="absolute top-2/3 left-1/6 w-64 h-64 ai-aurora rounded-full blur-2xl" style={{ animationDelay: '8s' }}></div>
+            
+            {/* Light Neural Network Nodes */}
+            {Array.from({ length: 25 }).map((_, i) => (
+              <div
+                key={`light-neural-${i}`}
+                className={`light-neural-glow absolute ${
+                  i % 6 === 0 ? 'w-2 h-2 bg-blue-400/60 rounded-full' :
+                  i % 6 === 1 ? 'w-1.5 h-1.5 bg-purple-400/60 rounded-full' :
+                  i % 6 === 2 ? 'w-2 h-2 bg-cyan-400/60 rounded-full' :
+                  i % 6 === 3 ? 'w-1 h-1 bg-green-400/60 rounded-full' :
+                  i % 6 === 4 ? 'w-1.5 h-1.5 bg-teal-400/60 rounded-full' :
+                  'w-2 h-2 bg-indigo-400/60 rounded-full'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2.8}s`,
+                  animationDuration: `${2.8 + Math.random() * 1.5}s`,
+                }}
+              />
+            ))}
+            
+            {/* Light Data Particles */}
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div
+                key={`light-data-${i}`}
+                className={`light-data-particle absolute w-1 h-1 ${
+                  i % 5 === 0 ? 'bg-blue-300/50' :
+                  i % 5 === 1 ? 'bg-purple-300/50' :
+                  i % 5 === 2 ? 'bg-cyan-300/50' :
+                  i % 5 === 3 ? 'bg-green-300/50' : 'bg-teal-300/50'
+                } rounded-full`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 8}s`,
+                  animationDuration: `${8 + Math.random() * 3}s`,
+                }}
+              />
+            ))}
+
+            {/* Light AI Float Elements */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={`light-ai-${i}`}
+                className={`light-ai-float absolute ${
+                  i % 4 === 0 ? 'w-3 h-3 bg-gradient-to-br from-blue-200/50 to-purple-200/50' :
+                  i % 4 === 1 ? 'w-2.5 h-2.5 bg-gradient-to-br from-cyan-200/50 to-teal-200/50' :
+                  i % 4 === 2 ? 'w-3 h-3 bg-gradient-to-br from-green-200/50 to-blue-200/50' :
+                  'w-2.5 h-2.5 bg-gradient-to-br from-indigo-200/50 to-violet-200/50'
+                } rounded-full blur-sm`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDuration: `${6 + Math.random() * 2}s`,
+                  animationDelay: `${Math.random() * 6}s`,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      
+      {/* Interview Completion Report */}
+      {session.isComplete && finalReport && (
+        <div className="relative z-10">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="bg-white rounded-lg shadow-sm p-8">
+              <div className="text-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Interview Complete! 🎉</h1>
+                <div className="text-6xl font-bold mb-4">
+                  <span className={getScoreBand(finalReport.overallScore).color}>{finalReport.overallScore}</span>
+                </div>
+                <div className="text-xl font-semibold mb-4">
+                  <span className={getScoreBand(finalReport.overallScore).color}>{getScoreBand(finalReport.overallScore).band}</span>
+                </div>
+                <div
+                  className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getRecommendationColor(finalReport.recommendation)}`}
+                >
+                  Recommendation: {finalReport.recommendation.toUpperCase()}
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold mb-4">Summary</h3>
+                <p className="text-gray-700">{finalReport.summary}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Technical Skills</span>
+                      <span className="text-blue-600 font-bold">{finalReport.technicalSkills.score}/10</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{finalReport.technicalSkills.feedback}</p>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Communication</span>
+                      <span className="text-green-600 font-bold">{finalReport.communication.score}/10</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{finalReport.communication.feedback}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Problem Solving</span>
+                      <span className="text-purple-600 font-bold">{finalReport.problemSolving.score}/10</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{finalReport.problemSolving.feedback}</p>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Video Presence</span>
+                      <span className="text-orange-600 font-bold">{finalReport.videoPresence.score}/10</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{finalReport.videoPresence.feedback}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <h4 className="font-semibold text-green-900 mb-3">Strengths</h4>
+                  <ul className="space-y-1">
+                    {finalReport.strengths.map((strength, index) => (
+                      <li key={index} className="text-sm text-green-800">
+                        • {strength}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <h4 className="font-semibold text-yellow-900 mb-3">Areas for Improvement</h4>
+                  <ul className="space-y-1">
+                    {finalReport.areasForImprovement.map((area, index) => (
+                      <li key={index} className="text-sm text-yellow-800">
+                        • {area}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="p-4 bg-blue-50 rounded-lg mb-8">
+                <h4 className="font-semibold text-blue-900 mb-3">Detailed Feedback</h4>
+                <p className="text-blue-800 text-sm">{finalReport.detailedFeedback}</p>
+              </div>
+
+              <div className="text-center">
+                <button
+                  onClick={() => {
+                    setSession(null)
+                    setScores([])
+                    setVideoOnTime(0)
+                    setTotalTime(0)
+                    setStartTime(null)
+                    setFinalReport(null)
+                    setCurrentAnswer("")
+                    setTranscript("")
+                    setRecognitionError(null)
+                    setIsListening(false)
+                    setRecognitionRestarting(false)
+                    setManualStop(false)
+                    finalTranscriptRef.current = ""
+                    disableVideo()
+                  }}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Start New Interview
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Main Interview Interface - only show when not complete */}
+      {session && (!session.isComplete || !finalReport) && (
+        <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stop Interview Button */}
         <div className="flex justify-end mb-4">
           <button
@@ -1670,8 +2303,10 @@ const Interview: React.FC = () => {
               </button>
             </div>
           </div>
+          </div>
         </div>
       </div>
+      )}
     </div>
   )
 }
