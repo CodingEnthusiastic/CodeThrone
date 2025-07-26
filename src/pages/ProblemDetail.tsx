@@ -101,6 +101,8 @@ const ProblemDetail: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<{prompt: string, response: string}[]>([]);
   const [isAiMaximized, setIsAiMaximized] = useState(false);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
+  // const chatHistoryRef = useRef<HTMLDivElement>(null);
+  const bottomRef     = useRef<HTMLDivElement>(null);
   // Auto-scroll chat to bottom in both minimized and maximized mode when new answer appears
   useEffect(() => {
     if (chatHistoryRef.current) {
@@ -383,7 +385,7 @@ const ProblemDetail: React.FC = () => {
       };
       
       setChatHistory(prev => [...prev, newChatEntry]);
-      
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       // Save to database
       await saveChatMessage(aiPrompt, res.data.reply || 'No response received.');
       
@@ -783,7 +785,7 @@ const ProblemDetail: React.FC = () => {
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={chatHistoryRef}>
             {chatHistory.map((chat, index) => (
               <div key={index} className="space-y-3">
                 {/* User Message */}
@@ -804,7 +806,10 @@ const ProblemDetail: React.FC = () => {
                       <Bot className="h-4 w-4 mr-2 text-indigo-500" />
                       <span className="text-sm font-medium">AI Assistant</span>
                     </div>
-                    <div className="text-sm whitespace-pre-wrap break-words">{chat.response}</div>
+                    <div className="text-sm whitespace-pre-wrap break-words">
+                      {chat.response.replace(/\*\*(.*?)\*\*/g, '$1')}
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -817,6 +822,7 @@ const ProblemDetail: React.FC = () => {
                 <p>Ask me anything about this coding problem!</p>
               </div>
             )}
+            <div ref={bottomRef} />
           </div>
 
           {/* Input Area */}
