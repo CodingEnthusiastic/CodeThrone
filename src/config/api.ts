@@ -1,8 +1,8 @@
 // API Configuration
 export const API_CONFIG = {
-  // Use environment variables with fallback to localhost for development
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000',
+  // Use environment variables with fallback to production URLs
+  BASE_URL: import.meta.env.VITE_API_URL || 'https://codestar-qlq6.onrender.com/api',
+  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || 'https://codestar-qlq6.onrender.com',
 };
 
 // Helper function to get full API URL

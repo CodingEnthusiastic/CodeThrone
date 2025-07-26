@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/history/:problemId', authenticateToken, async (req, res) => {
   try {
     const { problemId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     const chatHistory = await ChatHistory.find({
       user: userId,
@@ -25,7 +25,7 @@ router.get('/history/:problemId', authenticateToken, async (req, res) => {
 // Get all chat history for a user (for the sidebar)
 router.get('/history', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user._id;
     const limit = parseInt(req.query.limit) || 50;
 
     const chatHistory = await ChatHistory.find({
@@ -59,7 +59,7 @@ router.get('/history', authenticateToken, async (req, res) => {
 router.get('/session/:sessionId', authenticateToken, async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     const chatSession = await ChatHistory.findOne({
       sessionId: sessionId,
@@ -81,7 +81,7 @@ router.get('/session/:sessionId', authenticateToken, async (req, res) => {
 router.post('/save', authenticateToken, async (req, res) => {
   try {
     const { sessionId, problemId, problemTitle, prompt, response } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     if (!sessionId || !problemId || !problemTitle || !prompt || !response) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -115,7 +115,7 @@ router.post('/save', authenticateToken, async (req, res) => {
 router.delete('/session/:sessionId', authenticateToken, async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     const result = await ChatHistory.findOneAndDelete({
       sessionId: sessionId,
