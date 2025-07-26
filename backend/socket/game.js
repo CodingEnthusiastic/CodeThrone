@@ -1,6 +1,7 @@
 import Game from "../models/Game.js"
 import User from "../models/User.js"
 import jwt from 'jsonwebtoken'
+import { makeJudge0Request } from "../services/judge0Service.js"
 
 export const setupGameSocket = (io) => {
   console.log("🎮 Setting up game socket handlers...")
@@ -573,19 +574,17 @@ async function executeCodeForGame(code, language, testCases) {
       throw new Error("Unsupported language")
     }
 
-    const apiKey = process.env.JUDGE0_API_KEY || "demo-key"
+    // Removed single API key usage - now using intelligent fallback system
 
     for (let i = 0; i < testCases.length; i++) {
       const testCase = testCases[i]
       console.log(`🧪 Testing case ${i + 1}:`, testCase.input.substring(0, 50) + "...")
 
       try {
-        const submissionResponse = await fetch("https://judge0-ce.p.rapidapi.com/submissions", {
+        const submissionResponse = await makeJudge0Request("https://judge0-ce.p.rapidapi.com/submissions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-RapidAPI-Key": apiKey,
-            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
           },
           body: JSON.stringify({
             source_code: code,
@@ -615,10 +614,9 @@ async function executeCodeForGame(code, language, testCases) {
         do {
           await new Promise((resolve) => setTimeout(resolve, 1500))
 
-          const resultResponse = await fetch(`https://judge0-ce.p.rapidapi.com/submissions/${submission.token}`, {
+          const resultResponse = await makeJudge0Request(`https://judge0-ce.p.rapidapi.com/submissions/${submission.token}`, {
             headers: {
-              "X-RapidAPI-Key": apiKey,
-              "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+              "Content-Type": "application/json",
             },
           })
           result = await resultResponse.json()

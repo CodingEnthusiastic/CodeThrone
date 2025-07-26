@@ -3,8 +3,70 @@ import Problem from '../models/Problem.js';
 import User from '../models/User.js';
 import POTDService from '../services/POTDService.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import { makeJudge0Request, getApiKeyStats } from '../services/judge0Service.js';
 
 const router = express.Router();
+
+// Monitor Judge0 API key usage (admin only)
+router.get('/admin/judge0-stats', requireAdmin, async (req, res) => {
+  try {
+    const stats = getApiKeyStats();
+    res.json({
+      success: true,
+      ...stats
+    });
+  } catch (error) {
+    console.error('❌ Error getting Judge0 stats:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Test Judge0 API key fallback system (admin only)
+router.post('/admin/test-judge0-fallback', requireAdmin, async (req, res) => {
+  try {
+    console.log('🧪 Testing Judge0 API key fallback system...');
+    
+    // Simple test code
+    const testCode = 'print("Hello World")';
+    const testInput = '';
+    const expectedOutput = 'Hello World';
+    
+    const response = await makeJudge0Request('https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        source_code: testCode,
+        language_id: 71, // Python
+        stdin: testInput,
+        expected_output: expectedOutput
+      })
+    });
+    
+    const result = await response.json();
+    
+    res.json({
+      success: true,
+      message: 'Judge0 fallback system test completed',
+      result: {
+        status: result.status?.description || 'Unknown',
+        output: result.stdout || '',
+        error: result.stderr || null,
+        keyStats: getApiKeyStats()
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Judge0 fallback test failed:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Judge0 fallback test failed', 
+      error: error.message,
+      keyStats: getApiKeyStats()
+    });
+  }
+});
 
 // Get problems by company
 router.get('/company', async (req, res) => {
@@ -424,16 +486,14 @@ async function executeCodeWithJudge0(code, language, testCases, isRun = false) {
       console.log(`🧪 Testing case ${i + 1}:`, testCase.input.substring(0, 50) + '...');
       
       try {
-        // ✅ FIXED: Better Judge0 API configuration with timeout and error handling
+        // ✅ IMPROVED: Using intelligent Judge0 API key fallback system
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
         
-        const submissionResponse = await fetch('https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true', {
+        const submissionResponse = await makeJudge0Request('https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'X-RapidAPI-Key': process.env.JUDGE0_API_KEY || 'demo-key',
-            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             source_code: code,
@@ -448,7 +508,7 @@ async function executeCodeWithJudge0(code, language, testCases, isRun = false) {
 
         if (!submissionResponse.ok) {
           console.log('❌ Judge0 API error:', submissionResponse.status, submissionResponse.statusText);
-          throw new Error(`Judge0 API error: ${submissionResponse.status}`);
+          throw new Error(`Judge0 API error: ${submissionResponse.status} - ${submissionResponse.statusText}`);
         }
 
         const result = await submissionResponse.json();
