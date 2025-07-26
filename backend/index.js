@@ -35,7 +35,10 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://codethrone.netlify.app"
+    ],
     methods: ["GET", "POST"]
   }
 });
@@ -43,7 +46,13 @@ const io = new Server(server, {
 console.log('🌐 Express app and Socket.IO server created');
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://codethrone.netlify.app"
+  ],
+  credentials: true
+}));
 console.log('✅ CORS middleware enabled');
 
 app.use(express.json());

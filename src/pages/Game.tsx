@@ -8,6 +8,7 @@ import axios from "axios"
 import {io} from "socket.io-client"
 import { Gamepad2, Users, Clock, Zap, Send, CheckCircle, XCircle, Medal, Heart, LogOut } from "lucide-react"
 import CodeMirrorEditor from "../components/CodeMirrorEditor"
+import { API_URL, SOCKET_URL } from "../config/api"
 
 interface GameRoom {
   _id: string
@@ -262,7 +263,7 @@ const Game: React.FC = () => {
       const loadDirectGame = async () => {
         try {
           const response = await axios.get(
-            `http://localhost:5000/api/game/play/${gameId}`,
+            `${API_URL}/game/play/${gameId}`,
             {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -333,7 +334,7 @@ useEffect(() => {
   console.log("🚀 Creating new socket connection...");
   
   // 3️⃣ Create a new socket connection with explicit user ID
-  const newSocket = io("http://localhost:5000", {
+  const newSocket = io(SOCKET_URL, {
     auth: { 
       token: localStorage.getItem("token"), 
       userId: user.id // ✅ FIXED: Use consistent user.id (normalized in AuthContext)
@@ -615,7 +616,7 @@ useEffect(() => {
       gameStateInterval = window.setInterval(async () => {
         try {
           const response = await axios.get(
-            `http://localhost:5000/api/game/${activeGame._id}`,
+            `${API_URL}/game/${activeGame._id}`,
             {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -901,7 +902,7 @@ int main() {
     try {
       console.log("📡 Making API request for random match")
       const response = await axios.post(
-        "http://localhost:5000/api/game/random",
+        `${API_URL}/game/random`,
         {},
         {
           headers: {
@@ -940,7 +941,7 @@ int main() {
     try {
       console.log("📡 Making API request to create room")
       const response = await axios.post(
-        "http://localhost:5000/api/game/room",
+        `${API_URL}/game/room`,
         {
           difficulty: selectedDifficulty,
         },
@@ -980,7 +981,7 @@ int main() {
     try {
       console.log("📡 Making API request to join room")
       const response = await axios.post(
-        `http://localhost:5000/api/game/room/${roomCode.toUpperCase()}/join`,
+        `${API_URL}/game/room/${roomCode.toUpperCase()}/join`,
         {},
         {
           headers: {

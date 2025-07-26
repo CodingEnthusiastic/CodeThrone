@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config/api';
 
 interface User {
   id: string;
@@ -66,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(savedToken);
       console.log('🔑 Setting token in state:', savedToken.substring(0, 20) + '...');
       
-      axios.get('http://localhost:5000/api/auth/me', {
+      axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${savedToken}` }
       })
       .then(res => {
@@ -94,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = async () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
-    const res = await axios.get('http://localhost:5000/api/auth/me', {
+    const res = await axios.get(`${API_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     const user = res.data;
@@ -120,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (username: string, password: string, role: string = 'user') => {
     try {
       console.log('🔐 Login attempt:', { username, role });
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post(`${API_URL}/auth/login`, {
         username,
         password,
         role
@@ -137,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Fetch complete user profile after login to ensure we have all data
         try {
-          const profileResponse = await axios.get('http://localhost:5000/api/auth/me', {
+          const profileResponse = await axios.get(`${API_URL}/auth/me`, {
             headers: { Authorization: `Bearer ${receivedToken}` }
           });
           const completeUser = profileResponse.data;
@@ -172,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (username: string, email: string, password: string) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
+      const response = await axios.post(`${API_URL}/auth/register`, {
         username,
         email,
         password
