@@ -231,7 +231,7 @@ router.get('/google/callback',
     // Redirect to frontend (production or development)
     const frontendUrl = process.env.NODE_ENV === 'production' 
       ? 'https://codethrone.netlify.app'
-      : 'http://localhost:5173';
+      : 'https://codethrone.netlify.app';
     res.redirect(`${frontendUrl}/oauth?token=${encodeURIComponent(token)}`);
     // Or: res.json({ token, user });
   }

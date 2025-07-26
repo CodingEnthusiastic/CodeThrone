@@ -143,8 +143,8 @@ app.use('/api/stats', statsRouter);
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log('🎉 Server is running successfully!');
-  console.log(`📍 Server URL: ${process.env.NODE_ENV === 'production' ? 'https://codestar-qlq6.onrender.com' : `http://localhost:${PORT}`}`);
-  console.log(`🏥 Health check: ${process.env.NODE_ENV === 'production' ? 'https://codestar-qlq6.onrender.com' : `http://localhost:${PORT}`}/api/health`);
+  console.log(`📍 Server URL: ${process.env.NODE_ENV === 'production' ? 'https://codestar-qlq6.onrender.com' : `https://codestar-qlq6.onrender.com`}` );
+  console.log(`🏥 Health check: ${process.env.NODE_ENV === 'production' ? 'https://codestar-qlq6.onrender.com' : `https://codestar-qlq6.onrender.com`}/api/health`);
   console.log('📡 Socket.IO enabled for real-time features');
   console.log('🔥 Ready to accept requests!');
 });
