@@ -68,14 +68,14 @@ const Navbar: React.FC = () => {
                   <span
                     className={
                       item.special
-                        ? 'bg-clip-text text-transparent bg-gradient-to-br from-purple-500 via-purple-400 to-purple-300 dark:from-yellow-400 dark:via-yellow-300 dark:to-yellow-200'
+                        ? 'bg-clip-text text-transparent bg-gradient-to-br from-purple-700 via-purple-600 to-purple-700 dark:from-yellow-400 dark:via-yellow-300 dark:to-yellow-200'
                         : ''
                     }
                   >
                     {item.label}
                   </span>
                   {item.special && (
-                    <span className="absolute -bottom-1 text-[10px] font-semibold text-purple-500 dark:text-yellow-400 uppercase">
+                    <span className="absolute -bottom-1 text-[10px] font-semibold text-purple-700 dark:text-yellow-400 uppercase">
                       New
                     </span>
                   )}
