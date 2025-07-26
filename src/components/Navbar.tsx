@@ -47,7 +47,7 @@ const Navbar: React.FC = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2" onClick={() => handleNavigation('/')}>
               <Code className="h-8 w-8 text-orange-500" />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">CodeArena</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">CodeThrone</span>
             </Link>
           </div>
 
