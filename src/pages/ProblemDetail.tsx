@@ -385,7 +385,17 @@ const ProblemDetail: React.FC = () => {
       };
       
       setChatHistory(prev => [...prev, newChatEntry]);
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+
+      // once the DOM has updated, shift scroll so the last item sits half‑way down
+      requestAnimationFrame(() => {
+        const container = chatHistoryRef.current;
+        if (!container) return;
+      
+        // total scrollable height minus half the visible height
+        const scrollTarget = container.scrollHeight - container.clientHeight / 2;
+        container.scrollTo({ top: scrollTarget, behavior: 'smooth' });
+      });
+
       // Save to database
       await saveChatMessage(aiPrompt, res.data.reply || 'No response received.');
       
