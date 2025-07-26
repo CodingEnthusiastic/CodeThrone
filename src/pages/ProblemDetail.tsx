@@ -808,7 +808,6 @@ const ProblemDetail: React.FC = () => {
                     <p className="text-sm">{chat.prompt}</p>
                   </div>
                 </div>
-                
                 {/* AI Response */}
                 <div className="flex justify-start">
                   <div className="max-w-3xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg">
@@ -816,12 +815,24 @@ const ProblemDetail: React.FC = () => {
                       <Bot className="h-4 w-4 mr-2 text-indigo-500" />
                       <span className="text-sm font-medium">AI Assistant</span>
                     </div>
-                    <div className="text-sm whitespace-pre-wrap break-words">
-                      {chat.response.replace(/\*\*(.*?)\*\*/g, '$1')}
-                    </div>
-
+                    <div className="text-sm whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{__html: chat.response.replace(/\*\*(.*?)\*\*/g, '<strong class=\'font-bold text-gray-900 dark:text-gray-100\'>$1</strong>')}} />
                   </div>
                 </div>
+                {/* Center latest question in chat */}
+                {index === chatHistory.length - 1 && (
+                  <script dangerouslySetInnerHTML={{
+                    __html: `setTimeout(function(){
+                      var container = document.querySelector('[ref=chatHistoryRef]');
+                      if(container){
+                        var last = container.lastElementChild;
+                        if(last){
+                          var top = last.offsetTop - container.clientHeight/2 + last.clientHeight/2;
+                          container.scrollTo({top: top, behavior: 'smooth'});
+                        }
+                      }
+                    }, 100);`
+                  }} />
+                )}
               </div>
             ))}
             
