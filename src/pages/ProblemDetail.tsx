@@ -700,6 +700,15 @@ const ProblemDetail: React.FC = () => {
               </>
             )}
           </div>
+          <div className="absolute inset-x-0 bottom-4 flex justify-center">
+            <button
+              aria-label="Add New Chat"
+              onClick={startNewChat}
+              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              <Plus />New Chat
+            </button>
+          </div>
         </div>
 
         {/* Main Chat Area */}
@@ -719,7 +728,7 @@ const ProblemDetail: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="absolute top-4 right-4 z-60flex items-center space-x-2">
                 <button
                   onClick={startNewChat}
                   className="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
