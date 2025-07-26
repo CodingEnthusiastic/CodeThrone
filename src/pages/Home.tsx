@@ -2390,7 +2390,7 @@ const Home: React.FC = () => {
                   <Code className="h-8 w-8 text-white" />
                 </div>
                 <span className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  CodeArena
+                  CodeThrone
                 </span>
               </div>
               <p className="text-gray-300 mb-8 max-w-md text-lg leading-relaxed">
@@ -2470,7 +2470,7 @@ const Home: React.FC = () => {
           </div>
 
           <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm">© 2025 CodeArena. All rights reserved. Built with ❤️ for developers.</p>
+            <p className="text-gray-400 text-sm">© 2025 CodeThrone. All rights reserved. Built with ❤️ for developers.</p>
             <div className="flex space-x-8 mt-4 md:mt-0">
               {["Privacy Policy", "Terms of Service", "Cookie Policy"].map((link, index) => (
                 <a
