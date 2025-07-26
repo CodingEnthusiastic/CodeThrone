@@ -708,13 +708,6 @@ const ProblemDetail: React.FC = () => {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <button
-                  onClick={toggleAiMaximized}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors mr-3"
-                  title="Back to Problem"
-                >
-                  <ArrowLeft className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                </button>
                 <Bot className="h-6 w-6 mr-3 text-indigo-500" />
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -737,10 +730,11 @@ const ProblemDetail: React.FC = () => {
                 </button>
                 <button
                   onClick={toggleAiMaximized}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Minimize AI Assistant"
+                  className="flex items-center px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+                  title="Minimize Chat"
                 >
-                  <Minimize2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  <Minimize2 className="h-5 w-5 mr-2" />
+                  Minimise
                 </button>
               </div>
             </div>
