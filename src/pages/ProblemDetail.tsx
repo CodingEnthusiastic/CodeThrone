@@ -1,3 +1,32 @@
+// Animated AI response for latest message
+function AnimatedAiResponse({ response }: { response: string }) {
+  const [displayed, setDisplayed] = useState('');
+  useEffect(() => {
+    let i = 0;
+    setDisplayed('');
+    const words = response.split(' ');
+    const interval = setInterval(() => {
+      if (i < words.length) {
+        setDisplayed(prev => prev + (prev ? ' ' : '') + words[i]);
+        i++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 40);
+    return () => clearInterval(interval);
+  }, [response]);
+  return (
+    <div className="flex justify-start">
+      <div className="max-w-3xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg">
+        <div className="flex items-center mb-1">
+          <Bot className="h-4 w-4 mr-2 text-indigo-500" />
+          <span className="text-sm font-medium">AI Assistant</span>
+        </div>
+        <div className="text-sm whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{__html: displayed.replace(/\*\*(.*?)\*\*/g, '<strong class=\'font-bold text-gray-900 dark:text-gray-100\'>$1</strong>')}} />
+      </div>
+    </div>
+  );
+}
 // 
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -818,23 +847,44 @@ const ProblemDetail: React.FC = () => {
                     <div className="text-sm whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{__html: chat.response.replace(/\*\*(.*?)\*\*/g, '<strong class=\'font-bold text-gray-900 dark:text-gray-100\'>$1</strong>')}} />
                   </div>
                 </div>
-                {/* Center latest question in chat */}
-                {index === chatHistory.length - 1 && (
-                  <script dangerouslySetInnerHTML={{
-                    __html: `setTimeout(function(){
-                      var container = document.querySelector('[ref=chatHistoryRef]');
-                      if(container){
-                        var last = container.lastElementChild;
-                        if(last){
-                          var top = last.offsetTop - container.clientHeight/2 + last.clientHeight/2;
-                          container.scrollTo({top: top, behavior: 'smooth'});
-                        }
-                      }
-                    }, 100);`
-                  }} />
-                )}
               </div>
             ))}
+
+            {/* Show latest user question immediately, then AI is thinking, then animate response */}
+            {aiLoading && aiPrompt && (
+              <div className="space-y-3">
+                <div className="flex justify-end">
+                  <div className="max-w-2xl bg-blue-600 text-white p-3 rounded-lg">
+                    <div className="flex items-center mb-1">
+                      <User className="h-4 w-4 mr-2" />
+                      <span className="text-sm font-medium">You</span>
+                    </div>
+                    <p className="text-sm">{aiPrompt}</p>
+                  </div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="max-w-3xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg">
+                    <div className="flex items-center mb-1">
+                      <Bot className="h-4 w-4 mr-2 text-indigo-500 animate-spin" />
+                      <span className="text-sm font-medium">AI Assistant</span>
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 italic">AI is thinking...</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Animate AI response word by word for latest message */}
+            {!aiLoading && aiResponse && chatHistory.length > 0 && (
+              <AnimatedAiResponse response={aiResponse} />
+            )}
+
+
+// ...existing code...
+
+// Place this at the very end of the file, outside ProblemDetail
+
+
             
             {chatHistory.length === 0 && (
               <div className="text-center text-gray-500 dark:text-gray-400 py-12">
@@ -1747,4 +1797,9 @@ const ProblemDetail: React.FC = () => {
   );
 };
 
-export default ProblemDetail; 
+
+
+export default ProblemDetail;
+
+
+
