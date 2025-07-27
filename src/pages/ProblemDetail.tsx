@@ -884,23 +884,22 @@ const ProblemDetail: React.FC = () => {
             </div>
 
             {/* Code Editor - FIXED: Proper scrolling configuration */}
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 p-6 min-h-0">
-                <div className="h-full border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                  <CodeMirrorEditor
-                    value={code}
-                    onChange={setCode}
-                    language={language}
-                    disabled={false}
-                    className="h-full w-full"
-                    height="100%"
-                    style={{ height: "100%" }}
-                    options={{
-                      scrollbarStyle: "native",
-                      viewportMargin: Number.POSITIVE_INFINITY,
-                    }}
-                  />
-                </div>
+            <div className="flex-1 relative p-4">
+              <div className="absolute inset-4 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <CodeMirrorEditor
+                  value={code}
+                  onChange={setCode}
+                  language={language}
+                  disabled={false}
+                  className="h-full w-full"
+                  height="100%"
+                  style={{ height: "100%" }}
+                  options={{
+                    scrollbarStyle: "native",
+                    viewportMargin: 10,
+                    lineWrapping: true,
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -1959,21 +1958,20 @@ const ProblemDetail: React.FC = () => {
             </div>
 
             <div className="p-6 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 flex-1 flex flex-col">
-              <div className="mb-4 flex-shrink-0">
-                <CodeMirrorEditor
-                  value={code}
-                  onChange={setCode}
-                  language={language}
-                  disabled={false}
-                  className="h-96"
-                  height="384px"
-                  options={{
-                    scrollbarStyle: "native",
-                    viewportMargin: 50,
-                  }}
-                />
-              </div>
-
+            <div className="mb-4 flex-shrink-0">
+              <CodeMirrorEditor
+                value={code}
+                onChange={setCode}
+                language={language}
+                disabled={false}
+                className="h-96"
+                height="384px"
+                options={{
+                  scrollbarStyle: "native",
+                  viewportMargin: 50,
+                }}
+              />
+            </div>
               <div className="flex space-x-4 mb-6 flex-shrink-0">
                 <button
                   onClick={handleRun}
