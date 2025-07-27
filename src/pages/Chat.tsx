@@ -106,7 +106,7 @@ const Chat: React.FC = () => {
       console.log("Connected to chat server")
       setSocket(newSocket)
     })
-
+    console.log("User:", user, "Token:", token);
     newSocket.on("disconnect", () => {
       console.log("Disconnected from chat server")
     })
@@ -117,7 +117,7 @@ const Chat: React.FC = () => {
         setMessages((prev) => [...prev, message])
       }
     })
-
+    console.log("User:", user, "Token:", token);
     newSocket.on("userTyping", ({ user: typingUser, roomId, isTyping: typing }) => {
       setIsTyping((prev) => {
         const roomTyping = prev[roomId] || []
