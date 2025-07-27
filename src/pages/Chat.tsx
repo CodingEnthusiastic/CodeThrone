@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useAuth } from "../contexts/AuthContext"
 import { io, type Socket } from "socket.io-client"
 import { SOCKET_URL } from "../config/api"
@@ -22,6 +22,9 @@ import {
   Settings,
   Minimize2,
   Maximize2,
+  Wifi,
+  WifiOff,
+  AlertCircle,
 } from "lucide-react"
 import { API_URL } from "../config/api"
 
@@ -76,8 +79,12 @@ interface Message {
 }
 
 const Chat: React.FC = () => {
-  const { user, token } = useAuth()
+  const { user, token } = useAuth() // ✅ Get token from auth context (same as Discussion)
+
   const [socket, setSocket] = useState<Socket | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected" | "error">(
+    "disconnected",
+  )
   const [rooms, setRooms] = useState<ChatRoom[]>([])
   const [activeRoom, setActiveRoom] = useState<ChatRoom | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -91,38 +98,107 @@ const Chat: React.FC = () => {
   const [editingMessage, setEditingMessage] = useState<string | null>(null)
   const [showCreateRoom, setShowCreateRoom] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
+  const [reconnectAttempts, setReconnectAttempts] = useState(0)
+  const [lastError, setLastError] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messageInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout>()
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
 
-  // Initialize socket connection
-  useEffect(() => {
-    console.log("Initializing socket connection");
-    console.log("User:", user, "Token:", token);
-    if (!token || !user) return
+  // Enhanced socket connection with reconnection logic
+  const connectSocket = useCallback(() => {
+    if (!token || !user) {
+      console.log("❌ Cannot connect socket: missing token or user")
+      console.log("🔍 Debug info:")
+      console.log("- token:", token ? "Present" : "Missing")
+      console.log("- user:", user ? `${user.username} (${user._id})` : "Not logged in")
+      return
+    }
+
+    console.log("🔌 Attempting to connect to Socket.IO server...")
+    console.log("📍 Socket URL:", SOCKET_URL)
+    console.log("👤 User:", user.username)
+    console.log("🔑 Token (first 20 chars):", token.substring(0, 20) + "...")
+
+    setConnectionStatus("connecting")
+    setLastError(null)
 
     const newSocket = io(SOCKET_URL, {
-      auth: { token },
+      auth: { token, userId: user._id }, // ✅ Use token directly (same as Discussion)
+      transports: ["websocket", "polling"],
+      timeout: 20000,
+      forceNew: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     })
 
+    // Connection events
     newSocket.on("connect", () => {
-      console.log("Connected to chat server")
+      console.log("✅ Socket connected successfully!")
+      console.log("🔌 Socket ID:", newSocket.id)
+      console.log("🚀 Transport:", newSocket.io.engine.transport.name)
+
       setSocket(newSocket)
+      setConnectionStatus("connected")
+      setReconnectAttempts(0)
+      setLastError(null)
     })
-    console.log("User:", user, "Token:", token);
-    newSocket.on("disconnect", () => {
-      console.log("Disconnected from chat server")
+
+    newSocket.on("disconnect", (reason) => {
+      console.log("🔌 Socket disconnected:", reason)
+      setConnectionStatus("disconnected")
+      setSocket(null)
+
+      // Attempt reconnection for certain disconnect reasons
+      if (reason === "io server disconnect") {
+        console.log("🔄 Server initiated disconnect, attempting reconnection...")
+        attemptReconnection()
+      }
+    })
+
+    newSocket.on("connect_error", (error) => {
+      console.error("❌ Socket connection error:", error)
+      setConnectionStatus("error")
+      setLastError(error.message)
+      attemptReconnection()
+    })
+
+    newSocket.on("reconnect", (attemptNumber) => {
+      console.log(`🔄 Socket reconnected after ${attemptNumber} attempts`)
+      setConnectionStatus("connected")
+      setReconnectAttempts(0)
+      setLastError(null)
+    })
+
+    newSocket.on("reconnect_attempt", (attemptNumber) => {
+      console.log(`🔄 Reconnection attempt ${attemptNumber}`)
+      setReconnectAttempts(attemptNumber)
+    })
+
+    newSocket.on("reconnect_error", (error) => {
+      console.error("❌ Reconnection error:", error)
+      setLastError(error.message)
+    })
+
+    newSocket.on("reconnect_failed", () => {
+      console.error("❌ Reconnection failed after maximum attempts")
+      setConnectionStatus("error")
+      setLastError("Failed to reconnect after maximum attempts")
     })
 
     // Chat event listeners
     newSocket.on("newMessage", (message: Message) => {
+      console.log("📨 New message received:", message)
       if (activeRoom && message.room === activeRoom._id) {
         setMessages((prev) => [...prev, message])
       }
     })
-    console.log("User:", user, "Token:", token);
+
     newSocket.on("userTyping", ({ user: typingUser, roomId, isTyping: typing }) => {
+      console.log(`⌨️ User ${typingUser.username} ${typing ? "started" : "stopped"} typing in room ${roomId}`)
       setIsTyping((prev) => {
         const roomTyping = prev[roomId] || []
         if (typing) {
@@ -137,68 +213,140 @@ const Chat: React.FC = () => {
     })
 
     newSocket.on("messageReaction", ({ messageId, reactions }) => {
+      console.log("👍 Message reaction updated:", messageId, reactions)
       setMessages((prev) => prev.map((msg) => (msg._id === messageId ? { ...msg, reactions } : msg)))
     })
 
     newSocket.on("messageEdited", ({ messageId, content, isEdited, editedAt }) => {
+      console.log("✏️ Message edited:", messageId)
       setMessages((prev) => prev.map((msg) => (msg._id === messageId ? { ...msg, content, isEdited, editedAt } : msg)))
     })
 
     newSocket.on("privateRoomCreated", (room: ChatRoom) => {
+      console.log("💬 Private room created:", room)
       setRooms((prev) => [room, ...prev])
       setActiveRoom(room)
     })
 
-    return () => {
-      newSocket.disconnect()
-    }
+    newSocket.on("joinedRoom", ({ roomId, roomName }) => {
+      console.log(`✅ Successfully joined room: ${roomName} (${roomId})`)
+    })
+
+    newSocket.on("error", (error) => {
+      console.error("❌ Socket error:", error)
+      setLastError(error.message)
+    })
+
+    return newSocket
   }, [token, user, activeRoom])
+
+  // Reconnection logic
+  const attemptReconnection = useCallback(() => {
+    if (reconnectAttempts >= 5) {
+      console.log("❌ Maximum reconnection attempts reached")
+      return
+    }
+
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000)
+    console.log(`🔄 Attempting reconnection in ${delay}ms (attempt ${reconnectAttempts + 1})`)
+
+    reconnectTimeoutRef.current = setTimeout(() => {
+      setReconnectAttempts((prev) => prev + 1)
+      connectSocket()
+    }, delay)
+  }, [reconnectAttempts, connectSocket])
+
+  // Initialize socket connection
+  useEffect(() => {
+    console.log("🔄 Chat component mounted, checking connection requirements...")
+    console.log("👤 User:", user ? `${user.username} (${user._id})` : "Not logged in")
+    console.log("🔑 Token:", token ? "Present" : "Missing")
+
+    if (!token || !user) {
+      console.log("❌ Cannot initialize socket: missing token or user")
+      return
+    }
+
+    const socketInstance = connectSocket()
+
+    return () => {
+      console.log("🔌 Cleaning up socket connection...")
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
+      if (socketInstance) {
+        socketInstance.disconnect()
+      }
+    }
+  }, [token, user, connectSocket])
 
   // Fetch chat rooms
   useEffect(() => {
     if (!token) return
 
+    console.log("📋 Fetching chat rooms...")
     const fetchRooms = async () => {
       try {
         const response = await fetch(`${API_URL}/chats/rooms`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ Same pattern as Discussion
+            "Content-Type": "application/json",
+          },
         })
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
         const data = await response.json()
+        console.log("✅ Chat rooms fetched:", data.length, "rooms")
         setRooms(data)
 
         if (data.length > 0 && !activeRoom) {
           setActiveRoom(data[0])
+          console.log("🏠 Set active room to:", data[0].name)
         }
       } catch (error) {
-        console.error("Error fetching rooms:", error)
+        console.error("❌ Error fetching rooms:", error)
       }
     }
 
     fetchRooms()
-  }, [token])
+  }, [token, activeRoom])
 
   // Fetch messages when active room changes
   useEffect(() => {
     if (!activeRoom || !token) return
 
+    console.log("📨 Fetching messages for room:", activeRoom.name)
     const fetchMessages = async () => {
       try {
         const response = await fetch(`${API_URL}/chats/rooms/${activeRoom._id}/messages`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ Same pattern as Discussion
+            "Content-Type": "application/json",
+          },
         })
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
         const data = await response.json()
+        console.log("✅ Messages fetched:", data.length, "messages")
         setMessages(data)
       } catch (error) {
-        console.error("Error fetching messages:", error)
+        console.error("❌ Error fetching messages:", error)
       }
     }
 
     fetchMessages()
 
-    if (socket) {
+    if (socket && connectionStatus === "connected") {
+      console.log("🏠 Joining room via socket:", activeRoom.name)
       socket.emit("joinRoom", activeRoom._id)
     }
-  }, [activeRoom, token, socket])
+  }, [activeRoom, token, socket, connectionStatus])
 
   // Fetch online users
   useEffect(() => {
@@ -207,17 +355,23 @@ const Chat: React.FC = () => {
     const fetchOnlineUsers = async () => {
       try {
         const response = await fetch(`${API_URL}/chats/online-users`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ Same pattern as Discussion
+            "Content-Type": "application/json",
+          },
         })
-        const data = await response.json()
-        setOnlineUsers(data)
+
+        if (response.ok) {
+          const data = await response.json()
+          setOnlineUsers(data)
+        }
       } catch (error) {
-        console.error("Error fetching online users:", error)
+        console.error("❌ Error fetching online users:", error)
       }
     }
 
     fetchOnlineUsers()
-    const interval = setInterval(fetchOnlineUsers, 30000) // Update every 30s
+    const interval = setInterval(fetchOnlineUsers, 30000)
     return () => clearInterval(interval)
   }, [token])
 
@@ -228,23 +382,28 @@ const Chat: React.FC = () => {
 
   // Join rooms on socket connection
   useEffect(() => {
-    if (socket && rooms.length > 0) {
+    if (socket && rooms.length > 0 && connectionStatus === "connected") {
+      console.log(
+        "🏠 Joining all rooms via socket:",
+        rooms.map((r) => r.name),
+      )
       socket.emit(
         "joinRooms",
         rooms.map((room) => room._id),
       )
     }
-  }, [socket, rooms])
+  }, [socket, rooms, connectionStatus])
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeRoom || !token) return
 
+    console.log("📤 Sending message to room:", activeRoom.name)
     try {
       const response = await fetch(`${API_URL}/chats/rooms/${activeRoom._id}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`, // ✅ Same pattern as Discussion
         },
         body: JSON.stringify({
           content: newMessage,
@@ -254,16 +413,19 @@ const Chat: React.FC = () => {
       })
 
       if (response.ok) {
+        console.log("✅ Message sent successfully")
         setNewMessage("")
         setReplyTo(null)
+      } else {
+        console.error("❌ Failed to send message:", response.status, response.statusText)
       }
     } catch (error) {
-      console.error("Error sending message:", error)
+      console.error("❌ Error sending message:", error)
     }
   }
 
   const handleTyping = () => {
-    if (!socket || !activeRoom) return
+    if (!socket || !activeRoom || connectionStatus !== "connected") return
 
     socket.emit("typing", { roomId: activeRoom._id, isTyping: true })
 
@@ -284,17 +446,24 @@ const Chat: React.FC = () => {
 
     try {
       const response = await fetch(`${API_URL}/chats/users/search?q=${encodeURIComponent(query)}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`, // ✅ Same pattern as Discussion
+          "Content-Type": "application/json",
+        },
       })
-      const data = await response.json()
-      setSearchResults(data)
+
+      if (response.ok) {
+        const data = await response.json()
+        setSearchResults(data)
+      }
     } catch (error) {
-      console.error("Error searching users:", error)
+      console.error("❌ Error searching users:", error)
     }
   }
 
   const createPrivateChat = (targetUser: User) => {
-    if (socket) {
+    if (socket && connectionStatus === "connected") {
+      console.log("💬 Creating private chat with:", targetUser.username)
       socket.emit("createPrivateChat", { targetUserId: targetUser._id })
       setShowUserSearch(false)
       setSearchQuery("")
@@ -303,7 +472,7 @@ const Chat: React.FC = () => {
   }
 
   const addReaction = (messageId: string, emoji: string) => {
-    if (socket) {
+    if (socket && connectionStatus === "connected") {
       socket.emit("reactToMessage", { messageId, emoji })
     }
   }
@@ -324,6 +493,37 @@ const Chat: React.FC = () => {
     }
   }
 
+  const getConnectionStatusIcon = () => {
+    switch (connectionStatus) {
+      case "connected":
+        return <Wifi className="h-4 w-4 text-green-500" />
+      case "connecting":
+        return <Wifi className="h-4 w-4 text-yellow-500 animate-pulse" />
+      case "disconnected":
+        return <WifiOff className="h-4 w-4 text-gray-500" />
+      case "error":
+        return <AlertCircle className="h-4 w-4 text-red-500" />
+      default:
+        return <WifiOff className="h-4 w-4 text-gray-500" />
+    }
+  }
+
+  const getConnectionStatusText = () => {
+    switch (connectionStatus) {
+      case "connected":
+        return "Connected"
+      case "connecting":
+        return "Connecting..."
+      case "disconnected":
+        return "Disconnected"
+      case "error":
+        return `Error${reconnectAttempts > 0 ? ` (Retry ${reconnectAttempts}/5)` : ""}`
+      default:
+        return "Unknown"
+    }
+  }
+
+  // ✅ Same check pattern as Discussion component
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -331,6 +531,22 @@ const Chat: React.FC = () => {
           <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-400" />
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Please Login to Chat</h2>
           <p className="text-gray-600 dark:text-gray-400">You need to be logged in to access the chat feature.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ✅ Additional check for token (same as Discussion would do)
+  if (!token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Authentication Required</h2>
+          <p className="text-gray-600 dark:text-gray-400">Please log in again to access the chat feature.</p>
+          <p className="text-red-600 dark:text-red-400 mt-2 text-sm">
+            Authentication token is missing. Please refresh the page and try logging in again.
+          </p>
         </div>
       </div>
     )
@@ -362,6 +578,27 @@ const Chat: React.FC = () => {
                 <Plus className="h-4 w-4" />
               </button>
             </div>
+          </div>
+
+          {/* Connection Status */}
+          <div className="mb-4 p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                {getConnectionStatusIcon()}
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {getConnectionStatusText()}
+                </span>
+              </div>
+              {connectionStatus === "error" && (
+                <button
+                  onClick={connectSocket}
+                  className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+            {lastError && <div className="mt-1 text-xs text-red-600 dark:text-red-400">{lastError}</div>}
           </div>
 
           {/* User Search */}
@@ -470,6 +707,10 @@ const Chat: React.FC = () => {
               )}
             </div>
             <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1">
+                {getConnectionStatusIcon()}
+                <span className="text-xs text-gray-500 dark:text-gray-400">{getConnectionStatusText()}</span>
+              </div>
               <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <Settings className="h-4 w-4" />
               </button>
@@ -549,6 +790,7 @@ const Chat: React.FC = () => {
                         onClick={() => addReaction(message._id, "👍")}
                         className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                         title="React"
+                        disabled={connectionStatus !== "connected"}
                       >
                         <Smile className="h-4 w-4" />
                       </button>
@@ -627,17 +869,24 @@ const Chat: React.FC = () => {
                   }}
                   onKeyPress={(e) => e.key === "Enter" && sendMessage()}
                   placeholder={activeRoom ? `Message ${activeRoom.name}` : "Select a room to start chatting"}
-                  disabled={!activeRoom}
+                  disabled={!activeRoom || connectionStatus !== "connected"}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
                 />
                 <button
                   onClick={sendMessage}
-                  disabled={!newMessage.trim() || !activeRoom}
+                  disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected"}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="h-4 w-4" />
                 </button>
               </div>
+
+              {connectionStatus !== "connected" && (
+                <div className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Chat is {connectionStatus}. Messages cannot be sent.
+                </div>
+              )}
             </div>
           </>
         )}

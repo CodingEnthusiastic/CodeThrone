@@ -1,67 +1,18 @@
 import express from "express"
-import mongoose from "mongoose"
 import { authenticateToken } from "../middleware/auth.js"
 import User from "../models/User.js"
+import ChatRoom from "../models/ChatRoom.js"
+import Message from "../models/Message.js"
 
 const router = express.Router()
 
-// Chat Room Schema
-const chatRoomSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    description: String,
-    type: {
-      type: String,
-      enum: ["general", "help", "contest", "interview", "private"],
-      default: "general",
-    },
-    participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    admins: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    isPrivate: { type: Boolean, default: false },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    lastActivity: { type: Date, default: Date.now },
-    messageCount: { type: Number, default: 0 },
-  },
-  { timestamps: true },
-)
-
-// Message Schema
-const messageSchema = new mongoose.Schema(
-  {
-    content: { type: String, required: true },
-    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    room: { type: mongoose.Schema.Types.ObjectId, ref: "ChatRoom", required: true },
-    type: {
-      type: String,
-      enum: ["text", "code", "image", "file", "system"],
-      default: "text",
-    },
-    language: String, // For code messages
-    isEdited: { type: Boolean, default: false },
-    editedAt: Date,
-    replyTo: { type: mongoose.Schema.Types.ObjectId, ref: "Message" },
-    reactions: [
-      {
-        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        emoji: String,
-      },
-    ],
-    readBy: [
-      {
-        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        readAt: { type: Date, default: Date.now },
-      },
-    ],
-  },
-  { timestamps: true },
-)
-
-const ChatRoom = mongoose.model("ChatRoom", chatRoomSchema)
-const Message = mongoose.model("Message", messageSchema)
+console.log("🛣️ Setting up chats routes...")
 
 // Get all chat rooms for user
 router.get("/rooms", authenticateToken, async (req, res) => {
   try {
+    console.log(`📋 Fetching chat rooms for user: ${req.user.userId}`)
+
     const rooms = await ChatRoom.find({
       $or: [{ participants: req.user.userId }, { isPrivate: false }],
     })
@@ -69,9 +20,10 @@ router.get("/rooms", authenticateToken, async (req, res) => {
       .populate("createdBy", "username profile.avatar")
       .sort({ lastActivity: -1 })
 
+    console.log(`✅ Found ${rooms.length} chat rooms for user`)
     res.json(rooms)
   } catch (error) {
-    console.error("Error fetching chat rooms:", error)
+    console.error("❌ Error fetching chat rooms:", error)
     res.status(500).json({ error: "Failed to fetch chat rooms" })
   }
 })
@@ -80,6 +32,7 @@ router.get("/rooms", authenticateToken, async (req, res) => {
 router.post("/rooms", authenticateToken, async (req, res) => {
   try {
     const { name, description, type, isPrivate, participants } = req.body
+    console.log(`🏗️ Creating new chat room: ${name} by user ${req.user.userId}`)
 
     const room = new ChatRoom({
       name,
@@ -95,15 +48,20 @@ router.post("/rooms", authenticateToken, async (req, res) => {
     await room.populate("participants", "username profile.avatar")
     await room.populate("createdBy", "username profile.avatar")
 
+    console.log(`✅ Chat room created successfully: ${room.name} (${room._id})`)
+
     // Emit to all participants
     const io = req.app.get("io")
-    room.participants.forEach((participant) => {
-      io.to(`user_${participant._id}`).emit("roomCreated", room)
-    })
+    if (io) {
+      room.participants.forEach((participant) => {
+        io.to(`user_${participant._id}`).emit("roomCreated", room)
+      })
+      console.log(`📡 Room creation event emitted to ${room.participants.length} participants`)
+    }
 
     res.status(201).json(room)
   } catch (error) {
-    console.error("Error creating chat room:", error)
+    console.error("❌ Error creating chat room:", error)
     res.status(500).json({ error: "Failed to create chat room" })
   }
 })
@@ -111,28 +69,35 @@ router.post("/rooms", authenticateToken, async (req, res) => {
 // Join chat room
 router.post("/rooms/:roomId/join", authenticateToken, async (req, res) => {
   try {
+    console.log(`👥 User ${req.user.userId} attempting to join room: ${req.params.roomId}`)
+
     const room = await ChatRoom.findById(req.params.roomId)
 
     if (!room) {
+      console.log(`❌ Room not found: ${req.params.roomId}`)
       return res.status(404).json({ error: "Room not found" })
     }
 
     if (!room.participants.includes(req.user.userId)) {
       room.participants.push(req.user.userId)
       await room.save()
+      console.log(`✅ User ${req.user.userId} added to room participants`)
     }
 
     await room.populate("participants", "username profile.avatar")
 
     const io = req.app.get("io")
-    io.to(`room_${room._id}`).emit("userJoined", {
-      user: await User.findById(req.user.userId).select("username profile.avatar"),
-      room: room._id,
-    })
+    if (io) {
+      io.to(`room_${room._id}`).emit("userJoined", {
+        user: await User.findById(req.user.userId).select("username profile.avatar"),
+        room: room._id,
+      })
+      console.log(`📡 User joined event emitted to room ${room.name}`)
+    }
 
     res.json({ message: "Joined room successfully" })
   } catch (error) {
-    console.error("Error joining room:", error)
+    console.error("❌ Error joining room:", error)
     res.status(500).json({ error: "Failed to join room" })
   }
 })
@@ -141,14 +106,18 @@ router.post("/rooms/:roomId/join", authenticateToken, async (req, res) => {
 router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 50 } = req.query
+    console.log(`📨 Fetching messages for room ${req.params.roomId}, page ${page}, limit ${limit}`)
+
     const room = await ChatRoom.findById(req.params.roomId)
 
     if (!room) {
+      console.log(`❌ Room not found: ${req.params.roomId}`)
       return res.status(404).json({ error: "Room not found" })
     }
 
     // Check if user has access to room
     if (room.isPrivate && !room.participants.includes(req.user.userId)) {
+      console.log(`❌ Access denied to private room ${req.params.roomId} for user ${req.user.userId}`)
       return res.status(403).json({ error: "Access denied" })
     }
 
@@ -159,9 +128,10 @@ router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit)
 
+    console.log(`✅ Found ${messages.length} messages for room ${req.params.roomId}`)
     res.json(messages.reverse())
   } catch (error) {
-    console.error("Error fetching messages:", error)
+    console.error("❌ Error fetching messages:", error)
     res.status(500).json({ error: "Failed to fetch messages" })
   }
 })
@@ -170,14 +140,17 @@ router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
 router.post("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
   try {
     const { content, type = "text", language, replyTo } = req.body
+    console.log(`📤 Sending message to room ${req.params.roomId} from user ${req.user.userId}`)
 
     const room = await ChatRoom.findById(req.params.roomId)
     if (!room) {
+      console.log(`❌ Room not found: ${req.params.roomId}`)
       return res.status(404).json({ error: "Room not found" })
     }
 
     // Check if user has access to room
     if (room.isPrivate && !room.participants.includes(req.user.userId)) {
+      console.log(`❌ Access denied to private room ${req.params.roomId} for user ${req.user.userId}`)
       return res.status(403).json({ error: "Access denied" })
     }
 
@@ -201,13 +174,18 @@ router.post("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
     room.messageCount += 1
     await room.save()
 
+    console.log(`✅ Message sent successfully to room ${room.name}`)
+
     // Emit to room
     const io = req.app.get("io")
-    io.to(`room_${req.params.roomId}`).emit("newMessage", message)
+    if (io) {
+      io.to(`room_${req.params.roomId}`).emit("newMessage", message)
+      console.log(`📡 New message event emitted to room ${room.name}`)
+    }
 
     res.status(201).json(message)
   } catch (error) {
-    console.error("Error sending message:", error)
+    console.error("❌ Error sending message:", error)
     res.status(500).json({ error: "Failed to send message" })
   }
 })
@@ -215,17 +193,27 @@ router.post("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
 // Get online users
 router.get("/online-users", authenticateToken, async (req, res) => {
   try {
+    console.log(`👥 Fetching online users for user ${req.user.userId}`)
+
     const io = req.app.get("io")
+    if (!io) {
+      console.log("❌ Socket.IO instance not available")
+      return res.json([])
+    }
+
     const sockets = await io.fetchSockets()
     const onlineUserIds = [...new Set(sockets.map((socket) => socket.userId).filter(Boolean))]
+
+    console.log(`🔌 Found ${sockets.length} active sockets, ${onlineUserIds.length} unique users`)
 
     const onlineUsers = await User.find({ _id: { $in: onlineUserIds } }).select(
       "username profile.avatar stats.problemsSolved.total ratings.globalRank",
     )
 
+    console.log(`✅ Returning ${onlineUsers.length} online users`)
     res.json(onlineUsers)
   } catch (error) {
-    console.error("Error fetching online users:", error)
+    console.error("❌ Error fetching online users:", error)
     res.status(500).json({ error: "Failed to fetch online users" })
   }
 })
@@ -234,7 +222,10 @@ router.get("/online-users", authenticateToken, async (req, res) => {
 router.get("/users/search", authenticateToken, async (req, res) => {
   try {
     const { q } = req.query
+    console.log(`🔍 Searching users with query: "${q}" for user ${req.user.userId}`)
+
     if (!q || q.length < 2) {
+      console.log("❌ Search query too short or empty")
       return res.json([])
     }
 
@@ -253,11 +244,14 @@ router.get("/users/search", authenticateToken, async (req, res) => {
       .select("username profile.firstName profile.lastName profile.avatar stats.problemsSolved.total")
       .limit(10)
 
+    console.log(`✅ Found ${users.length} users matching search query`)
     res.json(users)
   } catch (error) {
-    console.error("Error searching users:", error)
+    console.error("❌ Error searching users:", error)
     res.status(500).json({ error: "Failed to search users" })
   }
 })
+
+console.log("✅ Chats routes setup complete")
 
 export default router
