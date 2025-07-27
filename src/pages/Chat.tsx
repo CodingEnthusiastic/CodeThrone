@@ -4,6 +4,8 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "../contexts/AuthContext"
 import { io, type Socket } from "socket.io-client"
+import { SOCKET_URL } from "../config/api"
+
 import {
   Send,
   Users,
@@ -96,9 +98,11 @@ const Chat: React.FC = () => {
 
   // Initialize socket connection
   useEffect(() => {
+    console.log("Initializing socket connection");
+    console.log("User:", user, "Token:", token);
     if (!token || !user) return
 
-    const newSocket = io(API_URL, {
+    const newSocket = io(SOCKET_URL, {
       auth: { token },
     })
 
