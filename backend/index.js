@@ -17,6 +17,7 @@ import redeemRoutes from './routes/redeem.js';
 import { authenticateToken } from './middleware/auth.js';
 import { setupGameSocket } from './socket/game.js';
 import geminiRoutes from './routes/gemini.js';
+import chatsRoutes from './routes/chats.js';
 import chatRoutes from './routes/chat.js';
 import announcementsRouter from './routes/announcements.js';
 import certificatesRouter from './routes/certificates.js';
@@ -108,6 +109,8 @@ console.log('✅ Redeem routes mounted at /api/redeem');
 
 // app.use('/api/announcements', announcementRoutes);
 // console.log('✅ Announcement routes mounted at /api/announcements');
+
+app.use('/api/chats', chatsRoutes);
 
 app.use('/api/interview', interviewRoutes);
 console.log('✅ Interview routes mounted at /api/interview');

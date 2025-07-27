@@ -23,7 +23,7 @@ import ContestProblemDetail from './pages/ContestProblemDetail';
 import Announcements from './pages/Announcements';
 import AnnounceDetail from './pages/AnnounceDetail';
 import OAuthHandler from './pages/OAuthHandler';
-
+import Chat from './pages/Chat';
 // Move loading logic to a wrapper component
 const AppRoutes = () => {
   const { loading } = useAuth();
@@ -403,6 +403,7 @@ const AppRoutes = () => {
             <Route path="/register" element={<Register />} />
             <Route path="/problems" element={<Problems />} />
             <Route path="/problems/:id" element={<ProblemDetail />} />
+            <Route path="/chats" element={<Chat />} />
             <Route path="/top" element={<Discussion />} />
             <Route path="/top/:id" element={<DiscussionDetail />} />
             <Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>} />
