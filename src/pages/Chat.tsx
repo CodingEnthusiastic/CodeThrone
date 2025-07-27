@@ -452,6 +452,7 @@ const [roomError, setRoomError] = useState<string | null>(null);
           content: newMessage,
           type: "text",
           replyTo: replyTo?._id,
+          sender:user?._id,
         }),
       })
 
