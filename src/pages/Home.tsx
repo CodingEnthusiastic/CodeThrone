@@ -164,28 +164,36 @@ const Home: React.FC = () => {
       description: "Solve 2000+ coding problems from easy to expert level with detailed explanations",
       image: "https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=800",
       features: ["2000+ Problems", "Multiple Languages", "Real-time Testing"],
-      gradient: "from-violet-600 via-purple-600 to-blue-600",
+      gradient: isDark
+        ? "from-gray-800 via-slate-800 to-gray-900"
+        : "from-violet-600 via-purple-600 to-blue-600",
     },
     {
       title: "Compete Globally",
       description: "Join weekly contests and compete with programmers worldwide",
       image: "https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800",
       features: ["Weekly Contests", "Global Rankings", "ELO Rating System"],
-      gradient: "from-orange-500 via-red-500 to-pink-600",
+      gradient: isDark
+        ? "from-gray-800 via-slate-800 to-gray-900"
+        : "from-violet-600 via-purple-600 to-blue-600",
     },
     {
       title: "Real-time Battles",
       description: "Challenge others in live coding battles with anti-cheat protection",
       image: "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800",
       features: ["Live Battles", "Anti-cheat", "Rating System"],
-      gradient: "from-green-600 via-green-700 to-green-500",
+      gradient: isDark
+        ? "from-gray-800 via-slate-800 to-gray-900"
+        : "from-violet-600 via-purple-600 to-blue-600",
     },
     {
       title: "AI Interview Practice",
       description: "Practice technical interviews with AI-powered questions and feedback",
       image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800",
       features: ["AI Questions", "Voice Interaction", "Real-time Feedback"],
-      gradient: "from-gray-800 via-slate-800 to-gray-900",
+      gradient: isDark
+        ? "from-gray-800 via-slate-800 to-gray-900"
+        : "from-violet-600 via-purple-600 to-blue-600",
     },
   ]
 
