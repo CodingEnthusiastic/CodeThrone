@@ -351,7 +351,7 @@ const Interview: React.FC = () => {
   useEffect(() => {
     console.log("🎤 Initializing enhanced speech recognition...")
     
-    // Check browser support
+    // Check browser support 
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
       console.warn("❌ Speech recognition not supported in this browser")
       setSpeechRecognitionSupported(false)
