@@ -105,7 +105,12 @@ const Chat: React.FC = () => {
   const messageInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout>()
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
-
+  const [roomName, setRoomName] = useState("");
+const [roomDescription, setRoomDescription] = useState("");
+const [roomType, setRoomType] = useState<ChatRoom["type"]>("general");
+const [roomIsPrivate, setRoomIsPrivate] = useState(false);
+const [roomCreating, setRoomCreating] = useState(false);
+const [roomError, setRoomError] = useState<string | null>(null);
   // Enhanced socket connection with reconnection logic
   const connectSocket = useCallback(() => {
     if (!token || !user) {
@@ -393,7 +398,45 @@ const Chat: React.FC = () => {
       )
     }
   }, [socket, rooms, connectionStatus])
+  const handleCreateRoom = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!roomName.trim() || !token) return;
+  setRoomCreating(true);
+  setRoomError(null);
 
+  try {
+    const response = await fetch(`${API_URL}/chats/rooms`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name: roomName,
+        description: roomDescription,
+        type: roomType,
+        isPrivate: roomIsPrivate,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const newRoom = await response.json();
+    setRooms((prev) => [newRoom, ...prev]);
+    setActiveRoom(newRoom);
+    setShowCreateRoom(false);
+    setRoomName("");
+    setRoomDescription("");
+    setRoomType("general");
+    setRoomIsPrivate(false);
+  } catch (error: any) {
+    setRoomError(error.message || "Failed to create room");
+  } finally {
+    setRoomCreating(false);
+  }
+};
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeRoom || !token) return
 
@@ -640,6 +683,73 @@ const Chat: React.FC = () => {
               )}
             </div>
           )}
+
+          {showCreateRoom && (
+  <div className="mb-4 p-4 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+    <form onSubmit={handleCreateRoom} className="space-y-3">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Room Name</label>
+        <input
+          type="text"
+          value={roomName}
+          onChange={(e) => setRoomName(e.target.value)}
+          className="w-full mt-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Description</label>
+        <input
+          type="text"
+          value={roomDescription}
+          onChange={(e) => setRoomDescription(e.target.value)}
+          className="w-full mt-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Type</label>
+        <select
+          value={roomType}
+          onChange={(e) => setRoomType(e.target.value as ChatRoom["type"])}
+          className="w-full mt-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+        >
+          <option value="general">General</option>
+          <option value="help">Help</option>
+          <option value="contest">Contest</option>
+          <option value="interview">Interview</option>
+          <option value="private">Private</option>
+        </select>
+      </div>
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          checked={roomIsPrivate}
+          onChange={(e) => setRoomIsPrivate(e.target.checked)}
+          id="privateRoom"
+          className="mr-2"
+        />
+        <label htmlFor="privateRoom" className="text-sm text-gray-700 dark:text-gray-200">Private Room</label>
+      </div>
+      {roomError && <div className="text-xs text-red-600">{roomError}</div>}
+      <div className="flex space-x-2">
+        <button
+          type="submit"
+          disabled={roomCreating}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          {roomCreating ? "Creating..." : "Create Room"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowCreateRoom(false)}
+          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+)}
         </div>
 
         {/* Rooms List */}
