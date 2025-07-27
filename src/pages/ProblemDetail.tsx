@@ -1,18 +1,16 @@
-// Animated AI response for latest message
 function AnimatedAiResponse({ response }: { response: string }) {
   const [displayed, setDisplayed] = useState('');
   useEffect(() => {
     let i = 0;
     setDisplayed('');
-    const words = response.split(' ');
     const interval = setInterval(() => {
-      if (i < words.length) {
-        setDisplayed(prev => prev + (prev ? ' ' : '') + words[i]);
+      if (i < response.length - 1) {
+        setDisplayed(prev => prev + response[i]);
         i++;
       } else {
         clearInterval(interval);
       }
-    }, 40);
+    }, 12);
     return () => clearInterval(interval);
   }, [response]);
   return (
@@ -22,12 +20,16 @@ function AnimatedAiResponse({ response }: { response: string }) {
           <Bot className="h-4 w-4 mr-2 text-indigo-500" />
           <span className="text-sm font-medium">AI Assistant</span>
         </div>
-        <div className="text-sm whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{__html: displayed.replace(/\*\*(.*?)\*\*/g, '<strong class=\'font-bold text-gray-900 dark:text-gray-100\'>$1</strong>')}} />
+        <div
+          className="text-sm whitespace-pre-wrap break-words"
+          dangerouslySetInnerHTML={{
+            __html: displayed.replace(/\*\*(.*?)\*\*/g, "<strong class='font-bold text-gray-900 dark:text-gray-100'>$1</strong>")
+          }}
+        />
       </div>
     </div>
   );
-}
-// 
+} 
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
@@ -761,9 +763,10 @@ const ProblemDetail: React.FC = () => {
             <button
               aria-label="Add New Chat"
               onClick={startNewChat}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
             >
-              <Plus />New Chat
+              <Plus className="h-4 w-4" />
+              <span className="text-sm font-medium">New Chat</span>
             </button>
           </div>
         </div>
@@ -794,33 +797,35 @@ const ProblemDetail: React.FC = () => {
                   <Plus className="h-4 w-4 mr-2" />
                   New Chats
                 </button>
-                <button
-                  onClick={toggleAiMaximized}
-                  className="flex items-center px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-                  title="Minimize Chat"
-                >
-                  <Minimize2 className="h-5 w-5 mr-2" />
-                  Minimise
-                </button>
               </div>
             </div>
           </div>
 
           {/* Quick Prompts */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Quick questions:</p>
-            <div className="flex flex-wrap gap-2">
-              {getContextualPrompts().slice(0, 10).map((prompt, index) => (
-                <button
-                  key={index}
-                  onClick={() => setAiPrompt(prompt)}
-                  disabled={aiLoading}
-                  className="text-sm px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors disabled:opacity-50"
-                >
-                  {prompt}
-                </button>
-              ))}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Quick questions:</p>
+              <div className="flex flex-wrap gap-2">
+                {getContextualPrompts().slice(0, 10).map((prompt, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setAiPrompt(prompt)}
+                    disabled={aiLoading}
+                    className="text-sm px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors disabled:opacity-50"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
+            <button
+              onClick={toggleAiMaximized}
+              className="flex items-center px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors ml-4"
+              title="Minimize Chat"
+            >
+              <Minimize2 className="h-5 w-5 mr-2" />
+              Minimise
+            </button>
           </div>
 
           {/* Chat Messages */}
@@ -839,18 +844,23 @@ const ProblemDetail: React.FC = () => {
                 </div>
                 {/* AI Response */}
                 <div className="flex justify-start">
-                  <div className="max-w-3xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg">
-                    <div className="flex items-center mb-1">
-                      <Bot className="h-4 w-4 mr-2 text-indigo-500" />
-                      <span className="text-sm font-medium">AI Assistant</span>
+                  {index === chatHistory.length - 1 && aiResponse ? (
+                    // Animate only the latest AI response
+                    <AnimatedAiResponse response={aiResponse} />
+                  ) : (
+                    // For previous messages, render as static
+                    <div className="max-w-3xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg">
+                      <div className="flex items-center mb-1">
+                        <Bot className="h-4 w-4 mr-2 text-indigo-500" />
+                        <span className="text-sm font-medium">AI Assistant</span>
+                      </div>
+                      <div className="text-sm whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{__html: chat.response.replace(/\*\*(.*?)\*\*/g, '<strong class=\'font-bold text-gray-900 dark:text-gray-100\'>$1</strong>')}} />
                     </div>
-                    <div className="text-sm whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{__html: chat.response.replace(/\*\*(.*?)\*\*/g, '<strong class=\'font-bold text-gray-900 dark:text-gray-100\'>$1</strong>')}} />
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
 
-            {/* Show latest user question immediately, then AI is thinking, then animate response */}
             {aiLoading && aiPrompt && (
               <div className="space-y-3">
                 <div className="flex justify-end">
@@ -873,19 +883,7 @@ const ProblemDetail: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* Animate AI response word by word for latest message */}
-            {!aiLoading && aiResponse && chatHistory.length > 0 && (
-              <AnimatedAiResponse response={aiResponse} />
-            )}
-
-
-// ...existing code...
-
-// Place this at the very end of the file, outside ProblemDetail
-
-
-            
+         
             {chatHistory.length === 0 && (
               <div className="text-center text-gray-500 dark:text-gray-400 py-12">
                 <Bot className="h-16 w-16 mx-auto mb-4 opacity-50" />
@@ -987,33 +985,40 @@ const ProblemDetail: React.FC = () => {
                 </span>
               </div>
             </div>
-
             {/* Tabs */}
-            <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">
-              <nav className="flex space-x-8 px-0">
-                {[
-                  { id: 'description', label: 'Description', icon: <FileText className="h-4 w-4" /> },
-                  { id: 'editorial', label: 'Editorial', icon: <BookOpen className="h-4 w-4" /> },
-                  { id: 'solutions', label: 'Solutions', icon: <Code className="h-4 w-4" /> },
-                  { id: 'submissions', label: 'Submissions', icon: <Send className="h-4 w-4" /> },
-                  { id: 'chatai', label: 'ChatAI', icon: <Bot className="h-4 w-4" /> }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200 hover:scale-105 ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 rounded-t-lg'
-                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
-                  >
-                    <span className={`transition-colors ${activeTab === tab.id ? 'text-blue-500 dark:text-blue-400' : ''}`}>
-                      {tab.icon}
-                    </span>
-                    <span className="ml-2">{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
+            <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <style>
+              {`
+              /* Hide scrollbar for Chrome, Safari and Opera */
+              .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+              }
+              `}
+              </style>
+              <div className="flex whitespace-nowrap px-2">
+              {[
+              { id: 'description', label: 'Description', icon: <FileText className="h-4 w-4" /> },
+              { id: 'editorial', label: 'Editorial', icon: <BookOpen className="h-4 w-4" /> },
+              { id: 'solutions', label: 'Solutions', icon: <Code className="h-4 w-4" /> },
+              { id: 'submissions', label: 'Submissions', icon: <Send className="h-4 w-4" /> },
+              { id: 'chatai', label: 'ChatAI', icon: <Bot className="h-4 w-4" /> }
+              ].map((tab) => (
+              <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`flex items-center py-4 px-4 border-b-2 font-medium text-sm transition-all duration-200 ${
+                activeTab === tab.id
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 rounded-t-lg'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+              >
+              <span className={`transition-colors ${activeTab === tab.id ? 'text-blue-500 dark:text-blue-400' : ''}`}>
+                {tab.icon}
+              </span>
+              <span className="ml-2">{tab.label}</span>
+              </button>
+              ))}
+              </div>
             </div>
 
             {/* Tab Content */}
