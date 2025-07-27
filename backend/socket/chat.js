@@ -2,9 +2,10 @@ import jwt from "jsonwebtoken"
 import User from "../models/User.js"
 import mongoose from "mongoose"
 
-const ChatRoom = mongoose.model("ChatRoom")
-const Message = mongoose.model("Message")
-
+// const ChatRoom = mongoose.model("ChatRoom")
+// const Message = mongoose.model("Message")
+import ChatRoom from "../models/ChatRoom.js"
+import Message from "../models/Message.js"
 export const setupChatSocket = (io) => {
   // Authentication middleware for socket
   io.use(async (socket, next) => {
