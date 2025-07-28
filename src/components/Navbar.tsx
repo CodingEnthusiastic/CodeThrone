@@ -38,87 +38,108 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link to="/" onClick={() => handleNavigation('/')} className="flex items-center space-x-2">
-              <Code className="h-8 w-8 text-orange-500" />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">CodeThrone</span>
+          {/* Logo Section - Left */}
+          <div className="flex items-center min-w-0 flex-shrink-0">
+            <Link 
+              to="/" 
+              onClick={() => handleNavigation('/')} 
+              className="flex items-center space-x-3 group transition-all duration-200 hover:scale-105"
+            >
+              <div className="p-1 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg group-hover:shadow-orange-500/25 transition-all duration-200">
+                <Code className="h-7 w-7 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                CodeThrone
+              </span>
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map(item => {
-              const active = isActive(item.path);
-              const baseClasses = `flex flex-col items-center px-4 py-3 rounded-md text-lg font-medium transition-colors ${
-                active
-                  ? 'text-orange-600 bg-orange-50'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-orange-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`;
-
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => handleNavigation(item.path)}
-                  className={baseClasses + (item.special ? ' relative' : '')}
-                >
-                  <span
-                    className={
-                      item.special
-                        ? 'bg-clip-text text-transparent bg-gradient-to-br from-purple-700 via-purple-600 to-purple-700 dark:from-yellow-600 dark:via-yellow-300 dark:to-yellow-700'
-                        : ''
-                    }
+          {/* Navigation Items - Center */}
+          <div className="hidden lg:flex items-center justify-center flex-1 max-w-4xl mx-12">
+            <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-1 border border-gray-200 dark:border-gray-700/50 backdrop-blur-sm">
+              {navItems.map((item, index) => {
+                const active = isActive(item.path);
+                
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => handleNavigation(item.path)}
+                    className={`relative flex flex-col items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group min-w-[80px] ${
+                      active
+                        ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-700 shadow-sm border border-gray-200 dark:border-gray-600'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-white/60 dark:hover:bg-gray-700/60'
+                    }`}
                   >
-                    {item.label}
-                  </span>
-                  {item.special && (
-                    <span className="absolute -bottom-1 text-[10px] font-semibold text-purple-700 dark:text-yellow-600 uppercase">
-                      New
+                    <span
+                      className={
+                        item.special
+                          ? 'bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 dark:from-yellow-400 dark:via-yellow-300 dark:to-amber-400 font-semibold'
+                          : ''
+                      }
+                    >
+                      {item.label}
                     </span>
-                  )}
-                </Link>
-              );
-            })}
+                    
+                    {item.special && (
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-yellow-400 dark:to-amber-400 text-white dark:text-gray-900 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide shadow-sm">
+                        New
+                      </span>
+                    )}
+                    
+                    {active && (
+                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full"></div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
-          {/* User Menu and Mobile Toggle */}
-          <div className="flex items-center space-x-4">
+          {/* User Section - Right */}
+          <div className="flex items-center space-x-4 min-w-0 flex-shrink-0">
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={`flex items-center px-3 py-2 rounded-full border transition-colors duration-200
+              className={`relative flex items-center p-2.5 rounded-xl border transition-all duration-200 hover:scale-105 group
                 ${isDark
-                  ? 'bg-gray-800 border-gray-600 hover:bg-gray-700'
-                  : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
+                  ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 shadow-lg'
+                  : 'bg-gray-100 border-gray-300 hover:bg-gray-200 shadow-sm'
                 }`}
               aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              <Sun
-                className={`h-5 w-5 mr-1 transition-opacity duration-200 ${
-                  isDark ? 'text-gray-400 opacity-50' : 'text-yellow-500 opacity-100'
-                }`}
-              />
-              <Moon
-                className={`h-5 w-5 transition-opacity duration-200 ${
-                  isDark ? 'text-blue-400 opacity-100' : 'text-gray-400 opacity-50'
-                }`}
-              />
+              <div className="relative w-10 h-5 flex items-center">
+                <Sun
+                  className={`absolute h-4 w-4 transition-all duration-300 ${
+                    isDark 
+                      ? 'text-gray-500 opacity-40 transform translate-x-0' 
+                      : 'text-yellow-500 opacity-100 transform translate-x-5'
+                  }`}
+                />
+                <Moon
+                  className={`absolute h-4 w-4 transition-all duration-300 ${
+                    isDark 
+                      ? 'text-blue-400 opacity-100 transform translate-x-5' 
+                      : 'text-gray-500 opacity-40 transform translate-x-0'
+                  }`}
+                />
+              </div>
             </button>
 
-            {/* Coins / User Profile */}
+            {/* User Authentication Section */}
             {user ? (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                {/* Coins */}
                 <Link
                   to="/redeem"
-                  className="flex items-center space-x-1 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1 rounded-full border border-yellow-200 dark:border-yellow-800 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+                  className="flex items-center space-x-2 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 px-4 py-2.5 rounded-xl border border-yellow-200 dark:border-yellow-800 hover:from-yellow-100 hover:to-amber-100 dark:hover:from-yellow-900/30 dark:hover:to-amber-900/30 transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md group"
                 >
-                  <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                  <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
+                  <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400 group-hover:rotate-12 transition-transform duration-200" />
+                  <span className="text-sm font-bold text-yellow-700 dark:text-yellow-300 min-w-[20px] text-center">
                     {user.coins || 0}
                   </span>
                 </Link>
@@ -127,52 +148,59 @@ const Navbar: React.FC = () => {
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="flex items-center space-x-3 p-2 pr-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 group"
                   >
                     {user.profile?.avatar && !user.profile.avatar.startsWith('default:') ? (
                       <img
                         src={user.profile.avatar}
                         alt={user.username}
-                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                        className="w-9 h-9 rounded-xl object-cover border-2 border-gray-200 dark:border-gray-600 group-hover:border-orange-300 dark:group-hover:border-orange-500 transition-all duration-200"
                       />
                     ) : (
-                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
+                      <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-orange-500/25 transition-all duration-200">
+                        <span className="text-white text-sm font-bold">
                           {user.profile?.avatar?.startsWith('default:')
                             ? user.profile.avatar.replace('default:', '')
                             : user.username.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
-                    <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {user.username}
-                    </span>
+                    <div className="hidden md:flex flex-col items-start">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors duration-200">
+                        {user.username}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-500 capitalize">
+                        {user.role || 'Member'}
+                      </span>
+                    </div>
                   </button>
+                  
                   {isProfileOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border border-gray-200 dark:border-gray-700">
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 border border-gray-200 dark:border-gray-700 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 animate-in slide-in-from-top-2 duration-200">
                       {user.role === 'admin' && (
                         <Link
                           to="/admin"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 transition-all duration-200"
                           onClick={() => setIsProfileOpen(false)}
                         >
-                          <Shield className="h-4 w-4 mr-2" />
+                          <Shield className="h-4 w-4 mr-3" />
                           Admin Dashboard
                         </Link>
                       )}
                       <Link
                         to={`/profile/${user.username}`}
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
                         onClick={() => setIsProfileOpen(false)}
                       >
-                        <User className="h-4 w-4 mr-2" />
-                        Profile
+                        <User className="h-4 w-4 mr-3" />
+                        View Profile
                       </Link>
+                      <hr className="my-2 border-gray-200 dark:border-gray-700" />
                       <button
                         onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        className="flex items-center w-full px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
                       >
-                        <LogOut className="h-4 w-4 mr-2" />
+                        <LogOut className="h-4 w-4 mr-3" />
                         Sign out
                       </button>
                     </div>
@@ -180,16 +208,16 @@ const Navbar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <Link
                   to="/login"
-                  className="text-gray-700 dark:text-gray-300 hover:text-orange-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-orange-500/25 hover:scale-105"
                 >
                   Register
                 </Link>
@@ -199,31 +227,36 @@ const Navbar: React.FC = () => {
             {/* Mobile menu toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="lg:hidden p-2.5 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all duration-200"
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
-
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 dark:border-gray-700 py-4">
-            <div className="space-y-2">
+          <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 py-4 animate-in slide-in-from-top-2 duration-200">
+            <div className="space-y-1">
               {navItems.map(item => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive(item.path)
-                      ? 'text-orange-600 bg-orange-50'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-orange-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      ? 'text-orange-600 bg-orange-50 dark:bg-orange-900/20'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-orange-600 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span>{item.label}</span>
-                  {item.special && <span className="text-xs text-yellow-400 font-semibold ml-1">NEW</span>}
+                  <span className={item.special ? 'bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-yellow-400 dark:to-amber-400 font-semibold' : ''}>
+                    {item.label}
+                  </span>
+                  {item.special && (
+                    <span className="bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-yellow-400 dark:to-amber-400 text-white dark:text-gray-900 text-xs font-bold px-2 py-1 rounded-full uppercase">
+                      New
+                    </span>
+                  )}
                 </Link>
               ))}
             </div>
