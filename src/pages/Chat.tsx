@@ -996,18 +996,18 @@ useEffect(() => {
                 )}
 
                 <div className="flex items-center space-x-2">
-                  <input
-                    ref={messageInputRef}
-                    type="text"
+                  <textarea
+                    ref={messageInputRef as React.RefObject<HTMLTextAreaElement>}
                     value={newMessage}
                     onChange={(e) => {
                       setNewMessage(e.target.value)
                       handleTyping()
                     }}
-                    onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                    rows={1}
+                    // Allow Enter for new lines, only send on clicking Send
                     placeholder={activeRoom ? `Message ${activeRoom.name}` : "Select a room to start chatting"}
                     disabled={!activeRoom || connectionStatus !== "connected"}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50 resize-none"
                   />
                   <button
                     onClick={sendMessage}
