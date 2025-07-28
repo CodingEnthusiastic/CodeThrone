@@ -39,14 +39,15 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo Section - Left */}
-          <div className="flex items-center min-w-0 flex-shrink-0">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4">
+        {/* Use flex with items-stretch to align left/center/right */}
+        <div className="flex items-stretch h-16">
+          {/* Logo Section - Left, flush to left */}
+          <div className="flex items-center min-w-0 flex-shrink-0 pl-0 mr-0">
             <Link 
               to="/" 
               onClick={() => handleNavigation('/')} 
-              className="flex items-center space-x-3 group transition-all duration-200 hover:scale-105"
+              className="flex items-center space-x-2 group transition-all duration-200 hover:scale-105 ml-[-48px]"
             >
               <div className="p-1 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg group-hover:shadow-orange-500/25 transition-all duration-200">
                 <Code className="h-7 w-7 text-white" />
@@ -57,18 +58,17 @@ const Navbar: React.FC = () => {
             </Link>
           </div>
 
-          {/* Navigation Items - Center */}
-          <div className="hidden lg:flex items-center justify-center flex-1 max-w-4xl mx-12">
-            <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-1 border border-gray-200 dark:border-gray-700/50 backdrop-blur-sm">
+          {/* Navigation Items - Center, bigger text, more space, more gap from left */}
+          <div className="flex-1 flex items-center justify-center ml-24">
+            <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-1 border border-gray-200 dark:border-gray-700/50 backdrop-blur-sm">
               {navItems.map((item, index) => {
                 const active = isActive(item.path);
-                
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
                     onClick={() => handleNavigation(item.path)}
-                    className={`relative flex flex-col items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group min-w-[80px] ${
+                    className={`relative flex flex-col items-center px-6 py-3 rounded-lg text-lg font-semibold transition-all duration-200 group min-w-[100px] ${
                       active
                         ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-700 shadow-sm border border-gray-200 dark:border-gray-600'
                         : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-white/60 dark:hover:bg-gray-700/60'
@@ -83,13 +83,11 @@ const Navbar: React.FC = () => {
                     >
                       {item.label}
                     </span>
-                    
                     {item.special && (
                       <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-yellow-400 dark:to-amber-400 text-white dark:text-gray-900 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide shadow-sm">
                         New
                       </span>
                     )}
-                    
                     {active && (
                       <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full"></div>
                     )}
@@ -98,9 +96,11 @@ const Navbar: React.FC = () => {
               })}
             </div>
           </div>
-
-          {/* User Section - Right */}
-          <div className="flex items-center space-x-4 min-w-0 flex-shrink-0">
+          
+          {/* User Section - Right, flush to right */}
+          <div className="flex items-center space-x-4 min-w-0 flex-shrink-0 pl-2">
+            {/* Add extra gap before theme toggle */}
+            <div className="w-8 sm:w-12" />
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
