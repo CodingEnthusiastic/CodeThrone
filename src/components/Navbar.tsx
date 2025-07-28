@@ -84,7 +84,10 @@ const Navbar: React.FC = () => {
                       {item.label}
                     </span>
                     {item.special && (
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-yellow-400 dark:to-amber-400 text-white dark:text-gray-900 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide shadow-sm">
+                      <span
+                        className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-yellow-400 dark:to-amber-400 text-white dark:text-gray-900 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide shadow-sm"
+                        style={{ transform: 'scale(0.75)', transformOrigin: 'top right' }}
+                      >
                         New
                       </span>
                     )}
