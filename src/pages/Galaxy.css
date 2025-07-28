@@ -5,3 +5,31 @@
   pointer-events: none;
   z-index: 0;
 }
+
+/* Animation for falling black stars */
+@keyframes falling-star {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.7) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(110vh) scale(1.1) rotate(180deg);
+  }
+}
+
+.light-falling-star {
+  position: absolute;
+  color: #111;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 1;
+  animation: falling-star linear infinite;
+}

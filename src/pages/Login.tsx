@@ -6,107 +6,134 @@ import { API_URL } from "../config/api";
 import Galaxy from './Galaxy';
 
 // Animated Light Theme Background
-const LightThemeBackground: React.FC = () => (
-  <div className="fixed inset-0 w-full h-full overflow-hidden" style={{ pointerEvents: 'none' }}>
-    <svg
-      className="absolute inset-0 w-full h-full"
-      viewBox="0 0 1920 1080"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id="light-gradient" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#fef3c7" />
-          <stop offset="30%" stopColor="#fde68a" />
-          <stop offset="60%" stopColor="#fed7aa" />
-          <stop offset="100%" stopColor="#fecaca" />
-        </linearGradient>
-        <filter id="soft-glow">
-          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-          <feMerge> 
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-      <rect width="1920" height="1080" fill="url(#light-gradient)" />
-      
-      {/* Floating Geometric Shapes */}
-      <g opacity="0.1">
-        <circle cx="200" cy="200" r="40" fill="#f59e0b">
-          <animateTransform
-            attributeName="transform"
-            type="translate"
-            values="0 0;50 -30;0 0"
-            dur="6s"
-            repeatCount="indefinite"
-          />
-        </circle>
-        <rect x="1500" y="300" width="60" height="60" rx="10" fill="#ef4444">
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            values="0 1530 330;360 1530 330"
-            dur="8s"
-            repeatCount="indefinite"
-          />
-        </rect>
-        <polygon points="800,150 850,250 750,250" fill="#10b981">
-          <animateTransform
-            attributeName="transform"
-            type="translate"
-            values="0 0;-20 40;0 0"
-            dur="7s"
-            repeatCount="indefinite"
-          />
-        </polygon>
-      </g>
-      
-      {/* Floating Particles */}
-      {Array.from({ length: 30 }, (_, i) => (
-        <circle
-          key={i}
-          cx={Math.random() * 1920}
-          cy={Math.random() * 1080}
-          r={Math.random() * 8 + 2}
-          fill={['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6'][Math.floor(Math.random() * 5)]}
+const LightThemeBackground: React.FC = () => {
+  // Generate 18 random stars for each render
+  const stars = Array.from({ length: 18 }).map((_, i) => {
+    const left = Math.random() * 98 + 1; // %
+    const delay = Math.random() * 8; // seconds
+    const duration = 4 + Math.random() * 4; // 4-8s
+    const size = 10 + Math.random() * 10; // px
+    return (
+      <span
+        key={i}
+        className="light-falling-star"
+        style={{
+          left: `${left}%`,
+          top: '-2%',
+          animationDelay: `${delay}s`,
+          animationDuration: `${duration}s`,
+          fontSize: `${size}px`,
+        }}
+      >
+        ★
+      </span>
+    );
+  });
+
+  return (
+    <div className="fixed inset-0 w-full h-full overflow-hidden" style={{ pointerEvents: 'none' }}>
+      {/* Falling black stars */}
+      {stars}
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 1920 1080"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="light-gradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#fef3c7" />
+            <stop offset="30%" stopColor="#fde68a" />
+            <stop offset="60%" stopColor="#fed7aa" />
+            <stop offset="100%" stopColor="#fecaca" />
+          </linearGradient>
+          <filter id="soft-glow">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+            <feMerge> 
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <rect width="1920" height="1080" fill="url(#light-gradient)" />
+        
+        {/* Floating Geometric Shapes */}
+        <g opacity="0.1">
+          <circle cx="200" cy="200" r="40" fill="#f59e0b">
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              values="0 0;50 -30;0 0"
+              dur="6s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          <rect x="1500" y="300" width="60" height="60" rx="10" fill="#ef4444">
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              values="0 1530 330;360 1530 330"
+              dur="8s"
+              repeatCount="indefinite"
+            />
+          </rect>
+          <polygon points="800,150 850,250 750,250" fill="#10b981">
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              values="0 0;-20 40;0 0"
+              dur="7s"
+              repeatCount="indefinite"
+            />
+          </polygon>
+        </g>
+        
+        {/* Floating Particles */}
+        {Array.from({ length: 30 }, (_, i) => (
+          <circle
+            key={i}
+            cx={Math.random() * 1920}
+            cy={Math.random() * 1080}
+            r={Math.random() * 8 + 2}
+            fill={['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6'][Math.floor(Math.random() * 5)]}
+            opacity="0.1"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              values={`0 0;${Math.random() * 100 - 50} ${Math.random() * 100 - 50};0 0`}
+              dur={`${Math.random() * 10 + 5}s`}
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0.05;0.2;0.05"
+              dur={`${Math.random() * 4 + 3}s`}
+              repeatCount="indefinite"
+            />
+          </circle>
+        ))}
+        
+        {/* Animated Waves */}
+        <path
+          d="M0 800 Q480 850 960 800 T1920 800 V1080 H0 Z"
+          fill="#ffffff"
           opacity="0.1"
         >
-          <animateTransform
-            attributeName="transform"
-            type="translate"
-            values={`0 0;${Math.random() * 100 - 50} ${Math.random() * 100 - 50};0 0`}
-            dur={`${Math.random() * 10 + 5}s`}
-            repeatCount="indefinite"
-          />
           <animate
-            attributeName="opacity"
-            values="0.05;0.2;0.05"
-            dur={`${Math.random() * 4 + 3}s`}
+            attributeName="d"
+            dur="8s"
             repeatCount="indefinite"
+            values="
+              M0 800 Q480 850 960 800 T1920 800 V1080 H0 Z;
+              M0 820 Q480 780 960 820 T1920 820 V1080 H0 Z;
+              M0 800 Q480 850 960 800 T1920 800 V1080 H0 Z
+            "
           />
-        </circle>
-      ))}
-      
-      {/* Animated Waves */}
-      <path
-        d="M0 800 Q480 850 960 800 T1920 800 V1080 H0 Z"
-        fill="#ffffff"
-        opacity="0.1"
-      >
-        <animate
-          attributeName="d"
-          dur="8s"
-          repeatCount="indefinite"
-          values="
-            M0 800 Q480 850 960 800 T1920 800 V1080 H0 Z;
-            M0 820 Q480 780 960 820 T1920 820 V1080 H0 Z;
-            M0 800 Q480 850 960 800 T1920 800 V1080 H0 Z
-          "
-        />
-      </path>
-    </svg>
-  </div>
-);
+        </path>
+      </svg>
+    </div>
+  );
+};
 
 // Robot Component with Magnet Hand
 // Robot Animation using video
@@ -215,12 +242,12 @@ const Login: React.FC = () => {
         <div className="flex justify-center mb-6">
           <div className="flex items-center space-x-2">
             <Code className="h-8 w-8 text-orange-500" />
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">CodeArena</span>
+            <span className="text-2xl font-bold text-gray-900 dark:text-white">CodeThrone</span>
           </div>
         </div>
         
         <h2 className="text-center text-3xl font-extrabold text-gray-900 dark:text-white mb-8">
-          Sign in to CodeArena
+          Sign in to CodeThrone
         </h2>
         
         <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm py-8 px-6 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700">
@@ -364,7 +391,7 @@ const Login: React.FC = () => {
                 <div className="w-full border-t border-gray-300 dark:border-gray-700" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white/90 dark:bg-gray-800/90 text-gray-500 dark:text-gray-300 backdrop-blur-sm">New to CodeArena?</span>
+                <span className="px-2 bg-white/90 dark:bg-gray-800/90 text-gray-500 dark:text-gray-300 backdrop-blur-sm">New to CodeThrone?</span>
               </div>
             </div>
 
