@@ -727,16 +727,16 @@ useEffect(() => {
           <option value="private">Private</option>
         </select>
       </div>
-      <div className="flex items-center">
-        <input
+      {/* <div className="flex items-center"> */}
+        {/* <input
           type="checkbox"
           checked={roomIsPrivate}
           onChange={(e) => setRoomIsPrivate(e.target.checked)}
           id="privateRoom"
           className="mr-2"
-        />
-        <label htmlFor="privateRoom" className="text-sm text-gray-700 dark:text-gray-200">Private Room</label>
-      </div>
+        /> */}
+        {/* <label htmlFor="privateRoom" className="text-sm text-gray-700 dark:text-gray-200">Private Room</label> */}
+      {/* </div> */}
       {roomError && <div className="text-xs text-red-600">{roomError}</div>}
       <div className="flex space-x-2">
         <button
@@ -749,7 +749,7 @@ useEffect(() => {
         <button
           type="button"
           onClick={() => setShowCreateRoom(false)}
-          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+          className="px-4 py-2 bg-red-500 text-gray-700 rounded-lg hover:bg-red-300 transition-colors"
         >
           Cancel
         </button>
