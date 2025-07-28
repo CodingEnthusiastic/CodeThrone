@@ -24,6 +24,7 @@ import Announcements from './pages/Announcements';
 import AnnounceDetail from './pages/AnnounceDetail';
 import OAuthHandler from './pages/OAuthHandler';
 import Chat from './pages/Chat';
+import { Toaster } from 'react-hot-toast';
 // Move loading logic to a wrapper component
 const AppRoutes = () => {
   const { loading } = useAuth();

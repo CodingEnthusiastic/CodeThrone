@@ -30,6 +30,8 @@ import {
 } from "lucide-react"
 import CodeMirrorEditor from "../components/CodeMirrorEditor"
 import { API_URL } from "../config/api"
+import confetti from "canvas-confetti";
+import toast from "react-hot-toast";
 
 interface Problem {
   _id: string
@@ -477,8 +479,21 @@ const ProblemDetail: React.FC = () => {
       await saveChatMessage(aiPrompt, res.data.reply || "No response received.")
       setAiPrompt("")
     } catch (error) {
-      console.error("AI Error:", error)
-      setAiResponse("Something went wrong while generating the response.")
+      console.error("AI Error:", error);
+      if (error.response?.status === 429 || error.response?.data?.error?.includes("quota")) {
+      toast.error("🚫 API quota exceeded! Please try again later.", {
+        icon: "⚠️",
+        duration: 7000,
+        style: {
+          borderRadius: "10px",
+          background: "#1f2937",
+          color: "#fff",
+        },
+      });
+    } else {
+      setAiResponse("Something went wrong while generating the response.");
+    }
+
     } finally {
       setAiLoading(false)
     }
@@ -628,17 +643,36 @@ const ProblemDetail: React.FC = () => {
       setSubmissionResult(response.data)
 
       if (response.data.status === "Accepted") {
-        setIsSolved(true)
+        setIsSolved(true);
+
+        // 🎉 Trigger confetti animation
+        confetti({
+          particleCount: 200,
+          spread: 100,
+          origin: { y: 0.6 },
+        });
+
+        // ✅ Show success toast
+        toast.success("🎉 Solution Accepted!", {
+          icon: "✅",
+          duration: 5000,
+          style: {
+            borderRadius: "10px",
+            background: "#333",
+            color: "#fff",
+          },
+        });
+
         if (response.data.potd && response.data.potd.awarded) {
-          console.log("🪙 POTD coins awarded! Updating user coins in real-time:", response.data.potd)
-          updateCoins(response.data.potd.totalCoins)
+          updateCoins(response.data.potd.totalCoins);
           setTimeout(() => {
             alert(
-              `🎉 Congratulations! You solved today's Problem of the Day and earned ${response.data.potd.coinsEarned} coins! 🪙`,
-            )
-          }, 1000)
+              `🎉 Congratulations! You solved today's Problem of the Day and earned ${response.data.potd.coinsEarned} coins! 🪙`
+            );
+          }, 1000);
         }
       }
+
 
       if (activeTab === "submissions") {
         fetchSubmissions()
