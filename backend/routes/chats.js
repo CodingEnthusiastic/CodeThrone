@@ -11,10 +11,10 @@ console.log("🛣️ Setting up chats routes...")
 // Get all chat rooms for user
 router.get("/rooms", authenticateToken, async (req, res) => {
   try {
-    console.log(`📋 Fetching chat rooms for user: ${req.user.userId}`)
+    console.log(`📋 Fetching chat rooms for user: ${req.user._id}`)
 
     const rooms = await ChatRoom.find({
-      $or: [{ participants: req.user.userId }, { isPrivate: false }],
+      $or: [{ participants: req.user._id }, { isPrivate: false }],
     })
       .populate("participants", "username profile.avatar")
       .populate("createdBy", "username profile.avatar")
@@ -32,16 +32,16 @@ router.get("/rooms", authenticateToken, async (req, res) => {
 router.post("/rooms", authenticateToken, async (req, res) => {
   try {
     const { name, description, type, isPrivate, participants } = req.body
-    console.log(`🏗️ Creating new chat room: ${name} by user ${req.user.userId}`)
+    console.log(`🏗️ Creating new chat room: ${name} by user ${req.user._id}`)
 
     const room = new ChatRoom({
       name,
       description,
       type,
       isPrivate,
-      participants: [req.user.userId, ...(participants || [])],
-      admins: [req.user.userId],
-      createdBy: req.user.userId,
+      participants: [req.user._id, ...(participants || [])],
+      admins: [req.user._id],
+      createdBy: req.user._id,
     })
 
     await room.save()
@@ -69,7 +69,7 @@ router.post("/rooms", authenticateToken, async (req, res) => {
 // Join chat room
 router.post("/rooms/:roomId/join", authenticateToken, async (req, res) => {
   try {
-    console.log(`👥 User ${req.user.userId} attempting to join room: ${req.params.roomId}`)
+    console.log(`👥 User ${req.user._id} attempting to join room: ${req.params.roomId}`)
 
     const room = await ChatRoom.findById(req.params.roomId)
 
@@ -78,10 +78,10 @@ router.post("/rooms/:roomId/join", authenticateToken, async (req, res) => {
       return res.status(404).json({ error: "Room not found" })
     }
 
-    if (!room.participants.includes(req.user.userId)) {
-      room.participants.push(req.user.userId)
+    if (!room.participants.includes(req.user._id)) {
+      room.participants.push(req.user._id)
       await room.save()
-      console.log(`✅ User ${req.user.userId} added to room participants`)
+      console.log(`✅ User ${req.user._id} added to room participants`)
     }
 
     await room.populate("participants", "username profile.avatar")
@@ -89,7 +89,7 @@ router.post("/rooms/:roomId/join", authenticateToken, async (req, res) => {
     const io = req.app.get("io")
     if (io) {
       io.to(`room_${room._id}`).emit("userJoined", {
-        user: await User.findById(req.user.userId).select("username profile.avatar"),
+        user: await User.findById(req.user._id).select("username profile.avatar"),
         room: room._id,
       })
       console.log(`📡 User joined event emitted to room ${room.name}`)
@@ -116,8 +116,8 @@ router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
     }
 
     // Check if user has access to room
-    if (room.isPrivate && !room.participants.includes(req.user.userId)) {
-      console.log(`❌ Access denied to private room ${req.params.roomId} for user ${req.user.userId}`)
+    if (room.isPrivate && !room.participants.includes(req.user._id)) {
+      console.log(`❌ Access denied to private room ${req.params.roomId} for user ${req.user._id}`)
       return res.status(403).json({ error: "Access denied" })
     }
 
@@ -140,7 +140,7 @@ router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
 router.post("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
   try {
     const { content, type = "text", language, replyTo } = req.body
-    console.log(`📤 Sending message to room ${req.params.roomId} from user ${req.user.userId}`)
+    console.log(`📤 Sending message to room ${req.params.roomId} from user ${req.user._id}`)
 
     const room = await ChatRoom.findById(req.params.roomId)
     if (!room) {
@@ -149,14 +149,14 @@ router.post("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
     }
 
     // Check if user has access to room
-    if (room.isPrivate && !room.participants.includes(req.user.userId)) {
-      console.log(`❌ Access denied to private room ${req.params.roomId} for user ${req.user.userId}`)
+    if (room.isPrivate && !room.participants.includes(req.user._id)) {
+      console.log(`❌ Access denied to private room ${req.params.roomId} for user ${req.user._id}`)
       return res.status(403).json({ error: "Access denied" })
     }
 
     const message = new Message({
       content,
-      sender: req.user.userId,
+      sender: req.user._id,
       room: req.params.roomId,
       type,
       language,
@@ -193,7 +193,7 @@ router.post("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
 // Get online users
 router.get("/online-users", authenticateToken, async (req, res) => {
   try {
-    console.log(`👥 Fetching online users for user ${req.user.userId}`)
+    console.log(`👥 Fetching online users for user ${req.user._id}`)
 
     const io = req.app.get("io")
     if (!io) {
@@ -222,7 +222,7 @@ router.get("/online-users", authenticateToken, async (req, res) => {
 router.get("/users/search", authenticateToken, async (req, res) => {
   try {
     const { q } = req.query
-    console.log(`🔍 Searching users with query: "${q}" for user ${req.user.userId}`)
+    console.log(`🔍 Searching users with query: "${q}" for user ${req.user._id}`)
 
     if (!q || q.length < 2) {
       console.log("❌ Search query too short or empty")
@@ -231,7 +231,7 @@ router.get("/users/search", authenticateToken, async (req, res) => {
 
     const users = await User.find({
       $and: [
-        { _id: { $ne: req.user.userId } },
+        { _id: { $ne: req.user._id } },
         {
           $or: [
             { username: { $regex: q, $options: "i" } },
