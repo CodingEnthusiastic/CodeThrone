@@ -117,6 +117,7 @@ router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
 
     // Check if user has access to room
     if (room.isPrivate && !room.participants.includes(req.user._id)) {
+      room.participants.push(req.user._id);
       console.log(`❌ Access denied to private room ${req.params.roomId} for user ${req.user._id}`)
       return res.status(403).json({ error: "Access denied" })
     }

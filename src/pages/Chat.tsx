@@ -949,7 +949,27 @@ const [roomError, setRoomError] = useState<string | null>(null);
 
               <div ref={messagesEndRef} />
             </div>
-
+            {activeRoom &&
+              !activeRoom.isPrivate &&
+              !activeRoom.participants.some((u) => u._id === user._id) && (
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center">
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    onClick={async () => {
+                      await fetch(`${API_URL}/chats/rooms/${activeRoom._id}/join`, {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      // Optionally refetch rooms or update state to include user as participant
+                      // For now, just reload the page or refetch rooms/messages
+                      window.location.reload();
+                    }}
+                  >
+                    Join Room
+                  </button>
+                  <p className="mt-2 text-gray-500">Join this room to send messages.</p>
+                </div>
+            )}
             {/* Message Input */}
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               {replyTo && (
