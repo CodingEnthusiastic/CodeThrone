@@ -9,45 +9,54 @@ export const setupChatSocket = (io) => {
 
   // Authentication middleware for socket
   io.use(async (socket, next) => {
-    console.log(`🔐 Authenticating socket connection: ${socket.id}`)
-
+    console.log(`🔐 Authenticating socket: ${socket.id}`)
     try {
       const token = socket.handshake.auth.token
-      console.log(`🔑 Token received: ${token ? "Present" : "Missing"}`)
-
       if (!token) {
-        console.log("❌ No token provided for socket authentication")
+        console.log("❌ No token provided")
         return next(new Error("Authentication error: No token provided"))
       }
-
       const decoded = jwt.verify(token, process.env.JWT_SECRET)
-      console.log(`🔓 Token decoded successfully for user: ${decoded.userId}`)
-
       const user = await User.findById(decoded.userId).select("username profile.avatar")
-
       if (!user) {
-        console.log(`❌ User not found for ID: ${decoded.userId}`)
-        return next(new Error("User not found"))
+        console.log(`❌ User not found: ${decoded.userId}`)
+        return next(new Error("Authentication error: User not found"))
       }
-
       socket.userId = user._id.toString()
       socket.user = user
-      console.log(`✅ Socket authenticated for user: ${user.username} (${user._id})`)
+      console.log(`✅ Authenticated: ${user.username} (${socket.userId})`)
       next()
-    } catch (error) {
-      console.error(`❌ Socket authentication error for ${socket.id}:`, error.message)
-      next(new Error("Authentication error: " + error.message))
+    } catch (err) {
+      console.error(`❌ Auth error: ${err.message}`)
+      next(new Error(`Authentication error: ${err.message}`))
     }
   })
 
-  io.on("connection", (socket) => {
-    console.log(`🔌 User ${socket.user.username} (${socket.userId}) connected to chat - Socket ID: ${socket.id}`)
-    onlineUsers.add(socket.userId);
-    // io.emit("onlineUsers", Array.from(onlineUsers));
-    io.emit("onlineUsers", Array.from(onlineUsers).map(id => userMap[id]));
+  io.on("connection", async (socket) => {
+    const { userId, user } = socket
+    console.log(`🔌 Connected: ${user.username} (${userId})`)
+
+    // Add user to online set
+    onlineUsers.add(userId)
+
+    const usersOnline = await User.find({ _id: { $in: Array.from(onlineUsers) } })
+      .select("username profile.avatar")
+
+    io.emit("onlineUsers", usersOnline)
+
+    // Join personal notification room
+    socket.join(`user_${socket.userId}`)
+
+    // Handle explicit requests for the list
+    socket.on("requestOnlineUsers", async () => {
+      const list = await User.find({ _id: { $in: Array.from(onlineUsers) } })
+        .select("username profile.avatar")
+      socket.emit("onlineUsers", list)
+    })
+
     // io.emit("onlineUsers", Array.from(onlineUsers));
     // Join user to their personal room for notifications
-    socket.join(`user_${socket.userId}`)
+    // socket.join(`user_${socket.userId}`)
     console.log(`👤 User ${socket.user.username} joined personal room: user_${socket.userId}`)
 
     // Handle connection errors
@@ -241,21 +250,30 @@ export const setupChatSocket = (io) => {
         socket.emit("error", { message: "Failed to create private chat" })
       }
     })
-    socket.on("requestOnlineUsers", () => {
-      socket.emit("onlineUsers", Array.from(onlineUsers));
+   
+    socket.on("requestOnlineUsers", async () => {
+      const list = await User.find({
+        _id: { $in: Array.from(onlineUsers) }
+      }).select("username profile.avatar");
+      socket.emit("onlineUsers", list);
     });
     // Handle disconnect
-    socket.on("disconnect", (reason) => {
-      onlineUsers.delete(socket.userId);
-      // broadcast updated list again
-      // io.emit("onlineUsers", Array.from(onlineUsers));
-      io.emit("onlineUsers", Array.from(onlineUsers).map(id => userMap[id]));
-      console.log(`🔌 User ${socket.user.username} (${socket.userId}) disconnected from chat - Reason: ${reason}`)
+    socket.on("disconnect", async (reason) => {
+      const { user, userId } = socket
+      console.log(`🔌 Disconnected: ${user.username} (${userId}) — ${reason}`)
+      onlineUsers.delete(userId)
+
+      // Fetch updated profiles list
+      const remaining = await User.find({
+        _id: { $in: Array.from(onlineUsers) }
+      }).select("username profile.avatar")
+
+      io.emit("onlineUsers", remaining)
     })
 
-    // Handle errors
-    socket.on("error", (error) => {
-      console.error(`❌ Socket error for ${socket.user.username}:`, error)
+    // Error handler
+    socket.on("error", (err) => {
+      console.error(`❌ Socket error for ${user.username}:`, err)
     })
   })
 
