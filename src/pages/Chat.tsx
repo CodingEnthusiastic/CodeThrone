@@ -933,7 +933,7 @@ useEffect(() => {
                         title="Thumbs Up"
                         disabled={connectionStatus !== "connected"}
                       >
-                        <Smile className="h-4 w-4" />
+                        👍
                       </button>
                       <button
                         onClick={() => setReplyTo(message)}
