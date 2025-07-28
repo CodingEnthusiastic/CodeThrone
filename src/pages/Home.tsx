@@ -155,7 +155,7 @@ const Home: React.FC = () => {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [error, setError] = useState<string | null>(null)
-
+  const [dynamicText, setDynamicText] = useState("P");
   console.log("🏠 Home component rendered")
 
   const carouselItems = [
@@ -210,6 +210,34 @@ const Home: React.FC = () => {
     }
   }, [user])
 
+  // ...existing code...
+  useEffect(() => {
+    const fullText = "Programming";
+    let i = 1;
+    let timeout: NodeJS.Timeout;
+    let interval: NodeJS.Timeout;
+
+    const startTyping = () => {
+      interval = setInterval(() => {
+        setDynamicText(fullText.slice(0, i));
+        i++;
+        if (i > fullText.length) {
+          clearInterval(interval);
+          timeout = setTimeout(() => {
+            i = 1;
+            startTyping();
+          }, 5000); // 5 seconds pause after full word
+        }
+      }, 120); // fast motion
+    };
+
+    startTyping();
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []);
   // Auto-slide carousel
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1318,7 +1346,7 @@ const Home: React.FC = () => {
                   </span>
                   <span className="block pb-3 relative overflow-hidden leading-[1.25]">
                     <span className="bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent gradient-text-shift font-extrabold relative">
-                      Programming
+                      {dynamicText}
                       <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent text-shimmer"></div>
                     </span>
                   </span>
