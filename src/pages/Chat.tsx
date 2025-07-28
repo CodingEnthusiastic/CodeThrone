@@ -586,21 +586,30 @@ useEffect(() => {
     )
   }
 
-  // ✅ Additional check for token (same as Discussion would do)
+  // ✅ Additional check for token (same as Discussion would do)'
+  useEffect(() => {
   if (!token) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Authentication Required</h2>
-          <p className="text-gray-600 dark:text-gray-400">Please log in again to access the chat feature.</p>
-          <p className="text-red-600 dark:text-red-400 mt-2 text-sm">
-            Authentication token is missing. Please refresh the page and try logging in again.
-          </p>
-        </div>
-      </div>
-    )
+    const interval = setInterval(() => {
+      window.location.reload();
+    }, 2000);
+    return () => clearInterval(interval);
   }
+}, [token]);
+
+  if (!token) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="text-center">
+        <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Authentication Required</h2>
+        <p className="text-gray-600 dark:text-gray-400">Please log in again to access the chat feature.</p>
+        <p className="text-red-600 dark:text-red-400 mt-2 text-sm">
+          Authentication token is missing. The page will auto-refresh to check authentication...
+        </p>
+      </div>
+    </div>
+  )
+}
 
   return (
     <div
@@ -921,7 +930,7 @@ useEffect(() => {
                       <button
                         onClick={() => addReaction(message._id, "👍")}
                         className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                        title="React"
+                        title="Thumbs Up"
                         disabled={connectionStatus !== "connected"}
                       >
                         <Smile className="h-4 w-4" />
