@@ -603,7 +603,12 @@ useEffect(() => {
   }
 
   return (
-    <div className={`${isMinimized ? "h-16" : "h-screen"} bg-white dark:bg-gray-900 flex transition-all duration-300` } style={{ height: "calc(100vh - 64px)" }}>
+    <div
+      className={`${
+        isMinimized ? "h-16" : "h-screen"
+      } bg-[url('/whatsapp-bg-light.png')] dark:bg-[url('/whatsapp-bg-dark.png')] bg-repeat bg-cover bg-fixed bg-white dark:bg-gray-900 flex transition-all duration-300`}
+      style={{ height: "calc(100vh - 64px)" }}
+    >
       {/* Sidebar */}
       <div
         className={`${isMinimized ? "w-0 overflow-hidden" : "w-80"} bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300`}
@@ -839,7 +844,7 @@ useEffect(() => {
         {!isMinimized && (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 max-h-[calc(100vh-220px)]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 max-h-[calc(100vh-220px)] bg-transparent">
               {messages.map((message) => (
                 <div key={message._id} className="group">
                   {message.replyTo && (
