@@ -26,7 +26,7 @@ const Navbar: React.FC = () => {
     { path: '/contest', label: 'Contest' },
     { path: '/game', label: 'Game', special: true },
     { path: '/interview', label: 'Interview', special: true },
-    { path: '/chats', label: 'Chats' }
+    { path: '/chats', label: 'ChatNCode' }
   ];
 
   // Emit game leave event when navigating away from game page
@@ -91,8 +91,9 @@ const Navbar: React.FC = () => {
                         New
                       </span>
                     )}
+                    {/* Replace orange dot with a bold bottom border for active tab */}
                     {active && (
-                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full"></div>
+                      <span className="absolute left-0 right-0 bottom-0 h-1 bg-orange-500 rounded-b-lg" style={{fontWeight: 700}} />
                     )}
                   </Link>
                 );
