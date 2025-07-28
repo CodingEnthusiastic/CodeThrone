@@ -1392,20 +1392,24 @@ const Profile: React.FC = () => {
               <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Recently Solved Problems</h3>
                 <div className="space-y-2">
-                  {profile.solvedProblems.slice(0, 10).map((problem, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-600 mr-3" />
-                        <span className="font-medium text-gray-900">{problem.title}</span>
+                  {profile.solvedProblems
+                    .filter((p): p is NonNullable<typeof p> => p != null)
+                    .slice(0, 10)
+                    .map((problem, index) => (
+                      <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-3" />
+                          <span className="font-medium text-gray-900">{problem.title}</span>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(problem.difficulty)}`}>
+                          {problem.difficulty}
+                        </span>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(problem.difficulty)}`}>
-                        {problem.difficulty}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             )}
+
             
             {/* Recent Submissions */}
             {profile.submissions && profile.submissions.length > 0 && (
@@ -1446,7 +1450,9 @@ const Profile: React.FC = () => {
                   {profile.gameHistory && profile.gameHistory.length > 0 ? (
                     Array.from(
                       new Map(
-                        profile.gameHistory.map(game => [
+                        profile.gameHistory
+                        .filter(g => g.opponent != null && g.problem != null)
+                        .map(game => [
                           `${game.date}-${game.opponent.username}-${game.problem.title}-${game.result}`,
                           game
                         ])
@@ -1491,7 +1497,9 @@ const Profile: React.FC = () => {
                       // Create a Set to track unique contests based on contest name and date
                       const uniqueContests = Array.from(
                         new Map(
-                          profile.contestHistory.map(contest => [
+                          profile.contestHistory
+                          .filter(c => c.contest != null)
+                          .map(contest => [
                             `${contest.contest.name}-${contest.date}`, // Unique key
                             contest
                           ])
