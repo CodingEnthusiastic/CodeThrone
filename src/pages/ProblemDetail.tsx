@@ -166,6 +166,7 @@ const ProblemDetail: React.FC = () => {
   const [isAiMaximized, setIsAiMaximized] = useState(false)
   const [isCodeEditorMaximized, setIsCodeEditorMaximized] = useState(false)
   const chatHistoryRef = useRef<HTMLDivElement>(null)
+  const [showAcceptedCard, setShowAcceptedCard] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll chat to bottom in both minimized and maximized mode when new answer appears
@@ -651,7 +652,7 @@ const ProblemDetail: React.FC = () => {
           spread: 100,
           origin: { y: 0.6 },
         });
-
+        
         // ✅ Show success toast
         toast.success("🎉 Solution Accepted!", {
           icon: "✅",
@@ -662,6 +663,8 @@ const ProblemDetail: React.FC = () => {
             color: "#fff",
           },
         });
+
+        setShowAcceptedCard(true); // Show the flash card
 
         if (response.data.potd && response.data.potd.awarded) {
           updateCoins(response.data.potd.totalCoins);
@@ -1423,9 +1426,26 @@ const ProblemDetail: React.FC = () => {
       </div>
     )
   }
+  
 
   return (
     <div className="min-h-screen transition-colors duration-200">
+      {showAcceptedCard && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white dark:bg-gray-900 text-center rounded-lg shadow-2xl p-8 animate-bounce">
+        <h2 className="text-3xl font-bold text-green-600 dark:text-green-400 mb-4">🎉 Solution Accepted!</h2>
+        <p className="text-gray-700 dark:text-gray-300 text-lg mb-6">
+          Great job! Your solution passed all test cases.
+        </p>
+        <button
+          onClick={() => setShowAcceptedCard(false)}
+          className="mt-4 px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Problem Description Panel */}
