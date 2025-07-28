@@ -843,9 +843,9 @@ useEffect(() => {
                 {getConnectionStatusIcon()}
                 <span className="text-xs text-gray-500 dark:text-gray-400">{getConnectionStatusText()}</span>
               </div>
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              {/* <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <Settings className="h-4 w-4" />
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -942,7 +942,7 @@ useEffect(() => {
                       >
                         <Reply className="h-4 w-4" />
                       </button>
-                      {message.sender._id === user._id && (
+                      {/* {message.sender._id === user._id && (
                         <button
                           onClick={() => setEditingMessage(message._id)}
                           className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
@@ -950,7 +950,7 @@ useEffect(() => {
                         >
                           <Edit3 className="h-4 w-4" />
                         </button>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </div>
