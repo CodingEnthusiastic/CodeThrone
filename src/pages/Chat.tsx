@@ -949,9 +949,65 @@ const [roomError, setRoomError] = useState<string | null>(null);
 
               <div ref={messagesEndRef} />
             </div>
+            
+            {/* Only show message input if user is a participant or it's a private room */}
             {activeRoom &&
-              !activeRoom.isPrivate &&
-              !activeRoom.participants.some((u) => u._id === user._id) && (
+              (activeRoom.isPrivate ||
+                activeRoom.participants.some((u) => u._id === user._id)) ? (
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                {replyTo && (
+                  <div className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-600 dark:text-gray-400">
+                        Replying to {replyTo.sender.username}:
+                      </span>
+                      <span className="ml-2 text-gray-500 dark:text-gray-400">
+                        {replyTo.content.substring(0, 50)}...
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setReplyTo(null)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    ref={messageInputRef}
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value)
+                      handleTyping()
+                    }}
+                    onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                    placeholder={activeRoom ? `Message ${activeRoom.name}` : "Select a room to start chatting"}
+                    disabled={!activeRoom || connectionStatus !== "connected"}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected"}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {connectionStatus !== "connected" && (
+                  <div className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Chat is {connectionStatus}. Messages cannot be sent.
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Show Join Room prompt if not a participant in a public room
+              activeRoom &&
+              !activeRoom.isPrivate && (
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center">
                   <button
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -960,8 +1016,6 @@ const [roomError, setRoomError] = useState<string | null>(null);
                         method: "POST",
                         headers: { Authorization: `Bearer ${token}` },
                       });
-                      // Optionally refetch rooms or update state to include user as participant
-                      // For now, just reload the page or refetch rooms/messages
                       window.location.reload();
                     }}
                   >
@@ -969,56 +1023,8 @@ const [roomError, setRoomError] = useState<string | null>(null);
                   </button>
                   <p className="mt-2 text-gray-500">Join this room to send messages.</p>
                 </div>
+              )
             )}
-            {/* Message Input */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              {replyTo && (
-                <div className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-between">
-                  <div className="text-sm">
-                    <span className="font-medium text-gray-600 dark:text-gray-400">
-                      Replying to {replyTo.sender.username}:
-                    </span>
-                    <span className="ml-2 text-gray-500 dark:text-gray-400">{replyTo.content.substring(0, 50)}...</span>
-                  </div>
-                  <button
-                    onClick={() => setReplyTo(null)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-
-              <div className="flex items-center space-x-2">
-                <input
-                  ref={messageInputRef}
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => {
-                    setNewMessage(e.target.value)
-                    handleTyping()
-                  }}
-                  onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                  placeholder={activeRoom ? `Message ${activeRoom.name}` : "Select a room to start chatting"}
-                  disabled={!activeRoom || connectionStatus !== "connected"}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected"}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
-              </div>
-
-              {connectionStatus !== "connected" && (
-                <div className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  Chat is {connectionStatus}. Messages cannot be sent.
-                </div>
-              )}
-            </div>
           </>
         )}
       </div>
