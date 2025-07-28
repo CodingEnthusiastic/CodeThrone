@@ -606,7 +606,7 @@ useEffect(() => {
     <div
       className={`${
         isMinimized ? "h-16" : "h-screen"
-      } bg-[url('/whatsapp-bg-light.png')] dark:bg-[url('/whatsapp-bg-dark.png')] bg-repeat bg-cover bg-fixed bg-white dark:bg-gray-900 flex transition-all duration-300`}
+      } bg-[url('/whatsapp-bg-light.jpg')] dark:bg-[url('/whatsapp-bg-dark.jpg')] bg-repeat bg-cover bg-fixed bg-white dark:bg-gray-900 flex transition-all duration-300`}
       style={{ height: "calc(100vh - 64px)" }}
     >
       {/* Sidebar */}
