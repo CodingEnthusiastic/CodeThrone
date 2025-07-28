@@ -189,7 +189,7 @@ const Home: React.FC = () => {
     {
       title: "AI Interview Practice",
       description: "Practice technical interviews with AI-powered questions and feedback",
-      image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800",
+      image: "https://www.theladders.com/wp-content/uploads/interview-190927.jpg",
       features: ["AI Questions", "Voice Interaction", "Real-time Feedback"],
       gradient: isDark
         ? "from-gray-800 via-slate-800 to-gray-900"
@@ -1405,7 +1405,7 @@ const Home: React.FC = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent gradient-animate"></div>
                       <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                        <h3 className="text-3xl font-bold mb-3 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent text-glow-effect">
+                        <h3 className="text-3xl font-bold mb-3 text-red-300 text-glow-effect">
                           {item.title}
                         </h3>
                         <p className="text-white/90 mb-4 text-lg leading-relaxed">{item.description}</p>
