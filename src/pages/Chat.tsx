@@ -852,9 +852,18 @@ useEffect(() => {
                   )}
 
                   <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                      {message.sender.username[0].toUpperCase()}
-                    </div>
+                    {/* Profile photo or fallback */}
+                    {message.sender.profile?.avatar && !message.sender.profile.avatar.startsWith('default:') ? (
+                      <img
+                        src={message.sender.profile.avatar}
+                        alt={message.sender.username}
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                        {message.sender.username[0].toUpperCase()}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1">
                         <span className="font-medium text-gray-900 dark:text-gray-100">{message.sender.username}</span>
