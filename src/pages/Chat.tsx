@@ -570,7 +570,7 @@ const [roomError, setRoomError] = useState<string | null>(null);
   // ✅ Same check pattern as Discussion component
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 ">
         <div className="text-center">
           <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-400" />
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Please Login to Chat</h2>
@@ -597,7 +597,7 @@ const [roomError, setRoomError] = useState<string | null>(null);
   }
 
   return (
-    <div className={`${isMinimized ? "h-16" : "h-screen"} bg-white dark:bg-gray-900 flex transition-all duration-300`}>
+    <div className={`${isMinimized ? "h-16" : "h-screen"} bg-white dark:bg-gray-900 flex transition-all duration-300` } style={{ height: "calc(100vh - 64px)" }}>
       {/* Sidebar */}
       <div
         className={`${isMinimized ? "w-0 overflow-hidden" : "w-80"} bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300`}
@@ -752,7 +752,7 @@ const [roomError, setRoomError] = useState<string | null>(null);
   </div>
 )}
         </div>
-
+      <div className="flex flex-col h-full">
         {/* Rooms List */}
         <div className="flex-1 overflow-y-auto">
           {rooms.map((room) => (
@@ -790,10 +790,11 @@ const [roomError, setRoomError] = useState<string | null>(null);
             ))}
           </div>
         </div>
+        </div>
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Chat Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between">
@@ -832,7 +833,7 @@ const [roomError, setRoomError] = useState<string | null>(null);
         {!isMinimized && (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 max-h-[calc(100vh-220px)]">
               {messages.map((message) => (
                 <div key={message._id} className="group">
                   {message.replyTo && (
