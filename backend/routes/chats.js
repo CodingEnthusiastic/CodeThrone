@@ -5,8 +5,9 @@ import ChatRoom from "../models/ChatRoom.js"
 import Message from "../models/Message.js"
 
 const router = express.Router()
+const onlineUsers = new Set();
 
-console.log("🛣️ Setting up chats routes...")
+// console.log("🛣️ Setting up chats routes...")
 
 // Get all chat rooms for user
 router.get("/rooms", authenticateToken, async (req, res) => {

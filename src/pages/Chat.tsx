@@ -354,31 +354,37 @@ const [roomError, setRoomError] = useState<string | null>(null);
   }, [activeRoom, token, socket, connectionStatus])
 
   // Fetch online users
-  useEffect(() => {
-    if (!token) return
+  // After you set `socket` in state, attach listener:
+useEffect(() => {
+  if (!socket) return;
 
-    const fetchOnlineUsers = async () => {
-      try {
-        const response = await fetch(`${API_URL}/chats/online-users`, {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ Same pattern as Discussion
-            "Content-Type": "application/json",
-          },
-        })
+  const handleOnline = (ids: string[]) => {
+    // If you only have IDs, you might need to merge with your users list,
+    // or fetch their profiles once. If your server already sent full User objects,
+    // then `ids` here should be an array of Users.
+    setOnlineUsers(ids);
+  };
 
-        if (response.ok) {
-          const data = await response.json()
-          setOnlineUsers(data)
-        }
-      } catch (error) {
-        console.error("❌ Error fetching online users:", error)
-      }
-    }
+  socket.on("onlineUsers", handleOnline);
 
-    fetchOnlineUsers()
-    const interval = setInterval(fetchOnlineUsers, 30000)
-    return () => clearInterval(interval)
-  }, [token])
+  // Ask server for initial list in case you connected after others:
+  socket.emit("requestOnlineUsers");
+
+  return () => {
+    socket.off("onlineUsers", handleOnline);
+  };
+}, [socket]);
+
+
+//   useEffect(() => {
+//   if (!socket) return;
+//   const handleOnlineUsers = (userList: User[]) => {
+//     setOnlineUsers(userList);
+//   };
+//   socket.on("onlineUsers", handleOnlineUsers);
+//   return () => socket.off("onlineUsers", handleOnlineUsers);
+// }, [socket]);
+
 
   // Auto scroll to bottom
   useEffect(() => {
