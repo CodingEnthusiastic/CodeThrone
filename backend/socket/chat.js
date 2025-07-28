@@ -43,7 +43,8 @@ export const setupChatSocket = (io) => {
   io.on("connection", (socket) => {
     console.log(`🔌 User ${socket.user.username} (${socket.userId}) connected to chat - Socket ID: ${socket.id}`)
     onlineUsers.add(socket.userId);
-    io.emit("onlineUsers", Array.from(onlineUsers));
+    // io.emit("onlineUsers", Array.from(onlineUsers));
+    io.emit("onlineUsers", Array.from(onlineUsers).map(id => userMap[id]));
     // io.emit("onlineUsers", Array.from(onlineUsers));
     // Join user to their personal room for notifications
     socket.join(`user_${socket.userId}`)
@@ -247,7 +248,8 @@ export const setupChatSocket = (io) => {
     socket.on("disconnect", (reason) => {
       onlineUsers.delete(socket.userId);
       // broadcast updated list again
-      io.emit("onlineUsers", Array.from(onlineUsers));
+      // io.emit("onlineUsers", Array.from(onlineUsers));
+      io.emit("onlineUsers", Array.from(onlineUsers).map(id => userMap[id]));
       console.log(`🔌 User ${socket.user.username} (${socket.userId}) disconnected from chat - Reason: ${reason}`)
     })
 
