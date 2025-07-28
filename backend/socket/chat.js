@@ -3,6 +3,7 @@ import User from "../models/User.js"
 import ChatRoom from "../models/ChatRoom.js"
 import Message from "../models/Message.js"
 
+const onlineUsers = new Set() // Track online users by their IDs
 export const setupChatSocket = (io) => {
   console.log("🔌 Setting up chat socket handlers...")
 
