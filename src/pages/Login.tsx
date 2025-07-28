@@ -1,8 +1,164 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Code, AlertCircle, Eye, EyeOff, Shield, User } from 'lucide-react';
-import { API_URL, SOCKET_URL } from "../config/api";
+import { API_URL } from "../config/api";
+import Galaxy from './Galaxy';
+
+// Animated Light Theme Background
+const LightThemeBackground: React.FC = () => (
+  <div className="fixed inset-0 w-full h-full overflow-hidden" style={{ pointerEvents: 'none' }}>
+    <svg
+      className="absolute inset-0 w-full h-full"
+      viewBox="0 0 1920 1080"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient id="light-gradient" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#fef3c7" />
+          <stop offset="30%" stopColor="#fde68a" />
+          <stop offset="60%" stopColor="#fed7aa" />
+          <stop offset="100%" stopColor="#fecaca" />
+        </linearGradient>
+        <filter id="soft-glow">
+          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+          <feMerge> 
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <rect width="1920" height="1080" fill="url(#light-gradient)" />
+      
+      {/* Floating Geometric Shapes */}
+      <g opacity="0.1">
+        <circle cx="200" cy="200" r="40" fill="#f59e0b">
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            values="0 0;50 -30;0 0"
+            dur="6s"
+            repeatCount="indefinite"
+          />
+        </circle>
+        <rect x="1500" y="300" width="60" height="60" rx="10" fill="#ef4444">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values="0 1530 330;360 1530 330"
+            dur="8s"
+            repeatCount="indefinite"
+          />
+        </rect>
+        <polygon points="800,150 850,250 750,250" fill="#10b981">
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            values="0 0;-20 40;0 0"
+            dur="7s"
+            repeatCount="indefinite"
+          />
+        </polygon>
+      </g>
+      
+      {/* Floating Particles */}
+      {Array.from({ length: 30 }, (_, i) => (
+        <circle
+          key={i}
+          cx={Math.random() * 1920}
+          cy={Math.random() * 1080}
+          r={Math.random() * 8 + 2}
+          fill={['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6'][Math.floor(Math.random() * 5)]}
+          opacity="0.1"
+        >
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            values={`0 0;${Math.random() * 100 - 50} ${Math.random() * 100 - 50};0 0`}
+            dur={`${Math.random() * 10 + 5}s`}
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="opacity"
+            values="0.05;0.2;0.05"
+            dur={`${Math.random() * 4 + 3}s`}
+            repeatCount="indefinite"
+          />
+        </circle>
+      ))}
+      
+      {/* Animated Waves */}
+      <path
+        d="M0 800 Q480 850 960 800 T1920 800 V1080 H0 Z"
+        fill="#ffffff"
+        opacity="0.1"
+      >
+        <animate
+          attributeName="d"
+          dur="8s"
+          repeatCount="indefinite"
+          values="
+            M0 800 Q480 850 960 800 T1920 800 V1080 H0 Z;
+            M0 820 Q480 780 960 820 T1920 820 V1080 H0 Z;
+            M0 800 Q480 850 960 800 T1920 800 V1080 H0 Z
+          "
+        />
+      </path>
+    </svg>
+  </div>
+);
+
+// Robot Component with Magnet Hand
+// Robot Animation using video
+const RobotAnimation: React.FC = () => {
+  const [showBubble, setShowBubble] = useState(false);
+
+  const handleClick = () => {
+    setShowBubble(true);
+    setTimeout(() => setShowBubble(false), 3000);
+  };
+
+  const isDark = typeof document !== 'undefined'
+    ? document.documentElement.classList.contains('dark')
+    : false;
+
+  return (
+    <div
+      className="fixed bottom-8 right-8 z-30 cursor-pointer"
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+    >
+      {/* Speech Bubble */}
+      {showBubble && (
+        <div className="absolute -top-14 -left-10 animate-bounce z-40">
+          <div
+            className="px-4 py-2 rounded-xl shadow-lg border text-sm font-semibold"
+            style={{
+              background: isDark ? '#1f2937' : '#ffffff',
+              color: isDark ? '#f3f4f6' : '#1f2937',
+              borderColor: isDark ? '#374151' : '#e5e7eb',
+              fontSize: '1.75em', // Increased text size
+              lineHeight: 1.2,
+            }}
+          >
+            Hello User! 👋
+          </div>
+        </div>
+      )}
+
+      {/* Robot GIF Animation */}
+      <img
+        src="/robot.gif"
+        alt="Robot"
+        className="w-[240px] h-[280px] object-contain drop-shadow-xl"
+        draggable={false}
+      />
+    </div>
+  );
+};
+
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -29,36 +185,59 @@ const Login: React.FC = () => {
     }
   };
 
+  // Reliable dark mode detection using a state and effect
+  const [isDark, setIsDark] = useState(() =>
+    typeof window !== "undefined"
+      ? document.documentElement.classList.contains("dark")
+      : false
+  );
+
+  useEffect(() => {
+    // Handler to update dark mode state on class change
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    // Initial set
+    setIsDark(document.documentElement.classList.contains("dark"));
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
+    <div className="relative h-screen w-screen flex items-center justify-center overflow-hidden bg-white dark:bg-gray-900 transition-colors duration-500">
+      {/* Animated Backgrounds */}
+      <div className="absolute inset-0 w-full h-full z-0">
+        {isDark ? <Galaxy /> : <LightThemeBackground />}
+      </div>
+      {/* Robot Animation */}
+      <RobotAnimation />
+      <div className="relative z-10 w-full max-w-md mx-auto px-6">
+        <div className="flex justify-center mb-6">
           <div className="flex items-center space-x-2">
             <Code className="h-8 w-8 text-orange-500" />
-            <span className="text-2xl font-bold text-gray-900">CodeArena</span>
+            <span className="text-2xl font-bold text-gray-900 dark:text-white">CodeArena</span>
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        
+        <h2 className="text-center text-3xl font-extrabold text-gray-900 dark:text-white mb-8">
           Sign in to CodeArena
         </h2>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10 border border-gray-200">
+        
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm py-8 px-6 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md p-4">
                 <div className="flex">
                   <AlertCircle className="h-5 w-5 text-red-400" />
                   <div className="ml-3">
-                    <p className="text-sm text-red-800">{error}</p>
+                    <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
                   </div>
                 </div>
               </div>
             )}
 
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Username or Email
               </label>
               <div className="mt-1">
@@ -68,7 +247,7 @@ const Login: React.FC = () => {
                   type="text"
                   autoComplete="username"
                   required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 dark:bg-gray-900/80 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm backdrop-blur-sm"
                   placeholder="Enter your username or email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -77,7 +256,7 @@ const Login: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Login as
               </label>
               <div className="mt-1">
@@ -85,10 +264,10 @@ const Login: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setRole('user')}
-                    className={`flex items-center justify-center px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center justify-center px-3 py-2 border rounded-md text-sm font-medium transition-all duration-200 ${
                       role === 'user'
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 shadow-md'
+                        : 'border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/80 backdrop-blur-sm'
                     }`}
                   >
                     <User className="h-4 w-4 mr-2" />
@@ -97,10 +276,10 @@ const Login: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setRole('admin')}
-                    className={`flex items-center justify-center px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center justify-center px-3 py-2 border rounded-md text-sm font-medium transition-all duration-200 ${
                       role === 'admin'
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 shadow-md'
+                        : 'border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/80 backdrop-blur-sm'
                     }`}
                   >
                     <Shield className="h-4 w-4 mr-2" />
@@ -111,7 +290,7 @@ const Login: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Password
               </label>
               <div className="mt-1 relative">
@@ -121,15 +300,16 @@ const Login: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 dark:bg-gray-900/80 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm backdrop-blur-sm"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-md transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-400" />
@@ -144,7 +324,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95"
               >
                 {loading ? (
                   <div className="flex items-center">
@@ -156,12 +336,13 @@ const Login: React.FC = () => {
                 )}
               </button>
             </div>
+
             {/* OAuth Login Button */}
             <div>
               <button
                 type="button"
                 onClick={() => window.location.href = `${API_URL}/auth/google`}
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 mt-2"
+                className="w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/90 dark:bg-gray-900/90 hover:bg-gray-50 dark:hover:bg-gray-800/90 transition-all duration-200 backdrop-blur-sm transform hover:scale-105 active:scale-95"
               >
                 <svg className="h-5 w-5 mr-2" viewBox="0 0 48 48">
                   <g>
@@ -180,17 +361,17 @@ const Login: React.FC = () => {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-gray-300 dark:border-gray-700" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">New to CodeArena?</span>
+                <span className="px-2 bg-white/90 dark:bg-gray-800/90 text-gray-500 dark:text-gray-300 backdrop-blur-sm">New to CodeArena?</span>
               </div>
             </div>
 
             <div className="mt-6 text-center">
               <Link
                 to="/register"
-                className="font-medium text-orange-600 hover:text-orange-500 transition-colors"
+                className="font-medium text-orange-600 hover:text-orange-500 transition-colors duration-200 hover:underline"
               >
                 Create your account
               </Link>

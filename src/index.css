@@ -108,3 +108,14 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;             /* Chrome, Safari */
 }
+
+@keyframes blob-move {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-30px) scale(1.1); }
+}
+@keyframes blob-move2 {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(30px) scale(1.05); }
+}
+.animate-blob-move { animation: blob-move 8s ease-in-out infinite; }
+.animate-blob-move2 { animation: blob-move2 10s ease-in-out infinite; }
