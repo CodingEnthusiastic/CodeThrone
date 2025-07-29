@@ -68,17 +68,20 @@ interface RunResult {
 
 // Custom Components
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-xl shadow-lg border border-gray-100 ${className}`}>{children}</div>
+  <div className={`bg-white rounded-xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-blue-400
+               dark:bg-gray-800 dark:border-gray-700 dark:hover:border-blue-500 ${className}`}>
+    {children}
+  </div>
 )
 
-const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => <div className="p-6">{children}</div>
+const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => <div className="p-6 pb-4">{children}</div>
 
 const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
   <div className={`p-6 pt-0 ${className}`}>{children}</div>
 )
 
 const CardTitle: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
-  <h3 className={`text-xl font-bold leading-tight tracking-tight ${className}`}>{children}</h3>
+  <h3 className={`text-2xl font-extrabold leading-tight tracking-tight text-gray-900 dark:text-gray-50 ${className}`}>{children}</h3>
 )
 
 const Button: React.FC<{
@@ -90,19 +93,19 @@ const Button: React.FC<{
   size?: "sm" | "default" | "lg"
 }> = ({ children, onClick, disabled = false, className = "", variant = "default", size = "default" }) => {
   const baseClasses =
-    "inline-flex items-center justify-center rounded-lg font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
+    "inline-flex items-center justify-center rounded-lg font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none transform hover:scale-105 active:scale-95"
 
   const variantClasses = {
-    default: "bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg",
-    outline: "border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400",
-    success: "bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg",
-    danger: "bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg",
+    default: "bg-blue-600 text-white hover:bg-blue-700 shadow-md",
+    outline: "border-2 border-blue-400 bg-white text-blue-700 hover:bg-blue-50 hover:border-blue-500 dark:border-blue-500 dark:bg-transparent dark:text-blue-300 dark:hover:bg-blue-900/20 dark:hover:border-blue-600",
+    success: "bg-green-600 text-white hover:bg-green-700 shadow-md",
+    danger: "bg-red-600 text-white hover:bg-red-700 shadow-md",
   }
 
   const sizeClasses = {
     sm: "h-9 px-4 text-sm",
-    default: "h-11 px-6 text-sm",
-    lg: "h-12 px-8 text-base",
+    default: "h-11 px-6 text-base",
+    lg: "h-12 px-8 text-lg",
   }
 
   return (
@@ -120,13 +123,21 @@ const Badge: React.FC<{ children: React.ReactNode; className?: string; variant?:
   children,
   className = "",
   variant = "default",
-}) => (
-  <span
-    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border bg-blue-100 text-blue-800 border-blue-200 ${className}`}
-  >
-    {children}
-  </span>
-)
+}) => {
+  const variantClasses = {
+    default: "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600",
+    success: "bg-green-100 text-green-800 border-green-200 dark:bg-green-700 dark:text-green-100 dark:border-green-600",
+    warning: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-700 dark:text-yellow-100 dark:border-yellow-600",
+    danger: "bg-red-100 text-red-800 border-red-200 dark:bg-red-700 dark:text-red-100 dark:border-red-600",
+  }
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${variantClasses[variant as keyof typeof variantClasses]} ${className}`}
+    >
+      {children}
+    </span>
+  )
+}
 
 const Select: React.FC<{
   value: string
@@ -136,7 +147,8 @@ const Select: React.FC<{
   <select
     value={value}
     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onValueChange(e.target.value)}
-    className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+    className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer hover:border-blue-400 bg-white text-gray-900
+               dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:border-blue-400"
   >
     {children}
   </select>
@@ -150,7 +162,7 @@ const ContestProblemDetail: React.FC = () => {
   const { id, problemId } = useParams<{ id: string; problemId: string }>()
   console.log("🧩 URL params:", { id, problemId })
   const contestId = id
-  const { user, token } = useAuth(); // ✅ Get token from auth context
+  const { user, token } = useAuth();
   const navigate = useNavigate()
   const [problem, setProblem] = useState<Problem | null>(null)
   const [contest, setContest] = useState<Contest | null>(null)
@@ -163,7 +175,7 @@ const ContestProblemDetail: React.FC = () => {
   const [submitting, setSubmitting] = useState(false)
   const [timeRemaining, setTimeRemaining] = useState("")
   const [tabSwitchCount, setTabSwitchCount] = useState(0)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const editorRef = useRef<HTMLDivElement>(null); // Ref for the editor container to attach event listeners
 
   useEffect(() => {
     if (contestId && problemId) {
@@ -200,7 +212,7 @@ const ContestProblemDetail: React.FC = () => {
   }, [tabSwitchCount])
 
   useEffect(() => {
-    // Anti-cheat: Prevent pasting, copying, and right-click
+    // Anti-cheat: Prevent pasting, copying, and right-click specifically on the editor area
     const preventActions = (e: Event) => {
       e.preventDefault()
       alert("Copy/paste operations are not allowed in contest mode!")
@@ -211,21 +223,21 @@ const ContestProblemDetail: React.FC = () => {
       alert("Right-click is disabled in contest mode!")
     }
 
-    const textarea = textareaRef.current
-    if (textarea) {
-      textarea.addEventListener("paste", preventActions)
-      textarea.addEventListener("copy", preventActions)
-      textarea.addEventListener("cut", preventActions)
-      textarea.addEventListener("contextmenu", preventRightClick)
+    const editorElement = editorRef.current;
+    if (editorElement) {
+      editorElement.addEventListener("paste", preventActions);
+      editorElement.addEventListener("copy", preventActions);
+      editorElement.addEventListener("cut", preventActions);
+      editorElement.addEventListener("contextmenu", preventRightClick);
 
       return () => {
-        textarea.removeEventListener("paste", preventActions)
-        textarea.removeEventListener("copy", preventActions)
-        textarea.removeEventListener("cut", preventActions)
-        textarea.removeEventListener("contextmenu", preventRightClick)
-      }
+        editorElement.removeEventListener("paste", preventActions);
+        editorElement.removeEventListener("copy", preventActions);
+        editorElement.removeEventListener("cut", preventActions);
+        editorElement.removeEventListener("contextmenu", preventRightClick);
+      };
     }
-  }, [])
+  }, []);
 
   const fetchProblem = async () => {
     try {
@@ -247,7 +259,6 @@ const ContestProblemDetail: React.FC = () => {
       const response = await axios.get(`${API_URL}/contests/${contestId}/problem/${problemId}`)
       console.log("✅ Contest info fetched:", response.data)
 
-      // Handle the response structure properly
       if (response.data.contest) {
         setContest(response.data.contest)
       }
@@ -372,14 +383,13 @@ const ContestProblemDetail: React.FC = () => {
         language,
       }, {
         headers: { 
-          'Authorization': `Bearer ${token}`, // ✅ Use token from auth context
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
       console.log('✅ Problem submission response:', response.data);
       setSubmissionResult(response.data)
       
-      // If submission was successful, update contest score
       if (response.data.status === 'Accepted' && response.data.passedTests === response.data.totalTests) {
         console.log('🎉 All test cases passed, updating contest score...');
         console.log('📊 Submission details for contest update:', {
@@ -393,21 +403,20 @@ const ContestProblemDetail: React.FC = () => {
           const contestResponse = await axios.post(
             `${API_URL}/contests/${contestId}/submit/${problemId}`,
             {
-              score: 100, // Base score, will be calculated dynamically on backend
+              score: 100,
               timeSubmitted: new Date().toISOString(),
               passedTests: response.data.passedTests,
               totalTests: response.data.totalTests
             },
             {
               headers: { 
-                'Authorization': `Bearer ${token}`, // ✅ Use token from auth context
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
               }
             }
           );
           console.log('✅ Contest score updated:', contestResponse.data);
           
-          // Show success message with score details
           if (contestResponse.data.scoreAwarded) {
             alert(`🎉 Problem solved! You earned ${contestResponse.data.scoreAwarded} points!`);
           }
@@ -447,13 +456,13 @@ const ContestProblemDetail: React.FC = () => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Easy":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-700 dark:text-green-100 dark:border-green-600"
       case "Medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-700 dark:text-yellow-100 dark:border-yellow-600"
       case "Hard":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "bg-red-100 text-red-800 border-red-200 dark:bg-red-700 dark:text-red-100 dark:border-red-600"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
     }
   }
 
@@ -461,15 +470,15 @@ const ContestProblemDetail: React.FC = () => {
     switch (status) {
       case "Accepted":
       case "Success":
-        return "text-green-600"
+        return "text-green-600 dark:text-green-400"
       case "Wrong Answer":
       case "Failed":
-        return "text-red-600"
+        return "text-red-600 dark:text-red-400"
       case "Compilation Error":
       case "Error":
-        return "text-red-600"
+        return "text-red-600 dark:text-red-400"
       default:
-        return "text-gray-600"
+        return "text-gray-600 dark:text-gray-400"
     }
   }
 
@@ -477,24 +486,24 @@ const ContestProblemDetail: React.FC = () => {
     switch (status) {
       case "Accepted":
       case "Success":
-        return <CheckCircle className="h-5 w-5 text-green-600" />
+        return <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
       case "Wrong Answer":
       case "Failed":
-        return <XCircle className="h-5 w-5 text-red-600" />
+        return <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
       case "Compilation Error":
       case "Error":
-        return <AlertCircle className="h-5 w-5 text-red-600" />
+        return <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
       default:
-        return <Clock className="h-5 w-5 text-gray-600" />
+        return <Clock className="h-5 w-5 text-gray-600 dark:text-gray-400" />
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center dark:bg-gray-950">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading problem...</p>
+          <div className="animate-spin rounded-full h-20 w-20 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-700 font-medium text-lg dark:text-gray-300">Loading problem details and contest info...</p>
         </div>
       </div>
     )
@@ -504,20 +513,21 @@ const ContestProblemDetail: React.FC = () => {
 
   if (!problem || !contest) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center dark:bg-gray-950">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Problem not found</h2>
-          <p className="text-gray-600">The problem you're looking for doesn't exist.</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4 dark:text-gray-100">Problem or Contest Not Found</h2>
+          <p className="text-gray-700 text-lg dark:text-gray-300">The problem or contest you're looking for doesn't exist or is inaccessible.</p>
+          <Button onClick={() => navigate('/')} className="mt-8">Go to Homepage</Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-sans text-gray-900 dark:bg-gray-900 dark:from-gray-950 dark:to-gray-800 dark:text-gray-100">
       {/* Contest Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm py-4 dark:bg-gray-800 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
@@ -530,63 +540,77 @@ const ContestProblemDetail: React.FC = () => {
                 Back to Contest
               </Button>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">{contest.name}</h1>
-                <p className="text-sm text-gray-600">{problem.title}</p>
+                <h1 className="text-xl font-extrabold text-gray-900 dark:text-gray-50">{contest.name}</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{problem.title}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               {tabSwitchCount > 0 && (
-                <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
+                <Badge variant="danger" className="animate-pulse">
                   Tab switches: {tabSwitchCount}
                 </Badge>
               )}
-              <div className="flex items-center space-x-2">
-                <Timer className="h-5 w-5 text-red-600" />
-                <span className="text-xl font-bold text-red-600">{timeRemaining}</span>
+              <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-lg shadow-inner text-blue-600
+                          dark:bg-blue-900/30 dark:border dark:border-blue-700 dark:text-blue-400">
+                <Timer className="h-5 w-5" />
+                <span className="text-xl font-bold">{timeRemaining}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Problem Description Panel */}
           <Card className="h-fit">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl font-bold text-gray-900">{problem.title}</CardTitle>
+                <CardTitle>{problem.title}</CardTitle>
                 <Badge className={getDifficultyColor(problem.difficulty)}>{problem.difficulty}</Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-8">
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Problem Description</h3>
-                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center dark:text-gray-50">
+                  <Code className="h-5 w-5 mr-2 text-blue-500 dark:text-blue-400" />
+                  Problem Description
+                </h3>
+                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-inner
+                            dark:text-gray-200 dark:bg-gray-800 dark:border-gray-700">
                   {problem.description}
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Examples</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center dark:text-gray-50">
+                  <Play className="h-5 w-5 mr-2 text-green-500 dark:text-green-400" />
+                  Examples
+                </h3>
                 {problem.examples.map((example, index) => (
-                  <div key={index} className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="mb-3">
-                      <strong className="text-sm font-semibold text-gray-700">Input:</strong>
-                      <pre className="bg-white p-3 rounded-md mt-1 text-sm font-mono border border-gray-300">
+                  <div key={index} className="mb-6 p-5 bg-white rounded-xl border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md
+                              dark:bg-gray-700 dark:border-gray-600">
+                    <div className="mb-4">
+                      <strong className="text-sm font-bold text-gray-700 block mb-2 dark:text-gray-200">Input:</strong>
+                      <pre className="bg-gray-100 p-3 rounded-lg text-sm font-mono border border-gray-300 overflow-x-auto
+                                  dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
                         {example.input}
                       </pre>
                     </div>
-                    <div className="mb-3">
-                      <strong className="text-sm font-semibold text-gray-700">Output:</strong>
-                      <pre className="bg-white p-3 rounded-md mt-1 text-sm font-mono border border-gray-300">
+                    <div className="mb-4">
+                      <strong className="text-sm font-bold text-gray-700 block mb-2 dark:text-gray-200">Output:</strong>
+                      <pre className="bg-gray-100 p-3 rounded-lg text-sm font-mono border border-gray-300 overflow-x-auto
+                                  dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
                         {example.output}
                       </pre>
                     </div>
                     {example.explanation && (
                       <div>
-                        <strong className="text-sm font-semibold text-gray-700">Explanation:</strong>
-                        <p className="mt-1 text-sm text-gray-600 bg-blue-50 p-2 rounded-md">{example.explanation}</p>
+                        <strong className="text-sm font-bold text-gray-700 block mb-2 dark:text-gray-200">Explanation:</strong>
+                        <p className="mt-1 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200
+                                  dark:text-gray-300 dark:bg-blue-900/20 dark:border-blue-700">
+                          {example.explanation}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -594,8 +618,12 @@ const ContestProblemDetail: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Constraints</h3>
-                <div className="whitespace-pre-wrap text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center dark:text-gray-50">
+                  <AlertCircle className="h-5 w-5 mr-2 text-orange-500 dark:text-orange-400" />
+                  Constraints
+                </h3>
+                <div className="whitespace-pre-wrap text-gray-700 bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-inner
+                            dark:text-gray-200 dark:bg-gray-800 dark:border-gray-700">
                   {problem.constraints}
                 </div>
               </div>
@@ -607,7 +635,7 @@ const ContestProblemDetail: React.FC = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center">
-                  <Code className="h-5 w-5 mr-2" />
+                  <Code className="h-6 w-6 mr-2 text-blue-600 dark:text-blue-500" />
                   Code Editor
                 </CardTitle>
                 <Select value={language} onValueChange={handleLanguageChange}>
@@ -618,18 +646,19 @@ const ContestProblemDetail: React.FC = () => {
                 </Select>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative">
+            <CardContent className="space-y-6">
+              <div className="relative" ref={editorRef}> {/* Attach ref here */}
                 <CodeMirrorEditor
                   value={code}
                   onChange={setCode}
                   language={language}
                   disabled={contest.status === "ended"}
-                  className="h-96"
+                  className="h-96 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600"
                   contestMode={true}
                   height="384px"
                 />
-                <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
+                <div className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce-slow
+                            dark:bg-red-700">
                   Copy/Paste Disabled
                 </div>
               </div>
@@ -639,126 +668,174 @@ const ContestProblemDetail: React.FC = () => {
                   onClick={handleRun}
                   disabled={running}
                   variant="outline"
-                  className="flex items-center bg-transparent"
+                  className="flex-1"
                 >
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play className="h-5 w-5 mr-2" />
                   {running ? "Running..." : "Run Code"}
                 </Button>
                 <Button
                   onClick={handleSubmit}
                   disabled={submitting || contest.status === "ended"}
                   variant="success"
-                  className="flex items-center"
+                  className="flex-1"
                 >
-                  <Send className="h-4 w-4 mr-2" />
+                  <Send className="h-5 w-5 mr-2" />
                   {submitting ? "Submitting..." : "Submit Solution"}
                 </Button>
               </div>
 
               {/* Results Panel */}
-              <Card className="bg-gray-50">
+              <Card className="bg-gray-50 border-dashed border-gray-200 dark:bg-gray-800 dark:border-dashed dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle className="text-lg">Console Output</CardTitle>
+                  <CardTitle className="text-xl text-gray-800 dark:text-gray-50">Console Output</CardTitle>
                 </CardHeader>
-                <CardContent className="h-80 overflow-y-auto">
-                  {runResult && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
+                <CardContent className="h-96 overflow-y-auto custom-scrollbar">
+                  {running && (
+                    <div className="text-center py-16 text-gray-600 dark:text-gray-400">
+                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                      <p className="font-semibold text-lg dark:text-gray-400">Executing code...</p>
+                      <p className="text-sm mt-2 text-gray-500">Please wait for the results.</p>
+                    </div>
+                  )}
+                  {submitting && (
+                    <div className="text-center py-16 text-gray-600 dark:text-gray-400">
+                      <div className="animate-bounce-slow rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mx-auto mb-4"></div>
+                      <p className="font-semibold text-lg dark:text-gray-400">Submitting solution...</p>
+                      <p className="text-sm mt-2 text-gray-500">Evaluating against all test cases.</p>
+                    </div>
+                  )}
+
+                  {runResult && !running && (
+                    <div className="space-y-5 animate-fade-in">
+                      <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
                         <div className="flex items-center space-x-2">
                           {getStatusIcon(runResult.status)}
-                          <span className={`font-semibold text-lg ${getStatusColor(runResult.status)}`}>
+                          <span className={`font-extrabold text-xl ${getStatusColor(runResult.status)}`}>
                             {runResult.status}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-600 font-medium">
+                        <Badge variant={runResult.passedTests === runResult.totalTests ? "success" : "danger"}>
                           Passed: {runResult.passedTests}/{runResult.totalTests} test cases
-                        </span>
+                        </Badge>
                       </div>
 
                       {runResult.error ? (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                          <div className="text-red-800 font-semibold mb-2">Error:</div>
-                          <div className="text-red-700 text-sm font-mono bg-red-100 p-2 rounded">{runResult.error}</div>
+                        <div className="bg-red-100 border border-red-300 rounded-lg p-4 shadow-sm animate-fade-in
+                                    dark:bg-red-900/50 dark:border-red-700">
+                          <div className="text-red-800 font-bold mb-2 flex items-center dark:text-red-300">
+                            <AlertCircle className="h-5 w-5 mr-2" /> Error:
+                          </div>
+                          <pre className="text-red-700 text-sm font-mono bg-red-50 p-3 rounded border border-red-200 overflow-x-auto
+                                      dark:text-red-200 dark:bg-red-900/30 dark:border-red-700">
+                            {runResult.error}
+                          </pre>
                         </div>
                       ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {runResult.testResults.slice(0, 3).map((result, index) => (
                             <div
                               key={index}
-                              className={`border-2 rounded-lg p-3 ${
-                                result.passed ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
+                              className={`border-2 rounded-xl p-4 shadow-sm transition-all duration-200 ${
+                                result.passed ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/30" : "border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/30"
                               }`}
                             >
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-sm">Test Case {index + 1}</span>
-                                <div className="flex items-center space-x-3 text-xs text-gray-600">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="font-bold text-sm text-gray-800 dark:text-gray-100">Test Case {index + 1}</span>
+                                <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400">
                                   <span className="flex items-center">
-                                    <Clock className="h-3 w-3 mr-1" />
+                                    <Clock className="h-4 w-4 mr-1 text-gray-500" />
                                     {result.executionTime}ms
                                   </span>
                                   <span className="flex items-center">
-                                    <Memory className="h-3 w-3 mr-1" />
+                                    <Memory className="h-4 w-4 mr-1 text-gray-500" />
                                     {result.memory}MB
                                   </span>
                                 </div>
                               </div>
                               {!result.passed && (
-                                <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mt-2">
                                   <div>
-                                    <div className="font-semibold text-gray-700 mb-1">Expected:</div>
-                                    <pre className="bg-white p-2 rounded text-xs border">{result.expectedOutput}</pre>
+                                    <div className="font-semibold text-gray-700 mb-1 dark:text-gray-300">Expected Output:</div>
+                                    <pre className="bg-white p-3 rounded-md text-xs border border-gray-300 overflow-x-auto max-h-24
+                                                dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+                                      {result.expectedOutput}
+                                    </pre>
                                   </div>
                                   <div>
-                                    <div className="font-semibold text-gray-700 mb-1">Your Output:</div>
-                                    <pre className="bg-white p-2 rounded text-xs border">{result.actualOutput}</pre>
+                                    <div className="font-semibold text-gray-700 mb-1 dark:text-gray-300">Your Output:</div>
+                                    <pre className="bg-white p-3 rounded-md text-xs border border-gray-300 overflow-x-auto max-h-24
+                                                dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+                                      {result.actualOutput}
+                                    </pre>
                                   </div>
                                 </div>
                               )}
                             </div>
                           ))}
+                           {runResult.totalTests > 3 && (
+                              <p className="text-center text-sm text-gray-500 mt-4 dark:text-gray-400">
+                                  And {runResult.totalTests - 3} more test cases...
+                              </p>
+                          )}
                         </div>
                       )}
                     </div>
                   )}
 
-                  {submissionResult && (
-                    <div className="space-y-4 border-t-2 pt-4">
+                  {submissionResult && !submitting && (
+                    <div className="space-y-5 border-t-2 border-blue-200 pt-5 mt-5 animate-fade-in dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           {getStatusIcon(submissionResult.status)}
-                          <span className={`font-bold text-lg ${getStatusColor(submissionResult.status)}`}>
+                          <span className={`font-extrabold text-xl ${getStatusColor(submissionResult.status)}`}>
                             Final Result: {submissionResult.status}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-600 font-medium">
+                        <Badge variant={submissionResult.passedTests === submissionResult.totalTests ? "success" : "danger"}>
                           {submissionResult.passedTests}/{submissionResult.totalTests} test cases passed
-                        </span>
+                        </Badge>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center bg-blue-50 p-3 rounded-lg">
-                          <Clock className="h-5 w-5 text-blue-500 mr-2" />
+                        <div className="flex items-center bg-blue-50 p-4 rounded-lg shadow-sm border border-blue-200
+                                    dark:bg-blue-900/30 dark:border dark:border-blue-700">
+                          <Clock className="h-6 w-6 mr-3 text-blue-500 dark:text-blue-400" />
                           <div>
-                            <div className="text-sm text-gray-600">Runtime</div>
-                            <div className="font-bold text-blue-600">{submissionResult.executionTime}ms</div>
+                            <div className="text-sm text-gray-600 font-medium dark:text-gray-300">Runtime</div>
+                            <div className="font-bold text-blue-700 text-lg dark:text-blue-300">{submissionResult.executionTime}ms</div>
                           </div>
                         </div>
-                        <div className="flex items-center bg-purple-50 p-3 rounded-lg">
-                          <Memory className="h-5 w-5 text-purple-500 mr-2" />
+                        <div className="flex items-center bg-purple-50 p-4 rounded-lg shadow-sm border border-purple-200
+                                    dark:bg-purple-900/30 dark:border dark:border-purple-700">
+                          <Memory className="h-6 w-6 mr-3 text-purple-500 dark:text-purple-400" />
                           <div>
-                            <div className="text-sm text-gray-600">Memory</div>
-                            <div className="font-bold text-purple-600">{submissionResult.memory}MB</div>
+                            <div className="text-sm text-gray-600 font-medium dark:text-gray-300">Memory</div>
+                            <div className="font-bold text-purple-700 text-lg dark:text-purple-300">{submissionResult.memory}MB</div>
                           </div>
                         </div>
                       </div>
+                      {submissionResult.error && (
+                        <div className="bg-red-100 border border-red-300 rounded-lg p-4 shadow-sm animate-fade-in
+                                    dark:bg-red-900/50 dark:border-red-700">
+                          <div className="text-red-800 font-bold mb-2 flex items-center dark:text-red-300">
+                            <AlertCircle className="h-5 w-5 mr-2" /> Submission Error:
+                          </div>
+                          <pre className="text-red-700 text-sm font-mono bg-red-50 p-3 rounded border border-red-200 overflow-x-auto
+                                      dark:text-red-200 dark:bg-red-900/30 dark:border-red-700">
+                            {submissionResult.error}
+                          </pre>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {!runResult && !submissionResult && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="font-medium">Run your code to see the output here...</p>
-                      <p className="text-sm mt-2">Test your solution before submitting</p>
+                  {!runResult && !submissionResult && !running && !submitting && (
+                    <div className="text-center py-16 text-gray-400">
+                      <Trophy className="h-16 w-16 mx-auto mb-5 opacity-40 text-blue-400 animate-float dark:text-blue-600" />
+                      <p className="font-semibold text-lg text-gray-600 dark:text-gray-400">Run your code to see the output here!</p>
+                      <p className="text-sm mt-2 text-gray-500">
+                        Test your solution against example cases before a final submission.
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -767,6 +844,63 @@ const ContestProblemDetail: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Tailwind CSS custom animations (add to your global CSS or in a style block if using Next.js/similar) */}
+      <style jsx>{`
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0px); }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          25% { transform: translateY(-5px); }
+          50% { transform: translateY(0); }
+          75% { transform: translateY(-2px); }
+        }
+        .animate-bounce-slow {
+          animation: bounce-slow 4s infinite;
+        }
+
+        /* Custom Scrollbar for Light Mode */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1; /* Tailwind gray-300 */
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8; /* Tailwind gray-400 */
+        }
+
+        /* Custom Scrollbar for Dark Mode */
+        .dark .custom-scrollbar::-webkit-scrollbar-track {
+          background: #374151; /* gray-700 */
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #4b5563; /* gray-600 */
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #6b7280; /* gray-500 */
+        }
+      `}</style>
     </div>
   )
 }
