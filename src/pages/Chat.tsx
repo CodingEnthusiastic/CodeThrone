@@ -25,6 +25,9 @@ import {
   Wifi,
   WifiOff,
   AlertCircle,
+  Clock, // Added for last activity/status
+  Info, // For general info/description
+  CornerUpLeft, // For reply indicator
 } from "lucide-react"
 import { API_URL } from "../config/api"
 
@@ -95,22 +98,25 @@ const Chat: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [replyTo, setReplyTo] = useState<Message | null>(null)
-  const [editingMessage, setEditingMessage] = useState<string | null>(null)
+  const [editingMessage, setEditingMessage] = useState<string | null>(null) // This state is not used in your current logic but kept for consistency
   const [showCreateRoom, setShowCreateRoom] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [reconnectAttempts, setReconnectAttempts] = useState(0)
   const [lastError, setLastError] = useState<string | null>(null)
+  const [isSendingMessage, setIsSendingMessage] = useState(false) // New state for send button disabling
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const messageInputRef = useRef<HTMLInputElement>(null)
+  const messageInputRef = useRef<HTMLTextAreaElement>(null) // Changed to TextAreaElement
   const typingTimeoutRef = useRef<NodeJS.Timeout>()
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
+
   const [roomName, setRoomName] = useState("");
-const [roomDescription, setRoomDescription] = useState("");
-const [roomType, setRoomType] = useState<ChatRoom["type"]>("general");
-const [roomIsPrivate, setRoomIsPrivate] = useState(false);
-const [roomCreating, setRoomCreating] = useState(false);
-const [roomError, setRoomError] = useState<string | null>(null);
+  const [roomDescription, setRoomDescription] = useState("");
+  const [roomType, setRoomType] = useState<ChatRoom["type"]>("general");
+  const [roomIsPrivate, setRoomIsPrivate] = useState(false); // Kept, but checkbox commented out in UI below
+  const [roomCreating, setRoomCreating] = useState(false);
+  const [roomError, setRoomError] = useState<string | null>(null);
+
   // Enhanced socket connection with reconnection logic
   const connectSocket = useCallback(() => {
     if (!token || !user) {
@@ -136,8 +142,8 @@ const [roomError, setRoomError] = useState<string | null>(null);
       forceNew: true,
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionDelay: 10000,
+      reconnectionDelayMax: 50000,
     })
 
     // Connection events
@@ -252,7 +258,7 @@ const [roomError, setRoomError] = useState<string | null>(null);
       return
     }
 
-    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000)
+    const delay = Math.min(10000 * Math.pow(2, reconnectAttempts), 10000)
     console.log(`🔄 Attempting reconnection in ${delay}ms (attempt ${reconnectAttempts + 1})`)
 
     reconnectTimeoutRef.current = setTimeout(() => {
@@ -353,37 +359,31 @@ const [roomError, setRoomError] = useState<string | null>(null);
     }
   }, [activeRoom, token, socket, connectionStatus])
 
-  // Fetch online users
-  // After you set `socket` in state, attach listener:
-useEffect(() => {
-  if (!socket) return;
+  // Fetch online users with 5-second refresh
+  useEffect(() => {
+    if (!socket) return;
 
-  const handleOnline = (ids: string[]) => {
-    // If you only have IDs, you might need to merge with your users list,
-    // or fetch their profiles once. If your server already sent full User objects,
-    // then `ids` here should be an array of Users.
-    setOnlineUsers(ids);
-  };
+    const handleOnline = (ids: User[]) => { // Changed type to User[] as implied by comments
+      setOnlineUsers(ids);
+    };
 
-  socket.on("onlineUsers", handleOnline);
+    socket.on("onlineUsers", handleOnline);
 
-  // Ask server for initial list in case you connected after others:
-  socket.emit("requestOnlineUsers");
+    // Request initial list
+    socket.emit("requestOnlineUsers");
 
-  return () => {
-    socket.off("onlineUsers", handleOnline);
-  };
-}, [socket]);
+    // Set up interval for refreshing online users every 5 seconds
+    const intervalId = setInterval(() => {
+      if (connectionStatus === "connected") {
+        socket.emit("requestOnlineUsers");
+      }
+    }, 5000); // 5 seconds
 
-
-//   useEffect(() => {
-//   if (!socket) return;
-//   const handleOnlineUsers = (userList: User[]) => {
-//     setOnlineUsers(userList);
-//   };
-//   socket.on("onlineUsers", handleOnlineUsers);
-//   return () => socket.off("onlineUsers", handleOnlineUsers);
-// }, [socket]);
+    return () => {
+      socket.off("onlineUsers", handleOnline);
+      clearInterval(intervalId); // Clear interval on unmount
+    };
+  }, [socket, connectionStatus]);
 
 
   // Auto scroll to bottom
@@ -404,48 +404,52 @@ useEffect(() => {
       )
     }
   }, [socket, rooms, connectionStatus])
+
   const handleCreateRoom = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!roomName.trim() || !token) return;
-  setRoomCreating(true);
-  setRoomError(null);
+    e.preventDefault();
+    if (!roomName.trim() || !token) return;
+    setRoomCreating(true);
+    setRoomError(null);
 
-  try {
-    const response = await fetch(`${API_URL}/chats/rooms`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        name: roomName,
-        description: roomDescription,
-        type: roomType,
-        isPrivate: roomIsPrivate,
-      }),
-    });
+    try {
+      const response = await fetch(`${API_URL}/chats/rooms`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: roomName,
+          description: roomDescription,
+          type: roomType,
+          isPrivate: roomIsPrivate,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const newRoom = await response.json();
+      setRooms((prev) => [newRoom, ...prev]);
+      setActiveRoom(newRoom);
+      setShowCreateRoom(false);
+      setRoomName("");
+      setRoomDescription("");
+      setRoomType("general");
+      setRoomIsPrivate(false);
+    } catch (error: any) {
+      setRoomError(error.message || "Failed to create room");
+    } finally {
+      setRoomCreating(false);
     }
+  };
 
-    const newRoom = await response.json();
-    setRooms((prev) => [newRoom, ...prev]);
-    setActiveRoom(newRoom);
-    setShowCreateRoom(false);
-    setRoomName("");
-    setRoomDescription("");
-    setRoomType("general");
-    setRoomIsPrivate(false);
-  } catch (error: any) {
-    setRoomError(error.message || "Failed to create room");
-  } finally {
-    setRoomCreating(false);
-  }
-};
   const sendMessage = async () => {
-    if (!newMessage.trim() || !activeRoom || !token) return
+    if (!newMessage.trim() || !activeRoom || !token || isSendingMessage) return
 
+    setIsSendingMessage(true); // Disable button immediately
     console.log("📤 Sending message to room:", activeRoom.name)
     try {
       const response = await fetch(`${API_URL}/chats/rooms/${activeRoom._id}/messages`, {
@@ -458,7 +462,6 @@ useEffect(() => {
           content: newMessage,
           type: "text",
           replyTo: replyTo?._id,
-          // sender:user?._id,
         }),
       })
 
@@ -468,9 +471,13 @@ useEffect(() => {
         setReplyTo(null)
       } else {
         console.error("❌ Failed to send message:", response.status, response.statusText)
+        // Optionally show an error to the user
       }
     } catch (error) {
       console.error("❌ Error sending message:", error)
+      // Optionally show an error to the user
+    } finally {
+      setIsSendingMessage(false); // Re-enable button
     }
   }
 
@@ -485,7 +492,7 @@ useEffect(() => {
 
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("typing", { roomId: activeRoom._id, isTyping: false })
-    }, 1000)
+    }, 10000)
   }
 
   const searchUsers = async (query: string) => {
@@ -535,11 +542,15 @@ useEffect(() => {
   const getRoomIcon = (room: ChatRoom) => {
     switch (room.type) {
       case "private":
-        return <MessageCircle className="h-4 w-4" />
+        return <MessageCircle className="h-4 w-4 text-purple-400" />
       case "help":
-        return <Users className="h-4 w-4" />
+        return <Users className="h-4 w-4 text-blue-400" />
+      case "contest":
+        return <Code className="h-4 w-4 text-green-400" />
+      case "interview":
+        return <Users className="h-4 w-4 text-red-400" /> // Using Users for interview as well, or you can add a specific icon
       default:
-        return <Hash className="h-4 w-4" />
+        return <Hash className="h-4 w-4 text-gray-400" />
     }
   }
 
@@ -576,11 +587,11 @@ useEffect(() => {
   // ✅ Same check pattern as Discussion component
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 ">
-        <div className="text-center">
-          <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Please Login to Chat</h2>
-          <p className="text-gray-600 dark:text-gray-400">You need to be logged in to access the chat feature.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black p-4">
+        <div className="text-center bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-700">
+          <MessageCircle className="h-16 w-16 mx-auto mb-6 text-indigo-400" />
+          <h2 className="text-2xl font-semibold text-gray-100 mb-3">Please Login to Chat</h2>
+          <p className="text-gray-400 text-lg">You need to be logged in to access the chat feature.</p>
         </div>
       </div>
     )
@@ -588,88 +599,88 @@ useEffect(() => {
 
   // ✅ Additional check for token (same as Discussion would do)'
   useEffect(() => {
-  if (!token) {
-    const interval = setInterval(() => {
-      window.location.reload();
-    }, 2000);
-    return () => clearInterval(interval);
-  }
-}, [token]);
+    if (!token) {
+      const interval = setInterval(() => {
+        window.location.reload();
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [token]);
 
   if (!token) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
-        <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Authentication Required</h2>
-        <p className="text-gray-600 dark:text-gray-400">Please log in again to access the chat feature.</p>
-        <p className="text-red-600 dark:text-red-400 mt-2 text-sm">
-          Authentication token is missing. The page will auto-refresh to check authentication...
-        </p>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black p-4">
+        <div className="text-center bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-700">
+          <MessageCircle className="h-16 w-16 mx-auto mb-6 text-red-400" />
+          <h2 className="text-2xl font-semibold text-gray-100 mb-3">Authentication Required</h2>
+          <p className="text-gray-400 text-lg">Please log in again to access the chat feature.</p>
+          <p className="text-red-500 mt-4 text-sm font-mono">
+            Authentication token is missing. The page will auto-refresh to check authentication...
+          </p>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
 
   return (
     <div
       className={`${
         isMinimized ? "h-16" : "h-screen"
-      } bg-[url('/whatsapp-bg-light.jpg')] dark:bg-[url('/whatsapp-bg-dark.jpg')] bg-repeat bg-cover bg-fixed bg-white dark:bg-gray-900 flex transition-all duration-300`}
+      } bg-gray-950 flex transition-all duration-300 relative`}
       style={{ height: "calc(100vh - 64px)" }}
     >
       {/* Sidebar */}
       <div
-        className={`${isMinimized ? "w-0 overflow-hidden" : "w-80"} bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300`}
+        className={`${isMinimized ? "w-0 overflow-hidden opacity-0" : "w-80"} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300 opacity-100`}
       >
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-800">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Chat</h1>
+            <h1 className="text-2xl font-bold text-gray-100">DevChat</h1>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowUserSearch(!showUserSearch)}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded-lg transition-colors"
                 title="Start Private Chat"
               >
-                <UserPlus className="h-4 w-4" />
+                <UserPlus className="h-5 w-5" />
               </button>
               <button
                 onClick={() => setShowCreateRoom(!showCreateRoom)}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded-lg transition-colors"
                 title="Create Room"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5" />
               </button>
             </div>
           </div>
 
           {/* Connection Status */}
-          <div className="mb-4 p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+          <div className="mb-4 p-3 bg-gray-800 rounded-xl border border-gray-700 shadow-inner">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 {getConnectionStatusIcon()}
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span className="text-sm font-medium text-gray-200">
                   {getConnectionStatusText()}
                 </span>
               </div>
               {connectionStatus === "error" && (
                 <button
                   onClick={connectSocket}
-                  className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  className="text-xs px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow"
                 >
                   Retry
                 </button>
               )}
             </div>
-            {lastError && <div className="mt-1 text-xs text-red-600 dark:text-red-400">{lastError}</div>}
+            {lastError && <div className="mt-2 text-xs text-red-400">{lastError}</div>}
           </div>
 
           {/* User Search */}
           {showUserSearch && (
             <div className="mb-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <input
                   type="text"
                   placeholder="Search users..."
@@ -678,26 +689,29 @@ useEffect(() => {
                     setSearchQuery(e.target.value)
                     searchUsers(e.target.value)
                   }}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-800 text-gray-100 placeholder-gray-500"
                 />
               </div>
               {searchResults.length > 0 && (
-                <div className="mt-2 max-h-40 overflow-y-auto bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
+                <div className="mt-2 max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
                   {searchResults.map((searchUser) => (
                     <button
                       key={searchUser._id}
                       onClick={() => createPrivateChat(searchUser)}
-                      className="w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center space-x-3"
+                      className="w-full p-3 text-left hover:bg-gray-700 flex items-center space-x-3 border-b border-gray-700 last:border-b-0"
                     >
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                        {searchUser.username[0].toUpperCase()}
+                      <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-white text-base font-medium flex-shrink-0">
+                        {searchUser.username[0]?.toUpperCase()}
                       </div>
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{searchUser.username}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-100">{searchUser.username}</div>
+                        <div className="text-sm text-gray-400">
                           {searchUser.stats?.problemsSolved.total || 0} problems solved
                         </div>
                       </div>
+                      {searchUser.ratings?.globalRank && (
+                        <div className="text-xs text-gray-500">Rank: #{searchUser.ratings.globalRank}</div>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -706,145 +720,148 @@ useEffect(() => {
           )}
 
           {showCreateRoom && (
-  <div className="mb-4 p-4 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-    <form onSubmit={handleCreateRoom} className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Room Name</label>
-        <input
-          type="text"
-          value={roomName}
-          onChange={(e) => setRoomName(e.target.value)}
-          className="w-full mt-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          required
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Description</label>
-        <input
-          type="text"
-          value={roomDescription}
-          onChange={(e) => setRoomDescription(e.target.value)}
-          className="w-full mt-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Type</label>
-        <select
-          value={roomType}
-          onChange={(e) => setRoomType(e.target.value as ChatRoom["type"])}
-          className="w-full mt-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-        >
-          <option value="general">General</option>
-          <option value="help">Help</option>
-          <option value="contest">Contest</option>
-          <option value="interview">Interview</option>
-          <option value="private">Private</option>
-        </select>
-      </div>
-      {/* <div className="flex items-center"> */}
-        {/* <input
-          type="checkbox"
-          checked={roomIsPrivate}
-          onChange={(e) => setRoomIsPrivate(e.target.checked)}
-          id="privateRoom"
-          className="mr-2"
-        /> */}
-        {/* <label htmlFor="privateRoom" className="text-sm text-gray-700 dark:text-gray-200">Private Room</label> */}
-      {/* </div> */}
-      {roomError && <div className="text-xs text-red-600">{roomError}</div>}
-      <div className="flex space-x-2">
-        <button
-          type="submit"
-          disabled={roomCreating}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          {roomCreating ? "Creating..." : "Create Room"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowCreateRoom(false)}
-          className="px-4 py-2 bg-red-500 text-gray-700 rounded-lg hover:bg-red-300 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  </div>
-)}
+            <div className="mb-4 p-4 bg-gray-800 rounded-xl border border-gray-700 shadow-lg">
+              <form onSubmit={handleCreateRoom} className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-200 mb-1">Room Name</label>
+                  <input
+                    type="text"
+                    value={roomName}
+                    onChange={(e) => setRoomName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-900 text-gray-100 placeholder-gray-500 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="e.g., LeetCode Warriors"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-200 mb-1">Description</label>
+                  <input
+                    type="text"
+                    value={roomDescription}
+                    onChange={(e) => setRoomDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-900 text-gray-100 placeholder-gray-500 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Brief description of the room"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-200 mb-1">Type</label>
+                  <select
+                    value={roomType}
+                    onChange={(e) => setRoomType(e.target.value as ChatRoom["type"])}
+                    className="w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-900 text-gray-100 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="general">General</option>
+                    <option value="help">Help</option>
+                    <option value="contest">Contest</option>
+                    <option value="interview">Interview</option>
+                    <option value="private">Private</option>
+                  </select>
+                </div>
+                {roomError && <div className="text-xs text-red-400 mt-2">{roomError}</div>}
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={roomCreating}
+                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {roomCreating ? "Creating..." : "Create Room"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateRoom(false)}
+                    className="flex-1 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors shadow"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
-      <div className="flex flex-col h-full">
-        {/* Rooms List */}
-        <div className="flex-1 overflow-y-auto">
-          {rooms.map((room) => (
-            <button
-              key={room._id}
-              onClick={() => setActiveRoom(room)}
-              className={`w-full p-4 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 ${
-                activeRoom?._id === room._id ? "bg-blue-50 dark:bg-blue-900/20 border-r-2 border-r-blue-500" : ""
-              }`}
-            >
-              <div className="flex items-center space-x-3">
+        <div className="flex flex-col h-full">
+          {/* Rooms List */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {rooms.map((room) => (
+              <button
+                key={room._id}
+                onClick={() => setActiveRoom(room)}
+                className={`w-full p-4 text-left border-b border-gray-800 flex items-center space-x-3 transition-colors duration-200
+                ${activeRoom?._id === room._id ? "bg-indigo-900/30 border-l-4 border-indigo-500" : "hover:bg-gray-800"}`}
+              >
                 <div className="flex-shrink-0">{getRoomIcon(room)}</div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{room.name}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-2">
+                  <div className="font-medium text-gray-100 truncate">{room.name}</div>
+                  <div className="text-sm text-gray-400 flex items-center space-x-2 mt-1">
                     <span>{room.participants.length} members</span>
                     {room.messageCount > 0 && <span>• {room.messageCount} messages</span>}
                   </div>
                 </div>
-                {room.isPrivate && <Lock className="h-3 w-3 text-gray-400" />}
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Online Users */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Online ({onlineUsers.length})</h3>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {onlineUsers.slice(0, 5).map((onlineUser) => (
-              <div key={onlineUser._id} className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400 truncate">{onlineUser.username}</span>
-              </div>
+                {room.isPrivate && <Lock className="h-3 w-3 text-gray-500" />}
+              </button>
             ))}
           </div>
-        </div>
+
+          {/* Online Users */}
+          <div className="p-4 border-t border-gray-800 bg-gray-900">
+            <h3 className="text-sm font-semibold text-gray-200 mb-3 flex items-center space-x-2">
+              <Wifi className="h-4 w-4 text-green-500" />
+              <span>Online Users ({onlineUsers.length})</span>
+            </h3>
+            <div className="space-y-2 max-h-36 overflow-y-auto custom-scrollbar">
+              {onlineUsers.length > 0 ? (
+                onlineUsers.map((onlineUser) => (
+                  <div key={onlineUser._id} className="flex items-center space-x-3">
+                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></div>
+                    <span className="text-sm text-gray-300 truncate">{onlineUser.username}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No users online.</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 relative">
         {/* Chat Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="p-4 border-b border-gray-800 bg-gray-900 shadow-md z-10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => setIsMinimized(!isMinimized)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors lg:hidden"
+                className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded-lg transition-colors lg:hidden"
+                title={isMinimized ? "Maximize Chat" : "Minimize Chat"}
               >
-                {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+                {isMinimized ? <Maximize2 className="h-5 w-5" /> : <Minimize2 className="h-5 w-5" />}
               </button>
               {activeRoom && (
-                <>
+                <div className="flex items-center space-x-3">
                   {getRoomIcon(activeRoom)}
                   <div>
-                    <h2 className="font-semibold text-gray-900 dark:text-gray-100">{activeRoom.name}</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {activeRoom.participants.length} members
-                      {activeRoom.type === "private" && " • Private"}
+                    <h2 className="text-lg font-semibold text-gray-100">{activeRoom.name}</h2>
+                    <p className="text-sm text-gray-400 flex items-center space-x-1">
+                      <Users className="h-3 w-3" />
+                      <span>{activeRoom.participants.length} members</span>
+                      {activeRoom.type === "private" && (
+                        <>
+                          <Lock className="h-3 w-3 ml-2" />
+                          <span>Private Chat</span>
+                        </>
+                      )}
                     </p>
                   </div>
-                </>
+                </div>
               )}
             </div>
             <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 p-2 bg-gray-800 rounded-md">
                 {getConnectionStatusIcon()}
-                <span className="text-xs text-gray-500 dark:text-gray-400">{getConnectionStatusText()}</span>
+                <span className="text-xs text-gray-400 font-medium">{getConnectionStatusText()}</span>
               </div>
-              {/* <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                <Settings className="h-4 w-4" />
+              {/* <button className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded-lg transition-colors" title="Settings">
+                <Settings className="h-5 w-5" />
               </button> */}
             </div>
           </div>
@@ -853,124 +870,125 @@ useEffect(() => {
         {!isMinimized && (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 max-h-[calc(100vh-220px)] bg-transparent">
+            <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-gradient-to-br from-gray-950 to-gray-900">
               {messages.map((message) => (
-                <div key={message._id} className="group">
-                  {message.replyTo && (
-                    <div className="ml-12 mb-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-sm border-l-2 border-gray-300 dark:border-gray-600">
-                      <span className="font-medium text-gray-600 dark:text-gray-400">
-                        {message.replyTo.sender.username}:
-                      </span>
-                      <span className="ml-2 text-gray-500 dark:text-gray-400">{message.replyTo.content}</span>
+                <div key={message._id} className="group flex items-start space-x-3 animate-fade-in">
+                  {/* Profile photo or fallback */}
+                  {message.sender.profile?.avatar && !message.sender.profile.avatar.startsWith('default:') ? (
+                    <img
+                      src={message.sender.profile.avatar}
+                      alt={message.sender.username}
+                      className="w-9 h-9 rounded-full object-cover flex-shrink-0 border-2 border-indigo-500 shadow-md"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-white text-base font-medium flex-shrink-0 shadow-md">
+                      {message.sender.username[0]?.toUpperCase()}
                     </div>
                   )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="font-semibold text-gray-100 text-sm">{message.sender.username}</span>
+                      <span className="text-xs text-gray-500">
+                        {formatTime(message.createdAt)}
+                        {message.isEdited && <span className="ml-1">(edited)</span>}
+                      </span>
+                    </div>
 
-                  <div className="flex items-start space-x-3">
-                    {/* Profile photo or fallback */}
-                    {message.sender.profile?.avatar && !message.sender.profile.avatar.startsWith('default:') ? (
-                      <img
-                        src={message.sender.profile.avatar}
-                        alt={message.sender.username}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                        {message.sender.username[0].toUpperCase()}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{message.sender.username}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatTime(message.createdAt)}
-                          {message.isEdited && " (edited)"}
+                    {message.replyTo && (
+                      <div className="mb-2 pl-3 py-1 bg-gray-800 rounded-md border-l-4 border-indigo-600 text-sm italic text-gray-300">
+                        <span className="font-medium text-indigo-400 flex items-center">
+                          <CornerUpLeft className="h-3 w-3 mr-1" />
+                          Replying to {message.replyTo.sender.username}:
+                        </span>
+                        <span className="ml-4 block text-gray-400 text-xs truncate">
+                          {message.replyTo.content}
                         </span>
                       </div>
+                    )}
 
-                      <div
-                        className={`${message.type === "code" ? "bg-gray-100 dark:bg-gray-800 p-3 rounded-lg font-mono text-sm" : ""}`}
-                      >
-                        {message.type === "code" && message.language && (
-                          <div className="flex items-center space-x-2 mb-2 text-xs text-gray-500 dark:text-gray-400">
-                            <Code className="h-3 w-3" />
-                            <span>{message.language}</span>
-                          </div>
-                        )}
-                        <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
-                      </div>
-
-                      {/* Reactions */}
-                      {message.reactions.length > 0 && (
-                        <div className="flex items-center space-x-1 mt-2">
-                          {Object.entries(
-                            message.reactions.reduce(
-                              (acc, reaction) => {
-                                acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1
-                                return acc
-                              },
-                              {} as Record<string, number>,
-                            ),
-                          ).map(([emoji, count]) => (
-                            <button
-                              key={emoji}
-                              onClick={() => addReaction(message._id, emoji)}
-                              className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            >
-                              {emoji} {count}
-                            </button>
-                          ))}
+                    <div
+                      className={`
+                        p-3 rounded-lg shadow-sm max-w-xl break-words whitespace-pre-wrap
+                        ${message.sender._id === user._id
+                          ? "bg-indigo-700 text-white ml-auto rounded-br-none"
+                          : "bg-gray-800 text-gray-100 rounded-bl-none"
+                        }
+                        ${message.type === "code" ? "font-mono text-sm overflow-x-auto custom-scrollbar-horizontal" : ""}
+                      `}
+                    >
+                      {message.type === "code" && message.language && (
+                        <div className="flex items-center space-x-2 mb-2 text-xs text-gray-400">
+                          <Code className="h-3.5 w-3.5 text-orange-400" />
+                          <span className="font-semibold">{message.language}</span>
                         </div>
                       )}
+                      <p>{message.content}</p>
                     </div>
 
-                    {/* Message Actions */}
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1">
+                    {/* Reactions */}
+                    {message.reactions.length > 0 && (
+                      <div className="flex items-center space-x-1 mt-2">
+                        {Object.entries(
+                          message.reactions.reduce(
+                            (acc, reaction) => {
+                              acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1
+                              return acc
+                            },
+                            {} as Record<string, number>,
+                          ),
+                        ).map(([emoji, count]) => (
+                          <button
+                            key={emoji}
+                            onClick={() => addReaction(message._id, emoji)}
+                            className="px-2.5 py-1 bg-gray-700 rounded-full text-xs hover:bg-gray-600 transition-colors flex items-center space-x-1 text-gray-200 shadow-sm"
+                          >
+                            <span>{emoji}</span>
+                            <span className="font-medium">{count}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Message Actions */}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 ml-2 self-center">
+                    <button
+                      onClick={() => addReaction(message._id, "👍")}
+                      className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-full transition-colors"
+                      title="Thumbs Up"
+                      disabled={connectionStatus !== "connected"}
+                    >
+                      👍
+                    </button>
+                    <button
+                      onClick={() => setReplyTo(message)}
+                      className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-full transition-colors"
+                      title="Reply"
+                    >
+                      <Reply className="h-4 w-4" />
+                    </button>
+                    {/* {message.sender._id === user._id && (
                       <button
-                        onClick={() => addReaction(message._id, "👍")}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                        title="Thumbs Up"
-                        disabled={connectionStatus !== "connected"}
+                        onClick={() => setEditingMessage(message._id)}
+                        className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-800 rounded-full transition-colors"
+                        title="Edit"
                       >
-                        👍
+                        <Edit3 className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => setReplyTo(message)}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                        title="Reply"
-                      >
-                        <Reply className="h-4 w-4" />
-                      </button>
-                      {/* {message.sender._id === user._id && (
-                        <button
-                          onClick={() => setEditingMessage(message._id)}
-                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                          title="Edit"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                      )} */}
-                    </div>
+                    )} */}
                   </div>
                 </div>
               ))}
 
               {/* Typing Indicators */}
               {activeRoom && isTyping[activeRoom._id] && isTyping[activeRoom._id].length > 0 && (
-                <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center space-x-2 text-sm text-gray-400 mt-4 px-3 py-2 bg-gray-800 rounded-lg w-fit shadow-md">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.1s" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce-slow" style={{ animationDelay: "0s" }}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce-slow" style={{ animationDelay: "0.1s" }}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce-slow" style={{ animationDelay: "0.2s" }}></div>
                   </div>
-                  <span>
+                  <span className="font-medium">
                     {isTyping[activeRoom._id].map((u) => u.username).join(", ")}
                     {isTyping[activeRoom._id].length === 1 ? " is" : " are"} typing...
                   </span>
@@ -979,57 +997,67 @@ useEffect(() => {
 
               <div ref={messagesEndRef} />
             </div>
-            
+
             {/* Only show message input if user is a participant or it's a private room */}
             {activeRoom &&
               (activeRoom.isPrivate ||
                 activeRoom.participants.some((u) => u._id === user._id)) ? (
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <div className="p-4 border-t border-gray-800 bg-gray-900 shadow-lg relative z-10">
                 {replyTo && (
-                  <div className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-between">
+                  <div className="mb-3 p-3 bg-gray-800 rounded-lg flex items-center justify-between border-l-4 border-indigo-600 shadow-inner">
                     <div className="text-sm">
-                      <span className="font-medium text-gray-600 dark:text-gray-400">
-                        Replying to {replyTo.sender.username}:
+                      <span className="font-medium text-gray-200 flex items-center">
+                        <CornerUpLeft className="h-3.5 w-3.5 mr-2 text-indigo-400" />
+                        Replying to <span className="text-indigo-400 ml-1 mr-1">{replyTo.sender.username}</span>:
                       </span>
-                      <span className="ml-2 text-gray-500 dark:text-gray-400">
-                        {replyTo.content.substring(0, 50)}...
+                      <span className="ml-6 block text-gray-400 italic text-sm truncate">
+                        {replyTo.content.substring(0, 70)}
+                        {replyTo.content.length > 70 ? "..." : ""}
                       </span>
                     </div>
                     <button
                       onClick={() => setReplyTo(null)}
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="text-gray-500 hover:text-gray-300 transition-colors p-1 rounded-full"
+                      title="Cancel Reply"
                     >
-                      ×
+                      <Plus className="h-4 w-4 rotate-45" /> {/* Using Plus rotated for 'X' */}
                     </button>
                   </div>
                 )}
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <textarea
-                    ref={messageInputRef as React.RefObject<HTMLTextAreaElement>}
+                    ref={messageInputRef}
                     value={newMessage}
                     onChange={(e) => {
                       setNewMessage(e.target.value)
                       handleTyping()
                     }}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault(); // Prevent new line
+                        sendMessage();
+                      }
+                    }}
                     rows={1}
-                    // Allow Enter for new lines, only send on clicking Send
-                    placeholder={activeRoom ? `Message ${activeRoom.name}` : "Select a room to start chatting"}
-                    disabled={!activeRoom || connectionStatus !== "connected"}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50 resize-none"
+                    placeholder={activeRoom ? `Message ${activeRoom.name}...` : "Select a room to start chatting"}
+                    disabled={!activeRoom || connectionStatus !== "connected" || isSendingMessage}
+                    className="flex-1 px-4 py-2.5 border border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent bg-gray-800 text-gray-100 placeholder-gray-500 disabled:opacity-60 disabled:cursor-not-allowed resize-none custom-scrollbar"
+                    style={{ minHeight: '44px', maxHeight: '120px' }} // Adjusted height for textarea
                   />
                   <button
                     onClick={sendMessage}
-                    disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected"}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected" || isSendingMessage}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-700 text-white rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-lg flex items-center justify-center"
+                    title="Send Message"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className="h-5 w-5" />
                   </button>
                 </div>
 
                 {connectionStatus !== "connected" && (
-                  <div className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center">
-                    <AlertCircle className="h-3 w-3 mr-1" />
+                  <div className="mt-3 text-xs text-amber-500 flex items-center justify-center p-2 bg-gray-800 rounded-lg border border-gray-700">
+                    <AlertCircle className="h-3.5 w-3.5 mr-2" />
                     Chat is {connectionStatus}. Messages cannot be sent.
                   </div>
                 )}
@@ -1038,20 +1066,36 @@ useEffect(() => {
               // Show Join Room prompt if not a participant in a public room
               activeRoom &&
               !activeRoom.isPrivate && (
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center">
+                <div className="p-4 border-t border-gray-800 bg-gray-900 flex flex-col items-center justify-center h-full">
+                  <Info className="h-12 w-12 text-indigo-500 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-100 mb-2">You are not a member of this room.</h3>
+                  <p className="text-gray-400 mb-6 text-center max-w-md">
+                    Join this room to participate in the conversation and send messages.
+                  </p>
                   <button
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-lg font-medium text-lg"
                     onClick={async () => {
-                      await fetch(`${API_URL}/chats/rooms/${activeRoom._id}/join`, {
-                        method: "POST",
-                        headers: { Authorization: `Bearer ${token}` },
-                      });
-                      window.location.reload();
+                      try {
+                        const response = await fetch(`${API_URL}/chats/rooms/${activeRoom._id}/join`, {
+                          method: "POST",
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (response.ok) {
+                          // Consider a more robust way to update UI without full reload if backend supports it
+                          // For now, refreshing as requested.
+                          window.location.reload();
+                        } else {
+                          const errorData = await response.json();
+                          alert(`Failed to join room: ${errorData.message || response.statusText}`);
+                        }
+                      } catch (error) {
+                        console.error("Error joining room:", error);
+                        alert("An error occurred while trying to join the room.");
+                      }
                     }}
                   >
                     Join Room
                   </button>
-                  <p className="mt-2 text-gray-500">Join this room to send messages.</p>
                 </div>
               )
             )}
