@@ -145,6 +145,34 @@ const Interview: React.FC = () => {
   const finalTranscriptRef = useRef<string>("")
   const keepAliveRef = useRef<number | null>(null)
 
+  // Helper to handle API errors
+const handleApiError = (error: any, context: string) => {
+  let message = "An unexpected error occurred.";
+  if (error.response) {
+    const status = error.response.status;
+    if (status === 401) {
+      message = "Authentication failed. Please log in again.";
+      console.error(`[${context}] ❌ 401 Unauthorized: Token expired or invalid.`);
+    } else if (status === 403) {
+      message = "Access denied. Your API token may be exhausted or you lack permission.";
+      console.error(`[${context}] ❌ 403 Forbidden: API tokens may be used up, or Gemini API quota issue.`);
+    } else if (status >= 400 && status < 500) {
+      message = error.response.data?.message || "Client error. Please check your input or try again.";
+      console.error(`[${context}] ❌ ${status} Client Error: ${message}`);
+    } else if (status >= 500) {
+      message = "Server error. Please try again later.";
+      console.error(`[${context}] ❌ ${status} Server Error: Gemini API or backend issue.`);
+    }
+  } else if (error.request) {
+    message = "No response from server. Please check your internet connection.";
+    console.error(`[${context}] ❌ No response from server.`);
+  } else {
+    message = error.message || "Unknown error.";
+    console.error(`[${context}] ❌ Error: ${message}`);
+  }
+  setRecognitionError(message);
+}
+
   // Text-to-speech function
   const speakText = (text: string) => {
     if (!("speechSynthesis" in window)) return
@@ -264,6 +292,8 @@ const Interview: React.FC = () => {
       }
     }
   }
+
+  
 
   useEffect(() => {
     return () => {
@@ -711,7 +741,7 @@ const Interview: React.FC = () => {
       console.error("❌ Error starting interview:", error)
       console.error("❌ Error response:", error.response?.data)
       console.error("❌ Error status:", error.response?.status)
-      
+      handleApiError(error, "Start Interview");
       if (error.response?.status === 401) {
         setRecognitionError("Authentication failed. Please log in again.");
       } else {
@@ -791,7 +821,8 @@ const Interview: React.FC = () => {
     } catch (error: any) {
       console.error("❌ Error submitting answer:", error)
       console.error("❌ Error response:", error.response?.data)
-      
+      handleApiError(error, "Next Question");
+      setIsListening(false);
       if (error.response?.status === 401) {
         setRecognitionError("Authentication failed. Please log in again.");
       } else {
@@ -864,7 +895,8 @@ const Interview: React.FC = () => {
       console.log("✅ Final report generated:", response.data)
       setFinalReport(response.data)
     } catch (error: any) {
-      console.error("❌ Error generating report:", error)
+      console.error("❌ Error generating report:", error);
+      handleApiError(error, "Generate Report");
       if (error.response?.status === 401) {
         setRecognitionError("Authentication failed. Please log in again.");
       }
