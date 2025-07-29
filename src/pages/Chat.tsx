@@ -98,7 +98,6 @@ const Chat: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [replyTo, setReplyTo] = useState<Message | null>(null)
-  const [editingMessage, setEditingMessage] = useState<string | null>(null) // This state is not used in your current logic but kept for consistency
   const [showCreateRoom, setShowCreateRoom] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [reconnectAttempts, setReconnectAttempts] = useState(0)
@@ -249,7 +248,7 @@ const Chat: React.FC = () => {
     })
 
     return newSocket
-  }, [token, user, activeRoom])
+  }, [token, user, activeRoom, reconnectAttempts])
 
   // Reconnection logic
   const attemptReconnection = useCallback(() => {
@@ -534,9 +533,12 @@ const Chat: React.FC = () => {
     }
   }
 
+  // Format time and date together
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    const date = new Date(dateString);
+    const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const day = date.toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
+    return `${day} ${time}`;
   }
 
   const getRoomIcon = (room: ChatRoom) => {
@@ -584,29 +586,6 @@ const Chat: React.FC = () => {
     }
   }
 
-  // ✅ Same check pattern as Discussion component
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black p-4">
-        <div className="text-center bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-700">
-          <MessageCircle className="h-16 w-16 mx-auto mb-6 text-indigo-400" />
-          <h2 className="text-2xl font-semibold text-gray-100 mb-3">Please Login to Chat</h2>
-          <p className="text-gray-400 text-lg">You need to be logged in to access the chat feature.</p>
-        </div>
-      </div>
-    )
-  }
-
-  // ✅ Additional check for token (same as Discussion would do)'
-  useEffect(() => {
-    if (!token) {
-      const interval = setInterval(() => {
-        window.location.reload();
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [token]);
-
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black p-4">
@@ -615,7 +594,7 @@ const Chat: React.FC = () => {
           <h2 className="text-2xl font-semibold text-gray-100 mb-3">Authentication Required</h2>
           <p className="text-gray-400 text-lg">Please log in again to access the chat feature.</p>
           <p className="text-red-500 mt-4 text-sm font-mono">
-            Authentication token is missing. The page will auto-refresh to check authentication...
+            Authentication token is missing. Please log in again.
           </p>
         </div>
       </div>
@@ -624,14 +603,22 @@ const Chat: React.FC = () => {
 
   return (
     <div
-      className={`${
-        isMinimized ? "h-16" : "h-screen"
-      } bg-gray-950 flex transition-all duration-300 relative`}
+      className={`${isMinimized ? "h-16" : "h-screen"} bg-gray-950 flex transition-all duration-300 relative`}
       style={{ height: "calc(100vh - 64px)" }}
     >
+      {/* Floating button to toggle the sidebar */}
+      <button
+        onClick={() => setIsMinimized(!isMinimized)}
+        className="fixed top-6 left-6 z-30 p-2 bg-gray-800 text-gray-300 rounded-lg shadow-lg hover:bg-indigo-600 hover:text-white transition-colors"
+        title={isMinimized ? "Show Rooms Sidebar" : "Hide Rooms Sidebar"}
+      >
+        {isMinimized ? <Maximize2 className="h-5 w-5" /> : <Minimize2 className="h-5 w-5" />}
+      </button>
+
       {/* Sidebar */}
       <div
         className={`${isMinimized ? "w-0 overflow-hidden opacity-0" : "w-80"} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300 opacity-100`}
+        style={{ minWidth: isMinimized ? 0 : 320 }}
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-800">
@@ -693,7 +680,7 @@ const Chat: React.FC = () => {
                 />
               </div>
               {searchResults.length > 0 && (
-                <div className="mt-2 max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
+                <div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
                   {searchResults.map((searchUser) => (
                     <button
                       key={searchUser._id}
@@ -871,114 +858,125 @@ const Chat: React.FC = () => {
           <>
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-gradient-to-br from-gray-950 to-gray-900">
-              {messages.map((message) => (
-                <div key={message._id} className="group flex items-start space-x-3 animate-fade-in">
-                  {/* Profile photo or fallback */}
-                  {message.sender.profile?.avatar && !message.sender.profile.avatar.startsWith('default:') ? (
-                    <img
-                      src={message.sender.profile.avatar}
-                      alt={message.sender.username}
-                      className="w-9 h-9 rounded-full object-cover flex-shrink-0 border-2 border-indigo-500 shadow-md"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-white text-base font-medium flex-shrink-0 shadow-md">
-                      {message.sender.username[0]?.toUpperCase()}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="font-semibold text-gray-100 text-sm">{message.sender.username}</span>
-                      <span className="text-xs text-gray-500">
-                        {formatTime(message.createdAt)}
-                        {message.isEdited && <span className="ml-1">(edited)</span>}
-                      </span>
-                    </div>
-
-                    {message.replyTo && (
-                      <div className="mb-2 pl-3 py-1 bg-gray-800 rounded-md border-l-4 border-indigo-600 text-sm italic text-gray-300">
-                        <span className="font-medium text-indigo-400 flex items-center">
-                          <CornerUpLeft className="h-3 w-3 mr-1" />
-                          Replying to {message.replyTo.sender.username}:
-                        </span>
-                        <span className="ml-4 block text-gray-400 text-xs truncate">
-                          {message.replyTo.content}
-                        </span>
+              {messages.map((message) => {
+                const isMe = message.sender._id === user._id;
+                return (
+                  <div
+                    key={message._id}
+                    className={`group flex items-start space-x-3 animate-fade-in ${isMe ? "flex-row-reverse" : ""}`}
+                    style={isMe ? { justifyContent: "flex-end" } : {}}
+                  >
+                    {/* Profile photo or fallback */}
+                    {message.sender.profile?.avatar && !message.sender.profile.avatar.startsWith('default:') ? (
+                      <img
+                        src={message.sender.profile.avatar}
+                        alt={message.sender.username}
+                        className={`w-9 h-9 rounded-full object-cover flex-shrink-0 border-2 border-indigo-500 shadow-md ${isMe ? "ml-3" : "mr-3"}`}
+                      />
+                    ) : (
+                      <div className={`w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-white text-base font-medium flex-shrink-0 shadow-md ${isMe ? "ml-3" : "mr-3"}`}>
+                        {message.sender.username[0]?.toUpperCase()}
                       </div>
                     )}
+                    <div className="flex-1 min-w-0">
+                      <div className={`flex items-center space-x-2 mb-1 ${isMe ? "justify-end" : ""}`}>
+                        {isMe ? (
+                          <>
+                            <span className="text-xs text-gray-500">
+                              {formatTime(message.createdAt)}
+                              {message.isEdited && <span className="ml-1">(edited)</span>}
+                            </span>
+                            <span className="font-semibold text-gray-100 text-sm ml-2">{message.sender.username}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-semibold text-gray-100 text-sm">{message.sender.username}</span>
+                            <span className="text-xs text-gray-500">
+                              {formatTime(message.createdAt)}
+                              {message.isEdited && <span className="ml-1">(edited)</span>}
+                            </span>
+                          </>
+                        )}
+                      </div>
 
-                    <div
-                      className={`
-                        p-3 rounded-lg shadow-sm max-w-xl break-words whitespace-pre-wrap
-                        ${message.sender._id === user._id
-                          ? "bg-indigo-700 text-white ml-auto rounded-br-none"
-                          : "bg-gray-800 text-gray-100 rounded-bl-none"
-                        }
-                        ${message.type === "code" ? "font-mono text-sm overflow-x-auto custom-scrollbar-horizontal" : ""}
-                      `}
-                    >
-                      {message.type === "code" && message.language && (
-                        <div className="flex items-center space-x-2 mb-2 text-xs text-gray-400">
-                          <Code className="h-3.5 w-3.5 text-orange-400" />
-                          <span className="font-semibold">{message.language}</span>
+                      {message.replyTo && (
+                        <div className="mb-2 pl-3 py-1 bg-gray-800 rounded-md border-l-4 border-indigo-600 text-sm italic text-gray-300">
+                          <span className="font-medium text-indigo-400 flex items-center">
+                            <CornerUpLeft className="h-3 w-3 mr-1" />
+                            Replying to {message.replyTo.sender.username}:
+                          </span>
+                          <span className="ml-4 block text-gray-400 text-xs truncate">
+                            {message.replyTo.content}
+                          </span>
                         </div>
                       )}
-                      <p>{message.content}</p>
+
+                      <div
+                        className={`
+                          p-3 rounded-lg shadow-sm max-w-xl break-words whitespace-pre-wrap
+                          ${isMe
+                            ? "bg-indigo-700 text-white ml-auto rounded-br-none"
+                            : "bg-gray-800 text-gray-100 rounded-bl-none"
+                          }
+                          ${message.type === "code" ? "font-mono text-sm overflow-x-auto custom-scrollbar-horizontal" : ""}
+                        `}
+                        style={isMe ? { marginLeft: "auto" } : {}}
+                      >
+                        {message.type === "code" && message.language && (
+                          <div className="flex items-center space-x-2 mb-2 text-xs text-gray-400">
+                            <Code className="h-3.5 w-3.5 text-orange-400" />
+                            <span className="font-semibold">{message.language}</span>
+                          </div>
+                        )}
+                        <p>{message.content}</p>
+                      </div>
+
+                      {/* Reactions */}
+                      {message.reactions.length > 0 && (
+                        <div className={`flex items-center space-x-1 mt-2 ${isMe ? "justify-end" : ""}`}>
+                          {Object.entries(
+                            message.reactions.reduce(
+                              (acc, reaction) => {
+                                acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1
+                                return acc
+                              },
+                              {} as Record<string, number>,
+                            ),
+                          ).map(([emoji, count]) => (
+                            <button
+                              key={emoji}
+                              onClick={() => addReaction(message._id, emoji)}
+                              className="px-2.5 py-1 bg-gray-700 rounded-full text-xs hover:bg-gray-600 transition-colors flex items-center space-x-1 text-gray-200 shadow-sm"
+                            >
+                              <span>{emoji}</span>
+                              <span className="font-medium">{count}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    {/* Reactions */}
-                    {message.reactions.length > 0 && (
-                      <div className="flex items-center space-x-1 mt-2">
-                        {Object.entries(
-                          message.reactions.reduce(
-                            (acc, reaction) => {
-                              acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1
-                              return acc
-                            },
-                            {} as Record<string, number>,
-                          ),
-                        ).map(([emoji, count]) => (
-                          <button
-                            key={emoji}
-                            onClick={() => addReaction(message._id, emoji)}
-                            className="px-2.5 py-1 bg-gray-700 rounded-full text-xs hover:bg-gray-600 transition-colors flex items-center space-x-1 text-gray-200 shadow-sm"
-                          >
-                            <span>{emoji}</span>
-                            <span className="font-medium">{count}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Message Actions */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 ml-2 self-center">
-                    <button
-                      onClick={() => addReaction(message._id, "👍")}
-                      className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-full transition-colors"
-                      title="Thumbs Up"
-                      disabled={connectionStatus !== "connected"}
-                    >
-                      👍
-                    </button>
-                    <button
-                      onClick={() => setReplyTo(message)}
-                      className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-full transition-colors"
-                      title="Reply"
-                    >
-                      <Reply className="h-4 w-4" />
-                    </button>
-                    {/* {message.sender._id === user._id && (
+                    {/* Message Actions */}
+                    <div className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 ml-2 self-center ${isMe ? "justify-end" : ""}`}>
                       <button
-                        onClick={() => setEditingMessage(message._id)}
-                        className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-800 rounded-full transition-colors"
-                        title="Edit"
+                        onClick={() => addReaction(message._id, "👍")}
+                        className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-full transition-colors"
+                        title="Thumbs Up"
+                        disabled={connectionStatus !== "connected"}
                       >
-                        <Edit3 className="h-4 w-4" />
+                        👍
                       </button>
-                    )} */}
+                      <button
+                        onClick={() => setReplyTo(message)}
+                        className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-full transition-colors"
+                        title="Reply"
+                      >
+                        <Reply className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Typing Indicators */}
               {activeRoom && isTyping[activeRoom._id] && isTyping[activeRoom._id].length > 0 && (
