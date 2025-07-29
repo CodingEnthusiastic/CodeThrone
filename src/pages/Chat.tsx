@@ -6,6 +6,8 @@ import { useAuth } from "../contexts/AuthContext"
 import { io, type Socket } from "socket.io-client"
 import { SOCKET_URL } from "../config/api"
 
+import { useTheme } from "../contexts/ThemeContext"
+
 import {
   Send,
   Users,
@@ -83,6 +85,7 @@ interface Message {
 
 const Chat: React.FC = () => {
   const { user, token } = useAuth() // ✅ Get token from auth context (same as Discussion)
+  const { isDark } = useTheme();
 
   const [socket, setSocket] = useState<Socket | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected" | "error">(
@@ -601,9 +604,11 @@ const Chat: React.FC = () => {
     )
   }
 
+  // Use isDark from ThemeContext (navbar)
+
   return (
     <div
-      className={`${isMinimized ? "h-16" : "h-screen"} bg-gray-950 flex transition-all duration-300 relative`}
+      className={`${isMinimized ? "h-16" : "h-screen"} ${isDark ? "bg-gray-950 text-gray-100" : "bg-white text-gray-800"} flex transition-all duration-300 relative`}
       style={{ height: "calc(100vh - 64px)" }}
     >
       {/* Floating button to toggle the sidebar */}
@@ -617,24 +622,24 @@ const Chat: React.FC = () => {
 
       {/* Sidebar */}
       <div
-        className={`${isMinimized ? "w-0 overflow-hidden opacity-0" : "w-80"} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300 opacity-100`}
+        className={`${isMinimized ? "w-0 overflow-hidden opacity-0" : "w-80"} ${isDark ? "bg-gray-900 border-gray-800 text-gray-100" : "bg-gray-100 border-gray-300 text-gray-900"} flex flex-col transition-all duration-300 opacity-100`}
         style={{ minWidth: isMinimized ? 0 : 320 }}
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-800">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-100">DevChat</h1>
+            <h1 className={`text-2xl font-bold ${isDark ? "text-gray-100" : "text-gradient bg-gradient-to-r from-indigo-600 via-blue-500 to-purple-500 bg-clip-text text-transparent"}`}>DevChat</h1>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowUserSearch(!showUserSearch)}
-                className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded-lg transition-colors"
+                className={`p-2 text-gray-400 hover:text-indigo-400 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800' : 'hover:bg-orange-100'}`}
                 title="Start Private Chat"
               >
                 <UserPlus className="h-5 w-5" />
               </button>
               <button
                 onClick={() => setShowCreateRoom(!showCreateRoom)}
-                className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded-lg transition-colors"
+                className={`p-2 text-gray-400 hover:text-indigo-400 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800' : 'hover:bg-orange-100'}`}
                 title="Create Room"
               >
                 <Plus className="h-5 w-5" />
@@ -643,11 +648,11 @@ const Chat: React.FC = () => {
           </div>
 
           {/* Connection Status */}
-          <div className="mb-4 p-3 bg-gray-800 rounded-xl border border-gray-700 shadow-inner">
+          <div className={`mb-4 p-3 rounded-xl border shadow-inner ${isDark ? "bg-gray-800 border-gray-700" : connectionStatus === "connected" ? "bg-red-100 border-red-300" : "bg-gray-100 border-gray-300"}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 {getConnectionStatusIcon()}
-                <span className="text-sm font-medium text-gray-200">
+                <span className={`text-sm font-medium ${isDark ? "text-gray-200" : connectionStatus === "connected" ? "text-red-700" : "text-gray-800"}`}>
                   {getConnectionStatusText()}
                 </span>
               </div>
@@ -773,12 +778,19 @@ const Chat: React.FC = () => {
                 key={room._id}
                 onClick={() => setActiveRoom(room)}
                 className={`w-full p-4 text-left border-b border-gray-800 flex items-center space-x-3 transition-colors duration-200
-                ${activeRoom?._id === room._id ? "bg-indigo-900/30 border-l-4 border-indigo-500" : "hover:bg-gray-800"}`}
+                  ${isDark
+                    ? activeRoom?._id === room._id
+                      ? "bg-indigo-900/30 border-l-4 border-indigo-500"
+                      : "hover:bg-gray-800"
+                    : activeRoom?._id === room._id
+                      ? "bg-blue-100 border-l-4 border-blue-500"
+                      : "hover:bg-blue-50 hover:border-l-4 hover:border-blue-300"
+                  }`}
               >
                 <div className="flex-shrink-0">{getRoomIcon(room)}</div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-100 truncate">{room.name}</div>
-                  <div className="text-sm text-gray-400 flex items-center space-x-2 mt-1">
+                  <div className={`font-medium truncate ${isDark ? "text-gray-100" : "text-gray-900"}`}>{room.name}</div>
+                  <div className={`text-sm flex items-center space-x-2 mt-1 ${isDark ? "text-gray-400" : "text-blue-700 font-semibold"}`}>
                     <span>{room.participants.length} members</span>
                     {room.messageCount > 0 && <span>• {room.messageCount} messages</span>}
                   </div>
@@ -788,32 +800,32 @@ const Chat: React.FC = () => {
             ))}
           </div>
 
-          {/* Online Users */}
-          <div className="p-4 border-t border-gray-800 bg-gray-900">
-            <h3 className="text-sm font-semibold text-gray-200 mb-3 flex items-center space-x-2">
-              <Wifi className="h-4 w-4 text-green-500" />
-              <span>Online Users ({onlineUsers.length})</span>
-            </h3>
-            <div className="space-y-2 max-h-36 overflow-y-auto custom-scrollbar">
-              {onlineUsers.length > 0 ? (
-                onlineUsers.map((onlineUser) => (
-                  <div key={onlineUser._id} className="flex items-center space-x-3">
-                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></div>
-                    <span className="text-sm text-gray-300 truncate">{onlineUser.username}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500">No users online.</p>
-              )}
-            </div>
-          </div>
+      {/* Online Users */}
+      <div className={`p-4 border-t border-gray-800 ${isDark ? "bg-gray-900" : "bg-blue-100"}`}>
+        <h3 className={`text-sm font-semibold mb-3 flex items-center space-x-2 ${isDark ? "text-gray-200" : "text-black"}`}>
+          <Wifi className="h-4 w-4 text-green-500" />
+          <span>Online Users ({onlineUsers.length})</span>
+        </h3>
+        <div className="space-y-2 max-h-36 overflow-y-auto custom-scrollbar">
+          {onlineUsers.length > 0 ? (
+            onlineUsers.map((onlineUser) => (
+              <div key={onlineUser._id} className="flex items-center space-x-3">
+                <div className="w-2.5 h-2.5 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></div>
+                <span className={`text-sm truncate ${isDark ? "text-gray-300" : "text-black"}`}>{onlineUser.username}</span>
+              </div>
+            ))
+          ) : (
+            <p className={`text-sm ${isDark ? "text-gray-500" : "text-black"}`}>No users online.</p>
+          )}
+        </div>
+      </div>
         </div>
       </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-h-0 relative">
         {/* Chat Header */}
-        <div className="p-4 border-b border-gray-800 bg-gray-900 shadow-md z-10">
+        <div className={`p-4 border-b ${isDark ? "border-gray-800 bg-gray-900" : "border-gray-300 bg-gray-100"} shadow-md z-10`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
@@ -827,8 +839,8 @@ const Chat: React.FC = () => {
                 <div className="flex items-center space-x-3">
                   {getRoomIcon(activeRoom)}
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-100">{activeRoom.name}</h2>
-                    <p className="text-sm text-gray-400 flex items-center space-x-1">
+                    <h2 className={`text-lg font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}>{activeRoom.name}</h2>
+                    <p className={`text-sm flex items-center space-x-1 ${isDark ? "text-gray-400" : "text-blue-700 font-semibold"}`}>
                       <Users className="h-3 w-3" />
                       <span>{activeRoom.participants.length} members</span>
                       {activeRoom.type === "private" && (
@@ -843,9 +855,9 @@ const Chat: React.FC = () => {
               )}
             </div>
             <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-1 p-2 bg-gray-800 rounded-md">
+              <div className={`flex items-center space-x-1 p-2 rounded-md ${isDark ? "bg-gray-800" : connectionStatus === "connected" ? "bg-cyan-200" : "bg-gray-800"}`}>
                 {getConnectionStatusIcon()}
-                <span className="text-xs text-gray-400 font-medium">{getConnectionStatusText()}</span>
+                <span className={`text-xs font-bold tracking-wide ${isDark ? "text-gray-200" : "text-red-700"}`}>{getConnectionStatusText()}</span>
               </div>
               {/* <button className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded-lg transition-colors" title="Settings">
                 <Settings className="h-5 w-5" />
@@ -857,7 +869,7 @@ const Chat: React.FC = () => {
         {!isMinimized && (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-gradient-to-br from-gray-950 to-gray-900">
+            <div className={`flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar ${isDark ? "bg-gradient-to-br from-gray-950 to-gray-900" : "bg-gray-50"}`}>
               {messages.map((message) => {
                 const isMe = message.sender._id === user._id;
                 return (
@@ -882,16 +894,16 @@ const Chat: React.FC = () => {
                       <div className={`flex items-center space-x-2 mb-1 ${isMe ? "justify-end" : ""}`}>
                         {isMe ? (
                           <>
-                            <span className="text-xs text-gray-500">
+                            <span className={`text-xs ${isDark ? "text-gray-400" : "text-blue-700"}`}>
                               {formatTime(message.createdAt)}
                               {message.isEdited && <span className="ml-1">(edited)</span>}
                             </span>
-                            <span className="font-semibold text-gray-100 text-sm ml-2">{message.sender.username}</span>
+                            <span className={`font-semibold text-sm ml-2 ${isDark ? "text-blue-200" : "text-blue-900"}`}>{message.sender.username}</span>
                           </>
                         ) : (
                           <>
-                            <span className="font-semibold text-gray-100 text-sm">{message.sender.username}</span>
-                            <span className="text-xs text-gray-500">
+                            <span className={`font-semibold text-sm ${isDark ? "text-blue-200" : "text-blue-900"}`}>{message.sender.username}</span>
+                            <span className={`text-xs ${isDark ? "text-gray-400" : "text-blue-700"}`}>
                               {formatTime(message.createdAt)}
                               {message.isEdited && <span className="ml-1">(edited)</span>}
                             </span>
@@ -900,12 +912,12 @@ const Chat: React.FC = () => {
                       </div>
 
                       {message.replyTo && (
-                        <div className="mb-2 pl-3 py-1 bg-gray-800 rounded-md border-l-4 border-indigo-600 text-sm italic text-gray-300">
+                        <div className={`mb-2 pl-3 py-1 ${isDark ? "bg-gray-800 text-gray-300" : "bg-blue-100 text-blue-900"} rounded-md border-l-4 border-indigo-600 text-sm italic`}>
                           <span className="font-medium text-indigo-400 flex items-center">
                             <CornerUpLeft className="h-3 w-3 mr-1" />
                             Replying to {message.replyTo.sender.username}:
                           </span>
-                          <span className="ml-4 block text-gray-400 text-xs truncate">
+                          <span className={`ml-4 block text-xs truncate ${isDark ? "text-gray-400" : "text-blue-700"}`}>
                             {message.replyTo.content}
                           </span>
                         </div>
@@ -915,8 +927,12 @@ const Chat: React.FC = () => {
                         className={`
                           p-3 rounded-lg shadow-sm max-w-xl break-words whitespace-pre-wrap
                           ${isMe
-                            ? "bg-indigo-700 text-white ml-auto rounded-br-none"
-                            : "bg-gray-800 text-gray-100 rounded-bl-none"
+                            ? isDark
+                              ? "bg-indigo-700 text-white ml-auto rounded-br-none"
+                              : "bg-blue-100 text-blue-900 ml-auto rounded-br-none"
+                            : isDark
+                              ? "bg-gray-800 text-gray-100 rounded-bl-none"
+                              : "bg-gray-200 text-blue-900 rounded-bl-none"
                           }
                           ${message.type === "code" ? "font-mono text-sm overflow-x-auto custom-scrollbar-horizontal" : ""}
                         `}
@@ -1000,7 +1016,7 @@ const Chat: React.FC = () => {
             {activeRoom &&
               (activeRoom.isPrivate ||
                 activeRoom.participants.some((u) => u._id === user._id)) ? (
-              <div className="p-4 border-t border-gray-800 bg-gray-900 shadow-lg relative z-10">
+              <div className={`p-4 border-t border-gray-800 shadow-lg relative z-10 ${isDark ? "bg-gray-900" : "bg-blue-100"}`}>
                 {replyTo && (
                   <div className="mb-3 p-3 bg-gray-800 rounded-lg flex items-center justify-between border-l-4 border-indigo-600 shadow-inner">
                     <div className="text-sm">
@@ -1024,25 +1040,25 @@ const Chat: React.FC = () => {
                 )}
 
                 <div className="flex items-center space-x-3">
-                  <textarea
-                    ref={messageInputRef}
-                    value={newMessage}
-                    onChange={(e) => {
-                      setNewMessage(e.target.value)
-                      handleTyping()
-                    }}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault(); // Prevent new line
-                        sendMessage();
-                      }
-                    }}
-                    rows={1}
-                    placeholder={activeRoom ? `Message ${activeRoom.name}...` : "Select a room to start chatting"}
-                    disabled={!activeRoom || connectionStatus !== "connected" || isSendingMessage}
-                    className="flex-1 px-4 py-2.5 border border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent bg-gray-800 text-gray-100 placeholder-gray-500 disabled:opacity-60 disabled:cursor-not-allowed resize-none custom-scrollbar"
-                    style={{ minHeight: '44px', maxHeight: '120px' }} // Adjusted height for textarea
-                  />
+                    <textarea
+                      ref={messageInputRef}
+                      value={newMessage}
+                      onChange={(e) => {
+                        setNewMessage(e.target.value)
+                        handleTyping()
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault(); // Prevent new line
+                          sendMessage();
+                        }
+                      }}
+                      rows={1}
+                      placeholder={activeRoom ? `Message ${activeRoom.name}...` : "Select a room to start chatting"}
+                      disabled={!activeRoom || connectionStatus !== "connected" || isSendingMessage}
+                      className={`flex-1 px-4 py-2.5 border border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent resize-none custom-scrollbar disabled:opacity-60 disabled:cursor-not-allowed ${isDark ? "bg-gray-800 text-gray-100 placeholder-gray-500" : "bg-blue-50 text-black placeholder-gray-500"}`}
+                      style={{ minHeight: '44px', maxHeight: '120px' }} // Adjusted height for textarea
+                    />
                   <button
                     onClick={sendMessage}
                     disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected" || isSendingMessage}
