@@ -670,7 +670,7 @@ const Chat: React.FC = () => {
 
           {/* User Search */}
           {showUserSearch && (
-            <div className="mb-4">
+            <div className={`mb-4 ${isDark ? '' : 'bg-orange-100 text-black rounded-xl p-4 border border-orange-200 shadow-lg'}`}> 
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <input
@@ -681,28 +681,26 @@ const Chat: React.FC = () => {
                     setSearchQuery(e.target.value)
                     searchUsers(e.target.value)
                   }}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-800 text-gray-100 placeholder-gray-500"
+                  className={`w-full pl-10 pr-4 py-2 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${isDark ? 'bg-gray-800 text-gray-100 placeholder-gray-500' : 'bg-orange-100 text-black placeholder-gray-500'}`}
                 />
               </div>
               {searchResults.length > 0 && (
-                <div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
+                <div className={`mt-2 max-h-48 overflow-y-auto custom-scrollbar rounded-lg shadow-lg ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-green-300 border border-green-500'}`}>
                   {searchResults.map((searchUser) => (
                     <button
                       key={searchUser._id}
                       onClick={() => createPrivateChat(searchUser)}
-                      className="w-full p-3 text-left hover:bg-gray-700 flex items-center space-x-3 border-b border-gray-700 last:border-b-0"
+                      className={`w-full p-3 text-left flex items-center space-x-3 border-b last:border-b-0 ${isDark ? 'hover:bg-gray-700 border-gray-700' : 'hover:bg-green-300 border-green-500'}`}
                     >
                       <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-white text-base font-medium flex-shrink-0">
                         {searchUser.username[0]?.toUpperCase()}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium text-gray-100">{searchUser.username}</div>
-                        <div className="text-sm text-gray-400">
-                          {searchUser.stats?.problemsSolved.total || 0} problems solved
-                        </div>
+                        <div className={`font-medium ${isDark ? 'text-gray-100' : 'text-black'}`}>{searchUser.username}</div>
+                        <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-black'}`}>{searchUser.stats?.problemsSolved.total || 0} problems solved</div>
                       </div>
                       {searchUser.ratings?.globalRank && (
-                        <div className="text-xs text-gray-500">Rank: #{searchUser.ratings.globalRank}</div>
+                        <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-black'}`}>Rank: #{searchUser.ratings.globalRank}</div>
                       )}
                     </button>
                   ))}
@@ -712,35 +710,35 @@ const Chat: React.FC = () => {
           )}
 
           {showCreateRoom && (
-            <div className="mb-4 p-4 bg-gray-800 rounded-xl border border-gray-700 shadow-lg">
+            <div className={`mb-4 p-4 rounded-xl shadow-lg ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-orange-100 text-black border border-orange-200'}`}> 
               <form onSubmit={handleCreateRoom} className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-1">Room Name</label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-200' : 'text-black'}`}>Room Name</label>
                   <input
                     type="text"
                     value={roomName}
                     onChange={(e) => setRoomName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-900 text-gray-100 placeholder-gray-500 focus:ring-indigo-500 focus:border-indigo-500"
+                    className={`w-full px-3 py-2 border border-gray-700 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 ${isDark ? 'bg-gray-900 text-gray-100 placeholder-gray-500' : 'bg-orange-50 text-black placeholder-gray-500'}`}
                     placeholder="e.g., LeetCode Warriors"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-1">Description</label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-200' : 'text-black'}`}>Description</label>
                   <input
                     type="text"
                     value={roomDescription}
                     onChange={(e) => setRoomDescription(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-900 text-gray-100 placeholder-gray-500 focus:ring-indigo-500 focus:border-indigo-500"
+                    className={`w-full px-3 py-2 border border-gray-700 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 ${isDark ? 'bg-gray-900 text-gray-100 placeholder-gray-500' : 'bg-orange-50 text-black placeholder-gray-500'}`}
                     placeholder="Brief description of the room"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-1">Type</label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-200' : 'text-black'}`}>Type</label>
                   <select
                     value={roomType}
                     onChange={(e) => setRoomType(e.target.value as ChatRoom["type"])}
-                    className="w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-900 text-gray-100 focus:ring-indigo-500 focus:border-indigo-500"
+                    className={`w-full px-3 py-2 border border-gray-700 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-orange-50 text-black'}`}
                   >
                     <option value="general">General</option>
                     <option value="help">Help</option>
@@ -754,14 +752,14 @@ const Chat: React.FC = () => {
                   <button
                     type="submit"
                     disabled={roomCreating}
-                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`flex-1 px-4 py-2 rounded-lg transition-colors shadow disabled:opacity-50 disabled:cursor-not-allowed ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-orange-300 text-black hover:bg-orange-400'}`}
                   >
                     {roomCreating ? "Creating..." : "Create Room"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowCreateRoom(false)}
-                    className="flex-1 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors shadow"
+                    className={`flex-1 px-4 py-2 rounded-lg transition-colors shadow ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-orange-200 text-black hover:bg-orange-300'}`}
                   >
                     Cancel
                   </button>
