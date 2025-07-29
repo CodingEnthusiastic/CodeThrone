@@ -72,7 +72,7 @@ const ULTRA_FAST_CONFIG = {
 }
 
 // ✅ Add timeout wrapper for AI calls
-const callAIWithTimeout = async (modelCall, timeoutMs = 15000) => {
+const callAIWithTimeout = async (modelCall, timeoutMs = 50000) => { // Increased to 30s
   return Promise.race([
     modelCall,
     new Promise((_, reject) => 
@@ -126,7 +126,7 @@ Respond in JSON:
         model.generateContent({
           contents: [{ parts: [{ text: prompt }] }]
         }),
-        10000  // 10 second timeout instead of default 60s
+        50000  // Increased timeout to 50s
       )
       
       const response = await result.response
@@ -194,7 +194,7 @@ Respond in JSON:
             fallbackModel.generateContent({
               contents: [{ parts: [{ text: prompt }] }]
             }),
-            10000
+            50000 // Increased timeout to 50s
           )
           
           const response = await result.response
@@ -356,7 +356,7 @@ IMPORTANT: Base your evaluation ONLY on how well the answer addresses the specif
         model.generateContent({
           contents: [{ parts: [{ text: evaluationPrompt }] }]
         }),
-        8000
+        50000 // Increased timeout to 50s
       )
 
       const response = await result.response
