@@ -2030,7 +2030,6 @@ const Interview: React.FC = () => {
                   Previous Answer Score: {session.evaluation.score}/10
                 </h3>
                 <p className="text-sm text-blue-800 mb-3">{session.evaluation.feedback}</p>
-
                 <div className="grid grid-cols-4 gap-2 text-xs">
                   <div className="text-center">
                     <div className="font-medium">Technical</div>
@@ -2064,7 +2063,7 @@ const Interview: React.FC = () => {
                   </div>
                 )}
 
-                {isListening && (
+                {session.evaluation && !session.isComplete && (
                   <button
                     onClick={proceedToNextQuestion}
                     className="w-full mt-4 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors"
@@ -2261,7 +2260,7 @@ const Interview: React.FC = () => {
                   onChange={(e) => setCurrentAnswer(e.target.value)}
                   rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Speak naturally or type your answer here..."
+                  placeholder="Supports speech input for some devices , other devices must check their Chrome settings whether they have enabled speech recording or not...."
                 />
               </div>
 
@@ -2289,17 +2288,15 @@ const Interview: React.FC = () => {
 
               <button
                 onClick={() => submitAnswer(currentAnswer)}
-                disabled={loading || !currentAnswer.trim() || !submitAllowed}
+                disabled={loading || !currentAnswer.trim()}
                 className={`w-full py-3 rounded-md transition-colors flex items-center justify-center ${
-                  !submitAllowed 
+                  loading || !currentAnswer.trim()
                     ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                    : loading || !currentAnswer.trim()
-                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 <Send className="h-4 w-4 mr-2" />
-                {loading ? "Processing Answer..." : !submitAllowed ? "Stop microphone to submit" : "Submit Answer & Continue"}
+                {loading ? "Processing Answer..." : "Submit Answer & Continue"}
               </button>
             </div>
           </div>
@@ -2312,3 +2309,6 @@ const Interview: React.FC = () => {
 }
 
 export default Interview
+// }
+
+// export default Interview
