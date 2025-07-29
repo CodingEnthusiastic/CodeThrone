@@ -151,8 +151,8 @@ const Discussion: React.FC = () => {
   return (
     <div className={`min-h-screen transition-colors duration-300 relative ${
       isDark
-        ? "bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900"
-        : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
+        ? "bg-gradient-to-br from-[#181824] via-[#23243a] to-[#181824]"
+        : "bg-gradient-to-br from-[#f0f4ff] via-[#eaf0fa] to-[#f7faff]"
     }`}>
       {/* Galaxy Stars Animation for Dark Mode */}
       {isDark && (
@@ -412,30 +412,45 @@ const Discussion: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className={`text-3xl font-bold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}>Discussion Forum</h1>
-            <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>Ask questions, share knowledge, and connect with the community</p>
+            <h1 className={`text-3xl font-bold mb-1 ${
+              isDark ? "text-[#e0e7ff] drop-shadow-lg" : "text-[#1e293b]"
+            }`}>Discussion Forum</h1>
+            <p className={`${isDark ? "text-[#a5b4fc]" : "text-[#64748b]"}`}>Ask questions, share knowledge, and connect with the community</p>
           </div>
           {user && (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className={`flex items-center px-4 py-2 rounded-md font-semibold shadow-md transition-all duration-200 ${
+                isDark
+                  ? "bg-gradient-to-r from-[#6366f1] to-[#818cf8] text-white hover:from-[#818cf8] hover:to-[#6366f1]"
+                  : "bg-gradient-to-r from-[#38bdf8] to-[#6366f1] text-white hover:from-[#6366f1] hover:to-[#38bdf8]"
+              }`}
             >
               <Plus className="h-4 w-4 mr-2" />
               New Discussion
             </button>
-                
           )}
         </div>
 
         {showCreateForm && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">Create New Discussion</h3>
+          <div className={`rounded-lg shadow-lg p-6 mb-6 ${
+            isDark
+              ? "bg-gradient-to-br from-[#23243a] to-[#181824] border border-[#6366f1]/30"
+              : "bg-gradient-to-br from-[#eaf0fa] to-[#f7faff] border border-[#38bdf8]/20"
+          }`}>
+            <h3 className={`text-lg font-semibold mb-4 ${
+              isDark ? "text-[#e0e7ff]" : "text-[#1e293b]"
+            }`}>Create New Discussion</h3>
             <form onSubmit={handleCreateDiscussion}>
               <input
                 type="text"
                 required
                 placeholder="Title"
-                className="w-full mb-3 px-3 py-2 border rounded-md"
+                className={`w-full mb-3 px-3 py-2 rounded-md border ${
+                  isDark
+                    ? "bg-[#23243a] text-[#e0e7ff] border-[#6366f1]/30 placeholder-[#a5b4fc]"
+                    : "bg-white text-[#1e293b] border-[#38bdf8]/20 placeholder-[#64748b]"
+                }`}
                 value={newDiscussion.title}
                 onChange={(e) => setNewDiscussion({ ...newDiscussion, title: e.target.value })}
               />
@@ -443,28 +458,44 @@ const Discussion: React.FC = () => {
                 rows={5}
                 required
                 placeholder="Content"
-                className="w-full mb-3 px-3 py-2 border rounded-md"
+                className={`w-full mb-3 px-3 py-2 rounded-md border ${
+                  isDark
+                    ? "bg-[#23243a] text-[#e0e7ff] border-[#6366f1]/30 placeholder-[#a5b4fc]"
+                    : "bg-white text-[#1e293b] border-[#38bdf8]/20 placeholder-[#64748b]"
+                }`}
                 value={newDiscussion.content}
                 onChange={(e) => setNewDiscussion({ ...newDiscussion, content: e.target.value })}
               />
               <input
                 type="text"
                 placeholder="Tags (comma separated)"
-                className="w-full mb-3 px-3 py-2 border rounded-md"
+                className={`w-full mb-3 px-3 py-2 rounded-md border ${
+                  isDark
+                    ? "bg-[#23243a] text-[#e0e7ff] border-[#6366f1]/30 placeholder-[#a5b4fc]"
+                    : "bg-white text-[#1e293b] border-[#38bdf8]/20 placeholder-[#64748b]"
+                }`}
                 value={newDiscussion.tags}
                 onChange={(e) => setNewDiscussion({ ...newDiscussion, tags: e.target.value })}
               />
               <div className="flex space-x-3">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className={`px-4 py-2 rounded-md font-semibold shadow transition-all duration-200 ${
+                    isDark
+                      ? "bg-gradient-to-r from-[#6366f1] to-[#818cf8] text-white hover:from-[#818cf8] hover:to-[#6366f1]"
+                      : "bg-gradient-to-r from-[#38bdf8] to-[#6366f1] text-white hover:from-[#6366f1] hover:to-[#38bdf8]"
+                  }`}
                 >
                   Submit
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateForm(false)}
-                  className="px-4 py-2 border rounded-md"
+                  className={`px-4 py-2 rounded-md border font-semibold ${
+                    isDark
+                      ? "border-[#6366f1]/30 text-[#a5b4fc] bg-[#23243a] hover:bg-[#181824]"
+                      : "border-[#38bdf8]/20 text-[#64748b] bg-white hover:bg-[#eaf0fa]"
+                  }`}
                 >
                   Cancel
                 </button>
@@ -474,13 +505,23 @@ const Discussion: React.FC = () => {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className={`rounded-lg shadow-md p-6 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 ${
+          isDark
+            ? "bg-gradient-to-br from-[#23243a] to-[#181824] border border-[#6366f1]/20"
+            : "bg-gradient-to-br from-[#eaf0fa] to-[#f7faff] border border-[#38bdf8]/10"
+        }`}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${
+              isDark ? "text-[#a5b4fc]" : "text-[#38bdf8]"
+            }`} />
             <input
               type="text"
               placeholder="Search discussions..."
-              className="w-full pl-10 pr-4 py-2 border rounded-md"
+              className={`w-full pl-10 pr-4 py-2 rounded-md border ${
+                isDark
+                  ? "bg-[#23243a] text-[#e0e7ff] border-[#6366f1]/20 placeholder-[#a5b4fc]"
+                  : "bg-white text-[#1e293b] border-[#38bdf8]/10 placeholder-[#64748b]"
+              }`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -488,7 +529,11 @@ const Discussion: React.FC = () => {
           <select
             value={selectedTag}
             onChange={(e) => setSelectedTag(e.target.value)}
-            className="px-4 py-2 border rounded-md"
+            className={`px-4 py-2 rounded-md border ${
+              isDark
+                ? "bg-[#23243a] text-[#e0e7ff] border-[#6366f1]/20"
+                : "bg-white text-[#1e293b] border-[#38bdf8]/10"
+            }`}
           >
             <option value="">All Tags</option>
             {allTags.map((tag) => (
@@ -500,7 +545,11 @@ const Discussion: React.FC = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'recent' | 'popular')}
-            className="px-4 py-2 border rounded-md"
+            className={`px-4 py-2 rounded-md border ${
+              isDark
+                ? "bg-[#23243a] text-[#e0e7ff] border-[#6366f1]/20"
+                : "bg-white text-[#1e293b] border-[#38bdf8]/10"
+            }`}
           >
             <option value="recent">Most Recent</option>
             <option value="popular">Most Popular</option>
@@ -508,7 +557,11 @@ const Discussion: React.FC = () => {
           <select
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
-            className="px-4 py-2 border rounded-md"
+            className={`px-4 py-2 rounded-md border ${
+              isDark
+                ? "bg-[#23243a] text-[#e0e7ff] border-[#6366f1]/20"
+                : "bg-white text-[#1e293b] border-[#38bdf8]/10"
+            }`}
           >
             <option value="">All Users</option>
             {allUsers.map((username) => (
@@ -524,7 +577,11 @@ const Discussion: React.FC = () => {
               setSortBy('recent');
               setSelectedUser('');
             }}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            className={`px-4 py-2 rounded-md font-semibold shadow transition-all duration-200 ${
+              isDark
+                ? "bg-gradient-to-r from-[#ef4444] to-[#f87171] text-white hover:from-[#f87171] hover:to-[#ef4444]"
+                : "bg-gradient-to-r from-[#ef4444] to-[#f87171] text-white hover:from-[#f87171] hover:to-[#ef4444]"
+            }`}
           >
             Clear Filters
           </button>
@@ -533,37 +590,53 @@ const Discussion: React.FC = () => {
         {/* Discussions */}
         <div className="space-y-4">
           {filteredDiscussions.map((discussion) => (
-            <div key={discussion._id} className="bg-white p-6 rounded-lg shadow-sm">
+            <div key={discussion._id} className={`p-6 rounded-lg shadow-lg transition-all duration-200 ${
+              isDark
+                ? "bg-gradient-to-br from-[#23243a] to-[#181824] border border-[#6366f1]/20"
+                : "bg-gradient-to-br from-[#eaf0fa] to-[#f7faff] border border-[#38bdf8]/10"
+            }`}>
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
-                    {discussion.isPinned && <Pin className="h-4 w-4 text-blue-500 mr-1" />}
-                    {discussion.isLocked && <Lock className="h-4 w-4 text-red-500 mr-1" />}
+                    {discussion.isPinned && <Pin className="h-4 w-4 text-[#6366f1] mr-1" />}
+                    {discussion.isLocked && <Lock className="h-4 w-4 text-[#ef4444] mr-1" />}
                     <Link
                       to={`/top/${discussion._id}`}
-                      className="text-lg font-semibold text-gray-900 hover:text-blue-600"
+                      className={`text-lg font-semibold hover:underline ${
+                        isDark ? "text-[#e0e7ff] hover:text-[#38bdf8]" : "text-[#1e293b] hover:text-[#6366f1]"
+                      }`}
                     >
                       {discussion.title}
                     </Link>
                   </div>
-                  <p className="text-gray-700 line-clamp-3 mb-3">{discussion.content}</p>
+                  <p className={`mb-3 line-clamp-3 ${
+                    isDark ? "text-[#a5b4fc]" : "text-[#64748b]"
+                  }`}>{discussion.content}</p>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {discussion.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                        className={`text-xs px-2 py-1 rounded-full font-semibold shadow ${
+                          isDark
+                            ? "bg-gradient-to-r from-[#6366f1]/30 to-[#38bdf8]/30 text-[#e0e7ff]"
+                            : "bg-gradient-to-r from-[#38bdf8]/20 to-[#6366f1]/20 text-[#1e293b]"
+                        }`}
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
-                  <div className="flex justify-between text-sm text-gray-500">
+                  <div className={`flex justify-between text-sm ${
+                    isDark ? "text-[#a5b4fc]" : "text-[#64748b]"
+                  }`}>
                     <div className="flex space-x-3">
                       <span>By {discussion.author.username}</span>
                       <span>{new Date(discussion.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <MessageSquare className="h-4 w-4" />
+                      <MessageSquare className={`h-4 w-4 ${
+                        isDark ? "text-[#38bdf8]" : "text-[#6366f1]"
+                      }`} />
                       <span>{discussion.comments.length}</span>
                     </div>
                   </div>
@@ -572,37 +645,53 @@ const Discussion: React.FC = () => {
                   <button
                     onClick={() => handleVote(discussion._id, 'up')}
                     disabled={!user}
-                    className={`p-1 rounded-full transition-all duration-200 ${
+                    className={`p-1 rounded-full transition-all duration-200 shadow ${
                       !user 
-                        ? 'bg-gray-50 cursor-not-allowed' 
+                        ? isDark
+                          ? 'bg-[#23243a] border border-[#6366f1]/10 cursor-not-allowed'
+                          : 'bg-gray-50 border border-[#38bdf8]/10 cursor-not-allowed'
                         : user && hasUserVoted(discussion.upvotes, user.id)
-                        ? 'bg-green-500 hover:bg-green-600 shadow-sm transform hover:scale-110'
-                        : 'bg-gray-50 hover:bg-green-50 border border-green-200'
+                        ? 'bg-gradient-to-r from-[#22c55e] to-[#38bdf8] hover:from-[#38bdf8] hover:to-[#22c55e] shadow-lg transform hover:scale-110'
+                        : isDark
+                          ? 'bg-[#23243a] border border-[#22c55e]/30 hover:bg-[#181824]'
+                          : 'bg-gray-50 border border-[#22c55e]/20 hover:bg-[#eaf0fa]'
                     }`}
                   >
                     <ThumbsUp
                       className={`h-4 w-4 ${
-                        user && hasUserVoted(discussion.upvotes, user.id) ? 'text-white' : 'text-green-600'
+                        user && hasUserVoted(discussion.upvotes, user.id)
+                          ? 'text-white'
+                          : isDark ? 'text-[#22c55e]' : 'text-[#22c55e]'
                       }`}
                     />
                   </button>
-                  <span className="text-sm font-medium text-gray-700 px-2 py-1 bg-gray-100 rounded-md min-w-[32px] text-center">
+                  <span className={`text-sm font-medium px-2 py-1 rounded-md min-w-[32px] text-center shadow ${
+                    isDark
+                      ? "bg-[#23243a] text-[#e0e7ff] border border-[#6366f1]/20"
+                      : "bg-[#eaf0fa] text-[#1e293b] border border-[#38bdf8]/10"
+                  }`}>
                     {discussion.upvotes.length - discussion.downvotes.length}
                   </span>
                   <button
                     onClick={() => handleVote(discussion._id, 'down')}
                     disabled={!user}
-                    className={`p-1 rounded-full transition-all duration-200 ${
+                    className={`p-1 rounded-full transition-all duration-200 shadow ${
                       !user 
-                        ? 'bg-gray-50 cursor-not-allowed' 
+                        ? isDark
+                          ? 'bg-[#23243a] border border-[#6366f1]/10 cursor-not-allowed'
+                          : 'bg-gray-50 border border-[#38bdf8]/10 cursor-not-allowed'
                         : user && hasUserVoted(discussion.downvotes, user.id)
-                        ? 'bg-red-500 hover:bg-red-600 shadow-sm transform hover:scale-110'
-                        : 'bg-gray-50 hover:bg-red-50 border border-red-200'
+                        ? 'bg-gradient-to-r from-[#ef4444] to-[#f87171] hover:from-[#f87171] hover:to-[#ef4444] shadow-lg transform hover:scale-110'
+                        : isDark
+                          ? 'bg-[#23243a] border border-[#ef4444]/30 hover:bg-[#181824]'
+                          : 'bg-gray-50 border border-[#ef4444]/20 hover:bg-[#eaf0fa]'
                     }`}
                   >
                     <ThumbsDown
                       className={`h-4 w-4 ${
-                        user && hasUserVoted(discussion.downvotes, user.id) ? 'text-white' : 'text-red-600'
+                        user && hasUserVoted(discussion.downvotes, user.id)
+                          ? 'text-white'
+                          : isDark ? 'text-[#ef4444]' : 'text-[#ef4444]'
                       }`}
                     />
                   </button>
@@ -613,8 +702,12 @@ const Discussion: React.FC = () => {
         </div>
 
         {filteredDiscussions.length === 0 && (
-          <div className="text-center py-12 text-gray-600">
-            <MessageSquare className="mx-auto h-10 w-10 mb-2" />
+          <div className={`text-center py-12 ${
+            isDark ? "text-[#a5b4fc]" : "text-[#64748b]"
+          }`}>
+            <MessageSquare className={`mx-auto h-10 w-10 mb-2 ${
+              isDark ? "text-[#38bdf8]" : "text-[#6366f1]"
+            }`} />
             <p>No discussions found.</p>
           </div>
         )}
