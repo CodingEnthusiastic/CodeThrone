@@ -1142,7 +1142,7 @@ const ProblemDetail: React.FC = () => {
                 )}
               </h4>
             </div>
-            <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+            <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900 max-h-[500px]">
               {/* Show loading state */}
               {(running || submitting) && !runResult && !submissionResult && (
                 <div className="text-center py-8">
