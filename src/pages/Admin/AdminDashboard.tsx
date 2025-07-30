@@ -1198,9 +1198,9 @@ const AdminDashboard: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex space-x-2">
-                                <button className="text-blue-600 hover:text-blue-900">
+                                {/* <button className="text-blue-600 hover:text-blue-900">
                                   <Edit className="h-4 w-4" />
-                                </button>
+                                </button> */}
                                 <button 
                                   onClick={() => handleDeleteProblem(problem._id)}
                                   className="text-red-600 hover:text-red-900"
@@ -1418,9 +1418,9 @@ const AdminDashboard: React.FC = () => {
                             }`}>
                               {contest.status}
                             </span>
-                            <button className="text-blue-600 hover:text-blue-900">
+                            {/* <button className="text-blue-600 hover:text-blue-900">
                               <Edit className="h-4 w-4" />
-                            </button>
+                            </button> */}
                             <button 
                               onClick={() => handleDeleteContest(contest._id)}
                               className="text-red-600 hover:text-red-900"
