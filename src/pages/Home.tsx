@@ -1321,13 +1321,18 @@ const Home: React.FC = () => {
       )}
       
       {/* Hero Section with Enhanced Carousel */}
+      {/* Hero Section with Enhanced Carousel */}
       <div className="relative overflow-hidden">
         {isDark ? (
           <StarsBackground />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"></div>
+          <>
+            {/* Fixed Gradient Background for Light Mode */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-700 via-purple-600 to-pink-600"></div>
+          </>
+
         )}
-        <div className="absolute inset-0 bg-black/20"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10"></div>
         {/* Light mode floating elements */}
         {!isDark && (
           <div className="absolute inset-0 overflow-hidden">
@@ -1349,7 +1354,7 @@ const Home: React.FC = () => {
             ))}
           </div>
         )}
-        
+
         {/* Subtle overlay for better text readability */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30 subtle-wave"></div>
 
