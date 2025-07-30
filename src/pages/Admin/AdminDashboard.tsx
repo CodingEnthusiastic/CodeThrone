@@ -134,6 +134,9 @@ const AdminDashboard: React.FC = () => {
     pinned: false
   });
 
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
+  const [editAnnouncementData, setEditAnnouncementData] = useState<any>(null);
+
   // Redirect if not admin
   if (!user || user.role !== 'admin') {
     return <Navigate to="/" replace />;
@@ -404,6 +407,45 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleEditAnnouncement = (announcement: Announcement) => {
+    setEditingAnnouncementId(announcement._id);
+    setEditAnnouncementData({
+      title: announcement.title,
+      content: announcement.content,
+      type: announcement.type,
+      priority: announcement.priority,
+      // Add other fields as needed
+    });
+  };
+
+  const handleUpdateAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAnnouncementId) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        `${API_URL}/announcements/${editingAnnouncementId}`,
+        editAnnouncementData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      setAnnouncements(
+        announcements.map(a =>
+          a._id === editingAnnouncementId ? response.data : a
+        )
+      );
+      setEditingAnnouncementId(null);
+      setEditAnnouncementData(null);
+      showNotification('success', 'Announcement updated!');
+    } catch (error: any) {
+      showNotification('error', 'Failed to update announcement.');
+    }
+  };
+  
   const handleDeleteProblem = async (problemId: string) => {
     console.log('🗑️ Admin: Deleting problem:', problemId);
     if (!confirm('Are you sure you want to delete this problem?')) return;
@@ -1609,33 +1651,121 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   )}
                   
-                  <div className="space-y-4">
-                    {announcements.map((announcement) => (
-                      <div key={announcement._id} className="p-4 border border-gray-200 rounded-lg">
-                        <div className="flex items-center justify-between">
+                  {/* Edit Announcement Form */}
+                  {editingAnnouncementId && editAnnouncementData && (
+                    <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-4">Edit Announcement</h4>
+                      <form onSubmit={handleUpdateAnnouncement} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Title *</label>
+                          <input
+                            type="text"
+                            required
+                            value={editAnnouncementData.title}
+                            onChange={e => setEditAnnouncementData({ ...editAnnouncementData, title: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Content *</label>
+                          <textarea
+                            required
+                            rows={4}
+                            value={editAnnouncementData.content}
+                            onChange={e => setEditAnnouncementData({ ...editAnnouncementData, content: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                            placeholder="Announcement content (supports Markdown)"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <h4 className="font-semibold">{announcement.title}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{announcement.content}</p>
-                            <p className="text-sm text-gray-500 mt-2">{new Date(announcement.createdAt).toLocaleDateString()}</p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              announcement.priority === 'high' ? 'bg-red-100 text-red-800' :
-                              announcement.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {announcement.type}
-                            </span>
-                            <button className="text-blue-600 hover:text-blue-900">
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteAnnouncement(announcement._id)}
-                              className="text-red-600 hover:text-red-900"
+                            <label className="block text-sm font-medium mb-2">Type</label>
+                            <select
+                              value={editAnnouncementData.type}
+                              onChange={e => setEditAnnouncementData({ ...editAnnouncementData, type: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                              <option value="general">General</option>
+                              <option value="contest">Contest</option>
+                              <option value="maintenance">Maintenance</option>
+                              <option value="feature">Feature</option>
+                              <option value="update">Update</option>
+                              <option value="alert">Alert</option>
+                            </select>
                           </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Priority</label>
+                            <select
+                              value={editAnnouncementData.priority}
+                              onChange={e => setEditAnnouncementData({ ...editAnnouncementData, priority: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="low">Low</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High</option>
+                              <option value="critical">Critical</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex space-x-4">
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            Update Announcement
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setEditingAnnouncementId(null); setEditAnnouncementData(null); }}
+                            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {announcements.map((announcement) => (
+                      <div
+                        key={announcement._id}
+                        className="group relative p-4 border border-gray-200 rounded-lg bg-white shadow-sm transition-all duration-200
+                          hover:shadow-lg hover:scale-[1.03] hover:border-blue-400"
+                        style={{ minHeight: 140, maxHeight: 180, overflow: "hidden" }}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-base truncate">{announcement.title}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            announcement.priority === 'high' ? 'bg-red-100 text-red-800' :
+                            announcement.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {announcement.type}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2 line-clamp-3">
+                          {announcement.content.length > 120
+                            ? `${announcement.content.substring(0, 120)}...`
+                            : announcement.content}
+                        </p>
+                        <p className="text-xs text-gray-500 mb-2">{new Date(announcement.createdAt).toLocaleDateString()}</p>
+                        <div className="absolute top-2 right-2 flex space-x-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                          <button
+                            className="text-blue-600 hover:text-blue-800 bg-white rounded-full p-1 shadow-sm border border-blue-100 hover:border-blue-400 transition-colors"
+                            title="Edit"
+                            onClick={() => handleEditAnnouncement(announcement)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteAnnouncement(announcement._id)}
+                            className="text-red-600 hover:text-red-800 bg-white rounded-full p-1 shadow-sm border border-red-100 hover:border-red-400 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
