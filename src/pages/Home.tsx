@@ -179,7 +179,7 @@ const Home: React.FC = () => {
   : "from-blue-500/20 via-indigo-500/20 to-purple-500/20",
     },
     {
-      title: "Real-time Battles",
+      title: "Play Games Like chess.com",
       description: "Challenge others in live coding battles with anti-cheat protection",
       image: "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800",
       features: ["Live Battles", "Anti-cheat", "Rating System"],
@@ -1464,7 +1464,7 @@ const Home: React.FC = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent gradient-animate"></div>
                       <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                        <h3 className="text-3xl font-bold mb-3 text-red-300 text-glow-effect">
+                        <h3 className="text-3xl font-bold mb-3 text-red-180 text-glow-effect">
                           {item.title}
                         </h3>
                         <p className="text-white/90 mb-4 text-lg leading-relaxed">{item.description}</p>
