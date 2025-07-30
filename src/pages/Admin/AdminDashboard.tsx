@@ -848,7 +848,11 @@ const AdminDashboard: React.FC = () => {
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
-              <div key={index} className={`p-6 rounded-lg border ${stat.color}`}>
+              <div
+                key={index}
+                className={`p-6 rounded-lg border ${stat.color} transition-transform duration-200 hover:scale-105 hover:shadow-lg`}
+                // ↑ Added scaling and shadow on hover
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.title}</p>
