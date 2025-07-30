@@ -994,6 +994,9 @@ const ProblemDetail: React.FC = () => {
                       Solved
                     </span>
                   )}
+                  <span className="text-gray-600 dark:text-gray-400 text-sm">
+                    Acceptance: {problem.acceptanceRate.toFixed(2)}% ({problem.submissions} submissions)
+                  </span>
                 </div>
               </div>
             </div>
@@ -1275,16 +1278,16 @@ const ProblemDetail: React.FC = () => {
                       <div>
                         <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
                           <div className="flex items-center">
-                            <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-1" />
+                            <Clock className="h-4 w-4 mr-1 opacity-70" />
                             <span className="text-gray-600 dark:text-gray-300">Runtime:</span>
-                            <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">
+                            <span className="ml-1 font-medium text-gray-900 dark:text-gray-100">
                               {submissionResult.executionTime}ms
                             </span>
                           </div>
                           <div className="flex items-center">
-                            <Memory className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-1" />
+                            <Memory className="h-4 w-4 mr-1 opacity-70" />
                             <span className="text-gray-600 dark:text-gray-300">Memory:</span>
-                            <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">
+                            <span className="ml-1 font-medium text-gray-900 dark:text-gray-100">
                               {submissionResult.memory}MB
                             </span>
                           </div>
@@ -1312,25 +1315,36 @@ const ProblemDetail: React.FC = () => {
                                       Test Case {index + 1}
                                     </span>
                                   </div>
-                                </div>
-                                {!result.passed && (
-                                  <div className="grid grid-cols-2 gap-3 text-xs">
-                                    <div>
-                                      <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Expected:</div>
-                                      <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
-                                        {result.expectedOutput}
-                                      </pre>
-                                    </div>
-                                    <div>
-                                      <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Your Output:
-                                      </div>
-                                      <pre className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 p-2 rounded text-red-800 dark:text-red-200 overflow-x-auto">
-                                        {result.actualOutput}
-                                      </pre>
-                                    </div>
+                                  <div className="flex items-center space-x-3 text-xs text-gray-600 dark:text-gray-400">
+                                    <span>{result.executionTime}ms</span>
+                                    <span>{result.memory}MB</span>
                                   </div>
-                                )}
+                                </div>
+                                <div className="space-y-2 text-xs">
+                                  <div>
+                                    <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Input:</div>
+                                    <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
+                                      {result.input}
+                                    </pre>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Expected:</div>
+                                    <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
+                                      {result.expectedOutput}
+                                    </pre>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Your Output:</div>
+                                    <pre className={`p-2 rounded border overflow-x-auto ${
+                                        result.passed
+                                          ? "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200"
+                                          : "bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200"
+                                      }`}
+                                    >
+                                      {result.actualOutput}
+                                    </pre>
+                                  </div>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1753,7 +1767,7 @@ const ProblemDetail: React.FC = () => {
                 </span>
               )}
               <span className="text-gray-600 dark:text-gray-400 text-sm">
-                Acceptance: {problem.acceptanceRate}% ({problem.submissions} submissions)
+                Acceptance: {problem.acceptanceRate.toFixed(2)}% ({problem.submissions} submissions)
               </span>
             </div>
           </div>
@@ -2174,22 +2188,24 @@ const ProblemDetail: React.FC = () => {
                                 ) : (
                                   <XCircle className="h-3 w-3 text-red-600 dark:text-red-400 mr-1" />
                                 )}
-                                <span className="font-medium text-gray-900 dark:text-gray-100">Test Case {index + 1}</span>
-                              </div>
-                              <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                                <span>{result.executionTime}ms</span>
-                                <span>{result.memory}MB</span>
+                                <span className="font-medium text-xs text-gray-900 dark:text-gray-100"> Test Case {index + 1} </span>
                               </div>
                             </div>
                             {!result.passed && (
-                              <div className="grid grid-cols-2 gap-2 mt-1">
+                              <div className="grid grid-cols-2 gap-2 text-xs">
                                 <div>
-                                  <div className="font-medium text-gray-700 dark:text-gray-300 mb-0.5">Expected:</div>
-                                  <pre className="bg-white dark:bg-gray-800 p-1 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">{result.expectedOutput}</pre>
+                                  <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Expected:</div>
+                                  <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
+                                    {result.expectedOutput}
+                                  </pre>
                                 </div>
                                 <div>
-                                  <div className="font-medium text-gray-700 dark:text-gray-300 mb-0.5">Your Output:</div>
-                                  <pre className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 p-1 rounded text-red-800 dark:text-red-200 overflow-x-auto">{result.actualOutput}</pre>
+                                  <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Your Output:
+                                  </div>
+                                  <pre className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 p-2 rounded text-red-800 dark:text-red-200 overflow-x-auto">
+                                    {result.actualOutput}
+                                  </pre>
                                 </div>
                               </div>
                             )}
