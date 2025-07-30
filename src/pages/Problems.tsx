@@ -144,9 +144,9 @@ const Problems: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 md:py-8">
+        <div className="mb-6 md:mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Problems</h1>
           <p className="text-gray-600 dark:text-gray-300">Practice coding problems and improve your skills</p>
         </div>
@@ -223,8 +223,8 @@ const Problems: React.FC = () => {
         )}
 
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-300" />
               <input
@@ -271,10 +271,10 @@ const Problems: React.FC = () => {
         </div>
 
         {/* Problems List */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
+          <div className="min-w-[600px] md:overflow-x-auto">
+            <table className="w-full text-xs md:text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
@@ -300,17 +300,17 @@ const Problems: React.FC = () => {
                 {filteredProblems.map((problem) => (
                   <tr
                     key={problem._id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                     onClick={() => window.open(`/problems/${problem._id}`, '_blank')}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                       {solvedProblems.has(problem._id) ? (
                         <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                       ) : (
                         <div className="h-5 w-5"></div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                       <span className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium flex items-center">
                         {problem.title}
                         {solvedProblems.has(problem._id) && (
@@ -320,7 +320,7 @@ const Problems: React.FC = () => {
                         )}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         problem.difficulty === 'Easy'
                           ? 'text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900'
@@ -333,10 +333,10 @@ const Problems: React.FC = () => {
                         {problem.difficulty}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
                       {problem.acceptanceRate.toFixed(1)}%
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-2 md:py-4">
                       <div className="flex flex-wrap gap-1">
                         {problem.tags.slice(0, 3).map((tag, index) => (
                           <span
@@ -353,7 +353,7 @@ const Problems: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-2 md:py-4">
                       <div className="flex flex-wrap gap-1">
                         {problem.companies.slice(0, 2).map((company, index) => (
                           <span
@@ -378,15 +378,15 @@ const Problems: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-gray-700 dark:text-gray-300">
+        <div className="mt-4 md:mt-6 flex flex-col md:flex-row items-center justify-between gap-2 md:gap-0">
+          <div className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
             Showing page {currentPage} of {totalPages}
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2 md:space-x-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-100"
+              className="px-2 md:px-3 py-1 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-100 text-xs md:text-sm"
             >
               Previous
             </button>
@@ -396,7 +396,7 @@ const Problems: React.FC = () => {
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-3 py-1 border rounded-md ${
+                  className={`px-2 md:px-3 py-1 border rounded-md text-xs md:text-sm ${
                     currentPage === pageNum
                       ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:text-white dark:border-blue-400'
                       : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100'
@@ -409,7 +409,7 @@ const Problems: React.FC = () => {
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-100"
+              className="px-2 md:px-3 py-1 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-100 text-xs md:text-sm"
             >
               Next
             </button>
