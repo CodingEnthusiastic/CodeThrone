@@ -11,6 +11,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { searchKeymap } from '@codemirror/search';
 import { useTheme } from '../contexts/ThemeContext';
+import { EditorSelection } from '@codemirror/state';
 
 interface CodeMirrorEditorProps {
   value: string;
@@ -709,12 +710,67 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     });
   }, [language]);
 
+  // Smart indentation keymap: auto-indent new line with same number of spaces as previous line (spaces only)
+    // Smart indentation keymap: auto-indent new line with same spaces/tabs as *current* line
+  const smartIndentKeymap = [
+    {
+      key: "Enter",
+      run: (view: EditorView) => {
+        // Debug: Print state and selection info
+        console.log("[SmartIndent] Enter key pressed");
+        // return false;
+        const { state } = view;
+        const { head } = state.selection.main;
+        const line = state.doc.lineAt(head);
+        console.log("[SmartIndent] Current line number:", line.number);
+        console.log("[SmartIndent] Current line text:", JSON.stringify(line.text));
+        // If at the start of the document, no indent
+        if (line.number === 1) {
+          console.log("[SmartIndent] At first line, no indent. line.number:", line.number);
+          view.dispatch({
+            changes: { from: head, to: head, insert: "\n" },
+            selection: EditorSelection.cursor(head + 1),
+            scrollIntoView: true,
+          });
+          return true;
+        }
+        const prevLine = state.doc.line(line.number - 1);
+        console.log("[SmartIndent] Previous line number:", prevLine.number);
+        console.log("[SmartIndent] Previous line text:", JSON.stringify(prevLine.text));
+        // Count spaces only (ignore tabs)
+        const spaceMatch = prevLine.text.match(/^( +)/);
+        const tabMatch = prevLine.text.match(/^(\t+)/);
+        const indentSpaces = spaceMatch ? spaceMatch[1] : "";
+        const indentTabs = tabMatch ? tabMatch[1] : "";
+        const indent = indentSpaces; // Only use spaces for indent
+
+      // Debug logs
+      console.log("[SmartIndent] Spaces at start:", JSON.stringify(indentSpaces), "Count:", indentSpaces.length);
+      console.log("[SmartIndent] Tabs at start:", JSON.stringify(indentTabs), "Count:", indentTabs.length);
+      console.log("[SmartIndent] Indent to insert (spaces only):", JSON.stringify(indent));
+      console.log("[SmartIndent] Cursor position before:", head);
+      console.log("[SmartIndent] Cursor position after:", head + 1 + indent.length);
+
+      view.dispatch({
+        changes: { from: head, to: head, insert: "\n" + indent },
+        selection: EditorSelection.cursor(head + 1 + indent.length),
+        scrollIntoView: true,
+      });
+      return true;
+    }
+  }
+  ];
+
+
+
+
   const createEditorState = useCallback(() => {
     const extensions: Extension[] = [
       basicSetup,
       getLanguageExtension(language),
       customCompletions(),
       keymap.of([
+        ...smartIndentKeymap,
         ...defaultKeymap,
         ...completionKeymap,
         ...searchKeymap,
@@ -735,6 +791,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         '.cm-content': {
           padding: '16px',
           minHeight: '100%',
+          whiteSpace: 'pre', 
         },
         '.cm-focused': {
           outline: 'none',
@@ -933,3 +990,5 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
 };
 
 export default CodeMirrorEditor;
+// export default CodeMirrorEditor;
+// export default CodeMirrorEditor;
