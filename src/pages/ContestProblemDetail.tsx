@@ -525,6 +525,235 @@ const ContestProblemDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-sans text-gray-900 dark:bg-gray-900 dark:from-gray-950 dark:to-gray-800 dark:text-gray-100">
+      {/* Animated Backgrounds (from Discussion.tsx) */}
+      {/* Dark Mode Galaxy Animation */}
+      <style>{`
+        @keyframes galaxy-drift {
+          0%, 100% {
+            transform: translateX(0px) translateY(0px) rotate(0deg);
+            opacity: 0.8;
+          }
+          25% {
+            transform: translateX(30px) translateY(-20px) rotate(90deg);
+            opacity: 1;
+          }
+          50% {
+            transform: translateX(-15px) translateY(25px) rotate(180deg);
+            opacity: 0.6;
+          }
+          75% {
+            transform: translateX(40px) translateY(10px) rotate(270deg);
+            opacity: 0.9;
+          }
+        }
+        @keyframes stellar-twinkle {
+          0%, 100% { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
+          25% { opacity: 0.8; transform: scale(1.2) rotate(90deg); }
+          50% { opacity: 1; transform: scale(1) rotate(180deg); }
+          75% { opacity: 0.5; transform: scale(1.1) rotate(270deg); }
+        }
+        @keyframes cosmic-float {
+          0% { transform: translateY(100vh) translateX(0px) rotate(0deg); opacity: 0; }
+          10% { opacity: 0.6; }
+          90% { opacity: 0.6; }
+          100% { transform: translateY(-100px) translateX(50px) rotate(360deg); opacity: 0; }
+        }
+        @keyframes nebula-pulse {
+          0%, 100% { 
+            transform: scale(1) rotate(0deg);
+            opacity: 0.1;
+          }
+          50% { 
+            transform: scale(1.1) rotate(180deg);
+            opacity: 0.3;
+          }
+        }
+        .galaxy-drift {
+          animation: galaxy-drift 8s ease-in-out infinite;
+        }
+        .stellar-twinkle {
+          animation: stellar-twinkle 3s ease-in-out infinite;
+        }
+        .cosmic-float {
+          animation: cosmic-float 12s linear infinite;
+        }
+        .nebula-pulse {
+          animation: nebula-pulse 15s ease-in-out infinite;
+        }
+        @keyframes light-constellation {
+          0%, 100% {
+            transform: translateY(0px) translateX(0px) rotate(0deg);
+            opacity: 0.4;
+          }
+          25% {
+            transform: translateY(-10px) translateX(15px) rotate(90deg);
+            opacity: 0.7;
+          }
+          50% {
+            transform: translateY(5px) translateX(-8px) rotate(180deg);
+            opacity: 0.9;
+          }
+          75% {
+            transform: translateY(-20px) translateX(20px) rotate(270deg);
+            opacity: 0.5;
+          }
+        }
+        @keyframes light-sparkle-dance {
+          0%, 100% { opacity: 0.2; transform: scale(0.8) rotate(0deg); }
+          50% { opacity: 0.8; transform: scale(1.3) rotate(180deg); }
+        }
+        @keyframes light-stardust {
+          0% { transform: translateY(100px) translateX(0px) rotate(0deg); opacity: 0; }
+          10% { opacity: 0.5; }
+          90% { opacity: 0.5; }
+          100% { transform: translateY(-100px) translateX(40px) rotate(360deg); opacity: 0; }
+        }
+        @keyframes aurora-glow {
+          0%, 100% { 
+            background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+            transform: scale(1) rotate(0deg);
+          }
+          33% { 
+            background: linear-gradient(45deg, rgba(236, 72, 153, 0.1), rgba(59, 130, 246, 0.1));
+            transform: scale(1.1) rotate(120deg);
+          }
+          66% { 
+            background: linear-gradient(45deg, rgba(34, 197, 94, 0.1), rgba(236, 72, 153, 0.1));
+            transform: scale(0.9) rotate(240deg);
+          }
+        }
+        .light-constellation {
+          animation: light-constellation 7s ease-in-out infinite;
+        }
+        .light-sparkle-dance {
+          animation: light-sparkle-dance 2.8s ease-in-out infinite;
+        }
+        .light-stardust {
+          animation: light-stardust 9s linear infinite;
+        }
+        .aurora-glow {
+          animation: aurora-glow 12s ease-in-out infinite;
+        }
+      `}</style>
+      {/* Dark mode background */}
+      <div className="dark:block hidden fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-1/4 left-1/6 w-96 h-96 bg-gradient-to-br from-purple-900/20 to-blue-900/20 nebula-pulse rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/6 w-80 h-80 bg-gradient-to-br from-indigo-900/20 to-violet-900/20 nebula-pulse rounded-full blur-3xl" style={{ animationDelay: '7s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-br from-cyan-900/15 to-teal-900/15 nebula-pulse rounded-full blur-2xl" style={{ animationDelay: '3s' }}></div>
+        {Array.from({ length: 50 }).map((_, i) => (
+          <div
+            key={`galaxy-star-${i}`}
+            className={`stellar-twinkle absolute ${
+              i % 8 === 0 ? 'w-1 h-1 bg-blue-300' :
+              i % 8 === 1 ? 'w-0.5 h-0.5 bg-purple-300' :
+              i % 8 === 2 ? 'w-1.5 h-1.5 bg-cyan-300' :
+              i % 8 === 3 ? 'w-0.5 h-0.5 bg-white' :
+              i % 8 === 4 ? 'w-1 h-1 bg-indigo-300' :
+              i % 8 === 5 ? 'w-0.5 h-0.5 bg-violet-300' :
+              i % 8 === 6 ? 'w-1 h-1 bg-teal-300' : 'w-0.5 h-0.5 bg-pink-300'
+            } rounded-full`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${3 + Math.random() * 2}s`,
+            }}
+          />
+        ))}
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={`cosmic-star-${i}`}
+            className={`cosmic-float absolute w-2 h-2 ${
+              i % 4 === 0 ? 'bg-gradient-to-r from-blue-400 to-cyan-400' :
+              i % 4 === 1 ? 'bg-gradient-to-r from-purple-400 to-pink-400' :
+              i % 4 === 2 ? 'bg-gradient-to-r from-indigo-400 to-blue-400' :
+              'bg-gradient-to-r from-violet-400 to-purple-400'
+            } rounded-full blur-sm`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 12}s`,
+              animationDuration: `${12 + Math.random() * 8}s`,
+            }}
+          />
+        ))}
+        {Array.from({ length: 15 }).map((_, i) => (
+          <div
+            key={`galaxy-particle-${i}`}
+            className={`galaxy-drift absolute ${
+              i % 5 === 0 ? 'w-3 h-3 bg-blue-500/30' :
+              i % 5 === 1 ? 'w-2 h-2 bg-purple-500/30' :
+              i % 5 === 2 ? 'w-2.5 h-2.5 bg-cyan-500/30' :
+              i % 5 === 3 ? 'w-2 h-2 bg-indigo-500/30' :
+              'w-3 h-3 bg-violet-500/30'
+            } rounded-full blur-sm`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDuration: `${8 + Math.random() * 4}s`,
+              animationDelay: `${Math.random() * 8}s`,
+            }}
+          />
+        ))}
+      </div>
+      {/* Light mode background */}
+      <div className="dark:hidden block fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-1/5 left-1/4 w-80 h-80 aurora-glow rounded-full blur-3xl opacity-40"></div>
+        <div className="absolute bottom-1/4 right-1/3 w-96 h-96 aurora-glow rounded-full blur-3xl opacity-30" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute top-2/3 left-1/6 w-64 h-64 aurora-glow rounded-full blur-2xl opacity-35" style={{ animationDelay: '8s' }}></div>
+        {Array.from({ length: 35 }).map((_, i) => (
+          <div
+            key={`constellation-${i}`}
+            className={`light-sparkle-dance absolute ${
+              i % 7 === 0 ? 'w-1.5 h-1.5 bg-blue-400/60' :
+              i % 7 === 1 ? 'w-1 h-1 bg-purple-400/60' :
+              i % 7 === 2 ? 'w-1.5 h-1.5 bg-pink-400/60' :
+              i % 7 === 3 ? 'w-1 h-1 bg-indigo-400/60' :
+              i % 7 === 4 ? 'w-1.5 h-1.5 bg-cyan-400/60' :
+              i % 7 === 5 ? 'w-1 h-1 bg-violet-400/60' : 'w-1.5 h-1.5 bg-teal-400/60'
+            } rounded-full`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2.8}s`,
+              animationDuration: `${2.8 + Math.random() * 1.5}s`,
+            }}
+          />
+        ))}
+        {Array.from({ length: 20 }).map((_, i) => (
+          <div
+            key={`stardust-${i}`}
+            className={`light-stardust absolute w-1 h-1 ${
+              i % 5 === 0 ? 'bg-blue-300/50' :
+              i % 5 === 1 ? 'bg-purple-300/50' :
+              i % 5 === 2 ? 'bg-pink-300/50' :
+              i % 5 === 3 ? 'bg-cyan-300/50' : 'bg-indigo-300/50'
+            } rounded-full`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 9}s`,
+              animationDuration: `${9 + Math.random() * 4}s`,
+            }}
+          />
+        ))}
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={`light-float-${i}`}
+            className={`light-constellation absolute ${
+              i % 4 === 0 ? 'w-3 h-3 bg-gradient-to-br from-blue-200/40 to-purple-200/40' :
+              i % 4 === 1 ? 'w-2.5 h-2.5 bg-gradient-to-br from-pink-200/40 to-cyan-200/40' :
+              i % 4 === 2 ? 'w-3 h-3 bg-gradient-to-br from-indigo-200/40 to-violet-200/40' :
+              'w-2.5 h-2.5 bg-gradient-to-br from-teal-200/40 to-blue-200/40'
+            } rounded-full blur-sm`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDuration: `${7 + Math.random() * 3}s`,
+              animationDelay: `${Math.random() * 7}s`,
+            }}
+          />
+        ))}
+      </div>
+
       {/* Contest Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm py-4 dark:bg-gray-800 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -638,12 +867,27 @@ const ContestProblemDetail: React.FC = () => {
                   <Code className="h-6 w-6 mr-2 text-blue-600 dark:text-blue-500" />
                   Code Editor
                 </CardTitle>
-                <Select value={language} onValueChange={handleLanguageChange}>
-                  <SelectOption value="cpp">C++20</SelectOption>
-                  <SelectOption value="java">Java</SelectOption>
-                  <SelectOption value="python">Python</SelectOption>
-                  <SelectOption value="c">C</SelectOption>
-                </Select>
+                <div className="flex items-center space-x-2">
+                  <Select value={language} onValueChange={handleLanguageChange}>
+                    <SelectOption value="cpp">C++20</SelectOption>
+                    <SelectOption value="java">Java</SelectOption>
+                    <SelectOption value="python">Python</SelectOption>
+                    <SelectOption value="c">C</SelectOption>
+                  </Select>
+                  {/* Reset Code Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => {
+                      if (problem?.codeTemplates) {
+                        setCode(problem.codeTemplates[language] || "");
+                      }
+                    }}
+                  >
+                    Reset Code
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
