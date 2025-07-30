@@ -1857,9 +1857,18 @@ const Home: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-20">
           {/* Announcements */}
           <section>
-            <h2 className={`text-2xl font-semibold mb-6 ${isDark ? "text-white" : "text-gray-900"}`}>
-              Latest Announcements
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                Latest Announcements
+              </h2>
+              <Link
+                to="/announcements"
+                className="inline-flex items-center text-orange-600 hover:text-orange-700 font-medium text-sm hover:underline"
+              >
+                View all
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </div>
             <div className="space-y-4">
               {loading ? (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
