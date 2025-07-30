@@ -338,6 +338,262 @@ const ContestProblems: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${pageBackgroundClass}`}>
+      {/* Animated Backgrounds (copied from Game.tsx) */}
+      {/* Dark Mode Gaming Galaxy Animation */}
+      <style>{`
+        @keyframes gaming-pulse {
+          0%, 100% {
+            transform: translateX(0px) translateY(0px) scale(1) rotate(0deg);
+            opacity: 0.7;
+          }
+          25% {
+            transform: translateX(25px) translateY(-15px) scale(1.1) rotate(90deg);
+            opacity: 1;
+          }
+          50% {
+            transform: translateX(-10px) translateY(20px) scale(0.9) rotate(180deg);
+            opacity: 0.8;
+          }
+          75% {
+            transform: translateX(35px) translateY(5px) scale(1.05) rotate(270deg);
+            opacity: 0.9;
+          }
+        }
+        @keyframes neon-glow {
+          0%, 100% { 
+            box-shadow: 0 0 5px rgba(34, 197, 94, 0.5), 0 0 10px rgba(34, 197, 94, 0.3), 0 0 15px rgba(34, 197, 94, 0.1);
+            opacity: 0.6; 
+          }
+          50% { 
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.6), 0 0 30px rgba(34, 197, 94, 0.4);
+            opacity: 1; 
+          }
+        }
+        @keyframes digital-rain {
+          0% { transform: translateY(-100px) translateX(0px) rotate(0deg); opacity: 0; }
+          10% { opacity: 0.8; }
+          90% { opacity: 0.8; }
+          100% { transform: translateY(100vh) translateX(20px) rotate(360deg); opacity: 0; }
+        }
+        @keyframes cyber-orbit {
+          0% { transform: rotate(0deg) translateX(100px) rotate(0deg); }
+          100% { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
+        }
+        @keyframes gaming-nebula {
+          0%, 100% { 
+            transform: scale(1) rotate(0deg);
+            background: linear-gradient(45deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+          }
+          33% { 
+            transform: scale(1.1) rotate(120deg);
+            background: linear-gradient(45deg, rgba(147, 51, 234, 0.1), rgba(34, 197, 94, 0.1));
+          }
+          66% { 
+            transform: scale(0.9) rotate(240deg);
+            background: linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(147, 51, 234, 0.1));
+          }
+        }
+        .gaming-pulse {
+          animation: gaming-pulse 6s ease-in-out infinite;
+        }
+        .neon-glow {
+          animation: neon-glow 2s ease-in-out infinite;
+        }
+        .digital-rain {
+          animation: digital-rain 8s linear infinite;
+        }
+        .cyber-orbit {
+          animation: cyber-orbit 20s linear infinite;
+        }
+        .gaming-nebula {
+          animation: gaming-nebula 12s ease-in-out infinite;
+        }
+        @keyframes light-gaming-float {
+          0%, 100% {
+            transform: translateY(0px) translateX(0px) rotate(0deg);
+            opacity: 0.5;
+          }
+          25% {
+            transform: translateY(-12px) translateX(18px) rotate(90deg);
+            opacity: 0.8;
+          }
+          50% {
+            transform: translateY(8px) translateX(-10px) rotate(180deg);
+            opacity: 1;
+          }
+          75% {
+            transform: translateY(-18px) translateX(25px) rotate(270deg);
+            opacity: 0.6;
+          }
+        }
+        @keyframes pastel-glow {
+          0%, 100% { 
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.3), 0 0 16px rgba(147, 51, 234, 0.2);
+            opacity: 0.6; 
+          }
+          50% { 
+            box-shadow: 0 0 16px rgba(59, 130, 246, 0.5), 0 0 32px rgba(147, 51, 234, 0.4);
+            opacity: 1; 
+          }
+        }
+        @keyframes light-pixel-fall {
+          0% { transform: translateY(-50px) translateX(0px) rotate(0deg); opacity: 0; }
+          10% { opacity: 0.7; }
+          90% { opacity: 0.7; }
+          100% { transform: translateY(100vh) translateX(30px) rotate(360deg); opacity: 0; }
+        }
+        @keyframes gaming-aurora {
+          0%, 100% { 
+            background: linear-gradient(45deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15));
+            transform: scale(1) rotate(0deg);
+          }
+          33% { 
+            background: linear-gradient(45deg, rgba(34, 197, 94, 0.15), rgba(59, 130, 246, 0.15));
+            transform: scale(1.05) rotate(120deg);
+          }
+          66% { 
+            background: linear-gradient(45deg, rgba(251, 191, 36, 0.15), rgba(34, 197, 94, 0.15));
+            transform: scale(0.95) rotate(240deg);
+          }
+        }
+        .light-gaming-float {
+          animation: light-gaming-float 5s ease-in-out infinite;
+        }
+        .pastel-glow {
+          animation: pastel-glow 2.5s ease-in-out infinite;
+        }
+        .light-pixel-fall {
+          animation: light-pixel-fall 7s linear infinite;
+        }
+        .gaming-aurora {
+          animation: gaming-aurora 10s ease-in-out infinite;
+        }
+      `}</style>
+      {/* Dark mode background */}
+      <div className="dark:block hidden fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-1/4 left-1/5 w-96 h-96 gaming-nebula rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-80 h-80 gaming-nebula rounded-full blur-3xl" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute top-2/3 left-1/3 w-64 h-64 gaming-nebula rounded-full blur-2xl" style={{ animationDelay: '8s' }}></div>
+        {Array.from({ length: 40 }).map((_, i) => (
+          <div
+            key={`neon-particle-${i}`}
+            className={`neon-glow absolute ${
+              i % 6 === 0 ? 'w-2 h-2 bg-green-400 rounded-full' :
+              i % 6 === 1 ? 'w-1.5 h-1.5 bg-blue-400 rounded-full' :
+              i % 6 === 2 ? 'w-2 h-2 bg-purple-400 rounded-full' :
+              i % 6 === 3 ? 'w-1 h-1 bg-cyan-400 rounded-full' :
+              i % 6 === 4 ? 'w-1.5 h-1.5 bg-pink-400 rounded-full' :
+              'w-2 h-2 bg-red-400 rounded-full'
+            }`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2}s`,
+              animationDuration: `${2 + Math.random() * 1}s`,
+            }}
+          />
+        ))}
+        {Array.from({ length: 15 }).map((_, i) => (
+          <div
+            key={`digital-rain-${i}`}
+            className={`digital-rain absolute w-1 h-8 ${
+              i % 4 === 0 ? 'bg-gradient-to-b from-green-400 to-transparent' :
+              i % 4 === 1 ? 'bg-gradient-to-b from-blue-400 to-transparent' :
+              i % 4 === 2 ? 'bg-gradient-to-b from-purple-400 to-transparent' :
+              'bg-gradient-to-b from-cyan-400 to-transparent'
+            }`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 8}s`,
+              animationDuration: `${8 + Math.random() * 4}s`,
+            }}
+          />
+        ))}
+        <div className="absolute top-1/4 left-1/4 w-4 h-4">
+          <div className="cyber-orbit w-2 h-2 bg-green-400 rounded-full neon-glow"></div>
+        </div>
+        <div className="absolute top-3/4 right-1/3 w-4 h-4">
+          <div className="cyber-orbit w-2 h-2 bg-blue-400 rounded-full neon-glow" style={{ animationDelay: '5s' }}></div>
+        </div>
+        <div className="absolute top-1/2 left-2/3 w-4 h-4">
+          <div className="cyber-orbit w-2 h-2 bg-purple-400 rounded-full neon-glow" style={{ animationDelay: '10s' }}></div>
+        </div>
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={`gaming-pulse-${i}`}
+            className={`gaming-pulse absolute ${
+              i % 4 === 0 ? 'w-4 h-4 bg-gradient-to-br from-green-500/40 to-blue-500/40' :
+              i % 4 === 1 ? 'w-3 h-3 bg-gradient-to-br from-purple-500/40 to-pink-500/40' :
+              i % 4 === 2 ? 'w-3.5 h-3.5 bg-gradient-to-br from-cyan-500/40 to-green-500/40' :
+              'w-4 h-4 bg-gradient-to-br from-red-500/40 to-orange-500/40'
+            } rounded-full blur-sm`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDuration: `${6 + Math.random() * 3}s`,
+              animationDelay: `${Math.random() * 6}s`,
+            }}
+          />
+        ))}
+      </div>
+      {/* Light mode background */}
+      <div className="dark:hidden block fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-1/5 left-1/3 w-96 h-96 gaming-aurora rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/5 w-80 h-80 gaming-aurora rounded-full blur-3xl" style={{ animationDelay: '3s' }}></div>
+        <div className="absolute top-2/3 left-1/6 w-64 h-64 gaming-aurora rounded-full blur-2xl" style={{ animationDelay: '7s' }}></div>
+        {Array.from({ length: 30 }).map((_, i) => (
+          <div
+            key={`pastel-particle-${i}`}
+            className={`pastel-glow absolute ${
+              i % 6 === 0 ? 'w-2 h-2 bg-blue-400/70 rounded-full' :
+              i % 6 === 1 ? 'w-1.5 h-1.5 bg-purple-400/70 rounded-full' :
+              i % 6 === 2 ? 'w-2 h-2 bg-green-400/70 rounded-full' :
+              i % 6 === 3 ? 'w-1 h-1 bg-pink-400/70 rounded-full' :
+              i % 6 === 4 ? 'w-1.5 h-1.5 bg-cyan-400/70 rounded-full' :
+              'w-2 h-2 bg-yellow-400/70 rounded-full'
+            }`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2.5}s`,
+              animationDuration: `${2.5 + Math.random() * 1}s`,
+            }}
+          />
+        ))}
+        {Array.from({ length: 18 }).map((_, i) => (
+          <div
+            key={`pixel-fall-${i}`}
+            className={`light-pixel-fall absolute w-1 h-1 ${
+              i % 5 === 0 ? 'bg-blue-300/60' :
+              i % 5 === 1 ? 'bg-purple-300/60' :
+              i % 5 === 2 ? 'bg-green-300/60' :
+              i % 5 === 3 ? 'bg-pink-300/60' : 'bg-cyan-300/60'
+            } rounded-full`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 7}s`,
+              animationDuration: `${7 + Math.random() * 3}s`,
+            }}
+          />
+        ))}
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div
+            key={`light-gaming-${i}`}
+            className={`light-gaming-float absolute ${
+              i % 4 === 0 ? 'w-3 h-3 bg-gradient-to-br from-blue-200/50 to-purple-200/50' :
+              i % 4 === 1 ? 'w-2.5 h-2.5 bg-gradient-to-br from-green-200/50 to-cyan-200/50' :
+              i % 4 === 2 ? 'w-3 h-3 bg-gradient-to-br from-pink-200/50 to-red-200/50' :
+              'w-2.5 h-2.5 bg-gradient-to-br from-yellow-200/50 to-orange-200/50'
+            } rounded-full blur-sm`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDuration: `${5 + Math.random() * 2}s`,
+              animationDelay: `${Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <div className="mb-6">
