@@ -40,10 +40,10 @@ const Navbar: React.FC = () => {
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
       <div className="max-w-7xl mx-auto px-2 sm:px-4">
-        {/* Use flex with items-stretch to align left/center/right */}
-        <div className="flex items-stretch h-16">
+        {/* Responsive flex: stack on mobile, row on desktop */}
+        <div className="flex flex-col md:flex-row items-stretch h-auto md:h-16">
           {/* Logo Section - Left, flush to left */}
-          <div className="flex items-center min-w-0 flex-shrink-0 pl-0 mr-0">
+          <div className="flex items-center min-w-0 flex-shrink-0 pl-0 mr-0 py-2 md:py-0">
             <Link 
               to="/" 
               onClick={() => handleNavigation('/')} 
@@ -59,8 +59,8 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Navigation Items - Center, bigger text, more space, more gap from left */}
-          <div className="flex-1 flex items-center justify-center ml-24">
-            <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-1 border border-gray-200 dark:border-gray-700/50 backdrop-blur-sm">
+          <div className="flex-1 flex items-center justify-center ml-0 md:ml-24">
+            <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-1 border border-gray-200 dark:border-gray-700/50 backdrop-blur-sm overflow-x-auto md:overflow-visible">
               {navItems.map((item, index) => {
                 const active = isActive(item.path);
                 return (
@@ -68,7 +68,7 @@ const Navbar: React.FC = () => {
                     key={item.path}
                     to={item.path}
                     onClick={() => handleNavigation(item.path)}
-                    className={`relative flex flex-col items-center px-6 py-3 rounded-lg text-lg font-semibold transition-all duration-200 group min-w-[100px] ${
+                    className={`relative flex flex-col items-center px-3 md:px-6 py-2 md:py-3 rounded-lg text-base md:text-lg font-semibold transition-all duration-200 group min-w-[80px] md:min-w-[100px] ${
                       active
                         ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-700 shadow-sm border border-gray-200 dark:border-gray-600'
                         : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-white/60 dark:hover:bg-gray-700/60'
@@ -102,13 +102,13 @@ const Navbar: React.FC = () => {
           </div>
           
           {/* User Section - Right, flush to right */}
-          <div className="flex items-center space-x-4 min-w-0 flex-shrink-0 pl-2">
+          <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-shrink-0 pl-2 py-2 md:py-0">
             {/* Add extra gap before theme toggle */}
-            <div className="w-8 sm:w-12" />
+            <div className="hidden md:block w-8 sm:w-12" />
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={`relative flex items-center p-2.5 rounded-xl border transition-all duration-200 hover:scale-105 group
+              className={`relative flex items-center p-2 rounded-xl border transition-all duration-200 hover:scale-105 group
                 ${isDark
                   ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 shadow-lg'
                   : 'bg-gray-100 border-gray-300 hover:bg-gray-200 shadow-sm'
@@ -180,7 +180,7 @@ const Navbar: React.FC = () => {
                   </button>
                   
                   {isProfileOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 border border-gray-200 dark:border-gray-700 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 animate-in slide-in-from-top-2 duration-200">
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 border border-gray-200 dark:border-gray-700 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 animate-in slide-in-from-top-2 duration-200 z-50">
                       {user.role === 'admin' && (
                         <Link
                           to="/admin"
@@ -212,7 +212,7 @@ const Navbar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 md:space-x-3">
                 <Link
                   to="/login"
                   className="text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -231,7 +231,7 @@ const Navbar: React.FC = () => {
             {/* Mobile menu toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2.5 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all duration-200"
+              className="md:hidden p-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all duration-200"
             >
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -240,7 +240,7 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 py-4 animate-in slide-in-from-top-2 duration-200">
+          <div className="md:hidden border-t border-gray-200 dark:border-gray-700 py-4 animate-in slide-in-from-top-2 duration-200">
             <div className="space-y-1">
               {navItems.map(item => (
                 <Link
