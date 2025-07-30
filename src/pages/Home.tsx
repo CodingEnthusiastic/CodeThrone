@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
+import StarsBackground from "../components/StarsBackground"
 import axios from "axios"
 import {
   Code,
@@ -165,8 +166,8 @@ const Home: React.FC = () => {
       image: "https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=800",
       features: ["2000+ Problems", "Multiple Languages", "Real-time Testing"],
       gradient: isDark
-        ? "from-gray-800 via-slate-800 to-gray-900"
-        : "from-violet-600 via-purple-600 to-blue-600",
+      ? "from-transparent via-transparent to-transparent"
+      : "from-blue-500/20 via-indigo-500/20 to-purple-500/20",
     },
     {
       title: "Compete Globally",
@@ -174,8 +175,8 @@ const Home: React.FC = () => {
       image: "https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800",
       features: ["Weekly Contests", "Global Rankings", "ELO Rating System"],
       gradient: isDark
-        ? "from-gray-800 via-slate-800 to-gray-900"
-        : "from-violet-600 via-purple-600 to-blue-600",
+  ? "from-transparent via-transparent to-transparent"
+  : "from-blue-500/20 via-indigo-500/20 to-purple-500/20",
     },
     {
       title: "Real-time Battles",
@@ -183,8 +184,8 @@ const Home: React.FC = () => {
       image: "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800",
       features: ["Live Battles", "Anti-cheat", "Rating System"],
       gradient: isDark
-        ? "from-gray-800 via-slate-800 to-gray-900"
-        : "from-violet-600 via-purple-600 to-blue-600",
+  ? "from-transparent via-transparent to-transparent"
+  : "from-blue-500/20 via-indigo-500/20 to-purple-500/20",
     },
     {
       title: "AI Interview Practice",
@@ -192,8 +193,8 @@ const Home: React.FC = () => {
       image: "https://www.theladders.com/wp-content/uploads/interview-190927.jpg",
       features: ["AI Questions", "Voice Interaction", "Real-time Feedback"],
       gradient: isDark
-        ? "from-gray-800 via-slate-800 to-gray-900"
-        : "from-violet-600 via-purple-600 to-blue-600",
+  ? "from-transparent via-transparent to-transparent"
+  : "from-blue-500/20 via-indigo-500/20 to-purple-500/20",
     },
   ]
 
@@ -1321,8 +1322,33 @@ const Home: React.FC = () => {
       
       {/* Hero Section with Enhanced Carousel */}
       <div className="relative overflow-hidden">
-        <div className={`absolute inset-0 bg-gradient-to-br ${carouselItems[currentSlide].gradient} gradient-animate`}></div>
+        {isDark ? (
+          <StarsBackground />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"></div>
+        )}
         <div className="absolute inset-0 bg-black/20"></div>
+        {/* Light mode floating elements */}
+        {!isDark && (
+          <div className="absolute inset-0 overflow-hidden">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={`light-float-${i}`}
+                className={`absolute w-2 h-2 rounded-full ${
+                  i % 4 === 0 ? 'bg-blue-300/30' :
+                  i % 4 === 1 ? 'bg-indigo-300/30' :
+                  i % 4 === 2 ? 'bg-purple-300/30' : 'bg-pink-300/30'
+                } light-floating`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 4}s`,
+                  animationDuration: `${4 + Math.random() * 2}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
         
         {/* Subtle overlay for better text readability */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30 subtle-wave"></div>
