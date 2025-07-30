@@ -288,10 +288,10 @@ const Contest: React.FC = () => {
   }
   console.log("here");
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 md:py-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8 md:mb-12">
           <div className="flex items-center justify-center mb-6">
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-full shadow-lg">
               <Trophy className="h-12 w-12 text-white" />
@@ -306,8 +306,8 @@ const Contest: React.FC = () => {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2 inline-flex space-x-2">
+        <div className="flex justify-center mb-6 md:mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2 inline-flex flex-wrap gap-2 md:space-x-2">
             {[
               { id: "all", label: "All Contests", icon: Trophy },
               { id: "upcoming", label: "Upcoming", icon: Calendar },
@@ -334,16 +334,16 @@ const Contest: React.FC = () => {
         </div>
 
         {/* Contests Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
           {filteredContests.map((contest) => {
             // Get actual status for each contest
             const actualStatus = getActualContestStatus(contest.startTime, contest.endTime)
             const userRegistered = isUserRegistered(contest)
 
             return (
-              <Card key={contest._id} className="overflow-hidden group">
+              <Card key={contest._id} className="overflow-hidden group flex flex-col h-full">
                 {/* Banner Image */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600 to-purple-700 overflow-hidden">
+                <div className="relative h-40 md:h-48 bg-gradient-to-br from-blue-600 to-purple-700 overflow-hidden">
                   {contest.bannerImage ? (
                     <img
                       src={contest.bannerImage}
@@ -368,7 +368,7 @@ const Contest: React.FC = () => {
                   )}
                 </div>
 
-                <CardHeader>
+                <CardHeader className="pb-2 md:pb-6">
                   <CardTitle className="text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-2">
                     {contest.name}
                   </CardTitle>
@@ -377,31 +377,31 @@ const Contest: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 md:space-y-4 flex-1">
                   {/* Contest Stats */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center text-gray-600">
+                  <div className="grid grid-cols-2 gap-2 md:gap-4">
+                    <div className="flex items-center text-gray-600 text-xs md:text-sm">
                       <Calendar className="h-4 w-4 mr-2 text-blue-500" />
                       <div>
                         <p className="text-xs font-medium text-gray-500">Start Time</p>
                         <p className="text-sm font-semibold">{formatDateTime(contest.startTime)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center text-gray-600">
+                    <div className="flex items-center text-gray-600 text-xs md:text-sm">
                       <Timer className="h-4 w-4 mr-2 text-green-500" />
                       <div>
                         <p className="text-xs font-medium text-gray-500">Duration</p>
                         <p className="text-sm font-semibold">{formatDuration(contest.duration)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center text-gray-600">
+                    <div className="flex items-center text-gray-600 text-xs md:text-sm">
                       <Users className="h-4 w-4 mr-2 text-purple-500" />
                       <div>
                         <p className="text-xs font-medium text-gray-500">Participants</p>
                         <p className="text-sm font-semibold">{contest.participants.length}</p>
                       </div>
                     </div>
-                    <div className="flex items-center text-gray-600">
+                    <div className="flex items-center text-gray-600 text-xs md:text-sm">
                       <Star className="h-4 w-4 mr-2 text-yellow-500" />
                       <div>
                         <p className="text-xs font-medium text-gray-500">Problems</p>
@@ -415,7 +415,7 @@ const Contest: React.FC = () => {
                   {contest.problems.length > 0 && (
                     <div>
                       <p className="text-sm font-semibold text-gray-700 mb-2">Problems:</p>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-1 md:gap-1.5">
                         {actualStatus === "ended"
                           ? contest.problems.slice(0, 3).map((problemObj, index) => (
                               <Badge key={index} className={`${getDifficultyColor(problemObj.problem?.difficulty)} text-xs`}>
@@ -438,7 +438,7 @@ const Contest: React.FC = () => {
 
                   {/* Time Display */}
                   {actualStatus === "upcoming" && (
-                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                    <div className="bg-blue-50 border border-blue-200 p-3 md:p-4 rounded-lg">
                       <p className="text-sm text-blue-700 font-medium mb-1">Contest starts in</p>
                       <p className="text-lg font-bold text-blue-800">
                         {getTimeRemaining(contest.startTime, contest.endTime, actualStatus)}
@@ -447,7 +447,7 @@ const Contest: React.FC = () => {
                   )}
 
                   {actualStatus === "ongoing" && (
-                    <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                    <div className="bg-green-50 border border-green-200 p-3 md:p-4 rounded-lg">
                       <p className="text-sm text-green-700 font-medium mb-1 flex items-center">
                         <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                         Contest is LIVE!
@@ -460,7 +460,7 @@ const Contest: React.FC = () => {
 
                   {/* Leaderboard Preview for Ended Contests */}
                   {actualStatus === "ended" && contest.participants.length > 0 && (
-                    <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+                    <div className="bg-gray-50 border border-gray-200 p-3 md:p-4 rounded-lg">
                       <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                         <Award className="h-4 w-4 mr-2 text-yellow-500" />
                         Top Performers
@@ -494,7 +494,7 @@ const Contest: React.FC = () => {
                   )}
                 </CardContent>
 
-                <CardFooter className="pt-0">
+                <CardFooter className="pt-0 pb-2 md:pb-6">
                   {/* Action Buttons */}
                   {user ? (
                     <>
@@ -573,8 +573,8 @@ const Contest: React.FC = () => {
 
         {/* Empty State */}
         {filteredContests.length === 0 && (
-          <div className="text-center py-16">
-            <div className="bg-white rounded-xl shadow-lg p-12 max-w-md mx-auto">
+          <div className="text-center py-10 md:py-16">
+            <div className="bg-white rounded-xl shadow-lg p-6 md:p-12 max-w-md mx-auto">
               <Trophy className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No contests found</h3>
               <p className="text-gray-600">
