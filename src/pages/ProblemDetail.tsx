@@ -145,6 +145,12 @@ function AnimatedAiResponse({ response }: { response: string }) {
 }
 
 const ProblemDetail: React.FC = () => {
+  // Reset code to starting template from DB
+  const handleResetCode = () => {
+    if (problem?.codeTemplates && language in problem.codeTemplates) {
+      setCode(problem.codeTemplates[language] || "")
+    }
+  }
   const { id } = useParams<{ id: string }>()
   const { user, token, updateCoins } = useAuth()
   const [problem, setProblem] = useState<Problem | null>(null)
@@ -2042,6 +2048,14 @@ const ProblemDetail: React.FC = () => {
                     Clear Results
                   </button>
                 )}
+                <button
+                  onClick={handleResetCode}
+                  className="flex items-center px-3 py-1.5 bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-200 rounded-lg transition-colors text-sm font-medium border border-transparent dark:border-red-700 hover:border-red-400 dark:hover:border-red-500"
+                  title="Reset code to starting template"
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  Reset Code
+                </button>
                 <button
                   onClick={toggleCodeEditorMaximized}
                   className="flex items-center px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm font-medium border border-transparent dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
