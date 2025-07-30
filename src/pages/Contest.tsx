@@ -289,25 +289,25 @@ const Contest: React.FC = () => {
   console.log("here");
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-full shadow-lg">
-              <Trophy className="h-12 w-12 text-white" />
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="flex items-center justify-center mb-4 sm:mb-6">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 sm:p-4 rounded-full shadow-lg">
+              <Trophy className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-700 dark:text-white mb-4">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-700 dark:text-white mb-2 sm:mb-4">
             Programming Contests
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-md sm:max-w-2xl mx-auto">
             Participate in exciting programming competitions and test your skills against other developers
           </p>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2 inline-flex space-x-2">
+        <div className="flex justify-center mb-6 sm:mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-1 sm:p-2 inline-flex space-x-1 sm:space-x-2 overflow-x-auto">
             {[
               { id: "all", label: "All Contests", icon: Trophy },
               { id: "upcoming", label: "Upcoming", icon: Calendar },
@@ -334,7 +334,7 @@ const Contest: React.FC = () => {
         </div>
 
         {/* Contests Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8">
           {filteredContests.map((contest) => {
             // Get actual status for each contest
             const actualStatus = getActualContestStatus(contest.startTime, contest.endTime)
@@ -343,7 +343,7 @@ const Contest: React.FC = () => {
             return (
               <Card key={contest._id} className="overflow-hidden group">
                 {/* Banner Image */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600 to-purple-700 overflow-hidden">
+                <div className="relative h-36 sm:h-48 bg-gradient-to-br from-blue-600 to-purple-700 overflow-hidden">
                   {contest.bannerImage ? (
                     <img
                       src={contest.bannerImage}
@@ -369,43 +369,43 @@ const Contest: React.FC = () => {
                 </div>
 
                 <CardHeader>
-                  <CardTitle className="text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-2">
+                  <CardTitle className="text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-2 text-base sm:text-xl">
                     {contest.name}
                   </CardTitle>
-                  <CardDescription className="line-clamp-3 mt-2">
+                  <CardDescription className="line-clamp-3 mt-1 sm:mt-2 text-xs sm:text-sm">
                     {contest.description}
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 sm:space-y-4">
                   {/* Contest Stats */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     <div className="flex items-center text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-blue-500" />
                       <div>
-                        <p className="text-xs font-medium text-gray-500">Start Time</p>
-                        <p className="text-sm font-semibold">{formatDateTime(contest.startTime)}</p>
+                        <p className="text-[10px] sm:text-xs font-medium text-gray-500">Start Time</p>
+                        <p className="text-xs sm:text-sm font-semibold">{formatDateTime(contest.startTime)}</p>
                       </div>
                     </div>
                     <div className="flex items-center text-gray-600">
-                      <Timer className="h-4 w-4 mr-2 text-green-500" />
+                      <Timer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-green-500" />
                       <div>
-                        <p className="text-xs font-medium text-gray-500">Duration</p>
-                        <p className="text-sm font-semibold">{formatDuration(contest.duration)}</p>
+                        <p className="text-[10px] sm:text-xs font-medium text-gray-500">Duration</p>
+                        <p className="text-xs sm:text-sm font-semibold">{formatDuration(contest.duration)}</p>
                       </div>
                     </div>
                     <div className="flex items-center text-gray-600">
-                      <Users className="h-4 w-4 mr-2 text-purple-500" />
+                      <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-purple-500" />
                       <div>
-                        <p className="text-xs font-medium text-gray-500">Participants</p>
-                        <p className="text-sm font-semibold">{contest.participants.length}</p>
+                        <p className="text-[10px] sm:text-xs font-medium text-gray-500">Participants</p>
+                        <p className="text-xs sm:text-sm font-semibold">{contest.participants.length}</p>
                       </div>
                     </div>
                     <div className="flex items-center text-gray-600">
-                      <Star className="h-4 w-4 mr-2 text-yellow-500" />
+                      <Star className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-yellow-500" />
                       <div>
-                        <p className="text-xs font-medium text-gray-500">Problems</p>
-                        <p className="text-sm font-semibold">{contest.problems.length}</p>
+                        <p className="text-[10px] sm:text-xs font-medium text-gray-500">Problems</p>
+                        <p className="text-xs sm:text-sm font-semibold">{contest.problems.length}</p>
                       </div>
                     </div>
                   </div>
@@ -414,21 +414,21 @@ const Contest: React.FC = () => {
                   {/* Problems Preview */}
                   {contest.problems.length > 0 && (
                     <div>
-                      <p className="text-sm font-semibold text-gray-700 mb-2">Problems:</p>
-                      <div className="flex flex-wrap gap-1.5">
+                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-2">Problems:</p>
+                      <div className="flex flex-wrap gap-1 sm:gap-1.5">
                         {actualStatus === "ended"
                           ? contest.problems.slice(0, 3).map((problemObj, index) => (
-                              <Badge key={index} className={`${getDifficultyColor(problemObj.problem?.difficulty)} text-xs`}>
-                                {problemObj.problem?.title || "Untitled"}
-                              </Badge>
+                          <Badge key={index} className={`${getDifficultyColor(problemObj.problem?.difficulty)} text-[10px] sm:text-xs`}>
+                            {problemObj.problem?.title || "Untitled"}
+                          </Badge>
                             ))
                           : contest.problems.slice(0, 3).map((problemObj, index) => (
-                              <Badge key={index} className={`${getDifficultyColor(problemObj.problem?.difficulty)} text-xs`}>
-                                🔒 Locked
-                              </Badge>
+                          <Badge key={index} className={`${getDifficultyColor(problemObj.problem?.difficulty)} text-[10px] sm:text-xs`}>
+                            🔒 Locked
+                          </Badge>
                             ))}
                         {contest.problems.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-[10px] sm:text-xs">
                             +{contest.problems.length - 3} more
                           </Badge>
                         )}
@@ -438,21 +438,21 @@ const Contest: React.FC = () => {
 
                   {/* Time Display */}
                   {actualStatus === "upcoming" && (
-                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                      <p className="text-sm text-blue-700 font-medium mb-1">Contest starts in</p>
-                      <p className="text-lg font-bold text-blue-800">
+                    <div className="bg-blue-50 border border-blue-200 p-2 sm:p-4 rounded-lg">
+                      <p className="text-xs sm:text-sm text-blue-700 font-medium mb-1">Contest starts in</p>
+                      <p className="text-base sm:text-lg font-bold text-blue-800">
                         {getTimeRemaining(contest.startTime, contest.endTime, actualStatus)}
                       </p>
                     </div>
                   )}
 
                   {actualStatus === "ongoing" && (
-                    <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                      <p className="text-sm text-green-700 font-medium mb-1 flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                    <div className="bg-green-50 border border-green-200 p-2 sm:p-4 rounded-lg">
+                      <p className="text-xs sm:text-sm text-green-700 font-medium mb-1 flex items-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-1 sm:mr-2 animate-pulse"></div>
                         Contest is LIVE!
                       </p>
-                      <p className="text-lg font-bold text-green-800">
+                      <p className="text-base sm:text-lg font-bold text-green-800">
                         {getTimeRemaining(contest.startTime, contest.endTime, actualStatus)}
                       </p>
                     </div>
@@ -460,12 +460,12 @@ const Contest: React.FC = () => {
 
                   {/* Leaderboard Preview for Ended Contests */}
                   {actualStatus === "ended" && contest.participants.length > 0 && (
-                    <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
-                        <Award className="h-4 w-4 mr-2 text-yellow-500" />
+                    <div className="bg-gray-50 border border-gray-200 p-2 sm:p-4 rounded-lg">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3 flex items-center text-xs sm:text-base">
+                        <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-yellow-500" />
                         Top Performers
                       </h4>
-                      <div className="space-y-2">
+                      <div className="space-y-1 sm:space-y-2">
                         {contest.participants
                           .sort((a, b) => a.rank - b.rank)
                           .slice(0, Math.min(3, contest.participants.length))
@@ -475,18 +475,18 @@ const Contest: React.FC = () => {
                             // console.log("Participant object:", participant)
                             <div key={index} className="flex items-center justify-between">
                               <div className="flex items-center">
-                                <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${
+                                <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full text-[10px] sm:text-xs font-bold flex items-center justify-center ${
                                   index === 0 ? 'bg-yellow-500 text-white' :
                                   index === 1 ? 'bg-gray-400 text-white' :
                                   'bg-orange-600 text-white'
                                 }`}>
                                   {participant.rank}
                                 </span>
-                                <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">
+                                <span className="ml-1 sm:ml-2 text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                                   {participant.user?.username || "Unknown"}
                                 </span>
                               </div>
-                              <span className="text-sm font-bold text-blue-600">{participant.score} pts</span>
+                              <span className="text-xs sm:text-sm font-bold text-blue-600">{participant.score} pts</span>
                             </div>
                           )})}
                       </div>
@@ -573,11 +573,11 @@ const Contest: React.FC = () => {
 
         {/* Empty State */}
         {filteredContests.length === 0 && (
-          <div className="text-center py-16">
-            <div className="bg-white rounded-xl shadow-lg p-12 max-w-md mx-auto">
-              <Trophy className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No contests found</h3>
-              <p className="text-gray-600">
+          <div className="text-center py-10 sm:py-16">
+            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-12 max-w-xs sm:max-w-md mx-auto">
+              <Trophy className="h-10 w-10 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-2 sm:mb-4" />
+              <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">No contests found</h3>
+              <p className="text-xs sm:text-base text-gray-600">
                 {filter === "all" 
                   ? "There are no contests available at the moment. Check back later!" 
                   : `There are no ${filter} contests currently.`}
