@@ -29,6 +29,7 @@ import {
   ArrowLeft,
   Zap, // For complexity analysis
   GraduationCap, // For visualizer
+  Settings,
 } from "lucide-react"
 import CodeMirrorEditor from "../components/CodeMirrorEditor"
 import { API_URL } from "../config/api"
@@ -163,6 +164,7 @@ const ProblemDetail: React.FC = () => {
   const [submitting, setSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("description")
   const [editorial, setEditorial] = useState<any>(null)
+  const [showSettings, setShowSettings] = useState(false);
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [solutions, setSolutions] = useState<Solution[]>([])
   const [isSolved, setIsSolved] = useState(false)
@@ -707,6 +709,72 @@ const ProblemDetail: React.FC = () => {
     }
   }
 
+  // Add near other state declarations
+  const [editorSettings, setEditorSettings] = useState({
+    tabSize: 2, // Default to 2 spaces
+    insertSpaces: true,
+    fontSize: 14,
+    lineNumbers: true,
+    wordWrap: false,
+  });
+
+  // Temporary settings for the dropdown (before applying)
+  const [tempEditorSettings, setTempEditorSettings] = useState({
+    tabSize: 2,
+    insertSpaces: true,
+    fontSize: 14,
+    lineNumbers: true,
+    wordWrap: false,
+  });
+
+  // Load settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('editorSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setEditorSettings(settings);
+      setTempEditorSettings(settings); // Sync temp settings
+    }
+  }, []);
+
+  // Handle applying settings
+  const handleApplySettings = () => {
+    setEditorSettings(tempEditorSettings);
+    localStorage.setItem('editorSettings', JSON.stringify(tempEditorSettings));
+    setShowSettings(false);
+  };
+
+  // Handle closing settings without applying
+  const handleCloseSettings = () => {
+    // Reset temp settings to current settings
+    setTempEditorSettings(editorSettings);
+    setShowSettings(false);
+  };
+
+  // Handle opening settings (sync temp with current)
+  const handleOpenSettings = () => {
+    setTempEditorSettings(editorSettings);
+    setShowSettings(true);
+  };
+
+  // Close settings when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showSettings && event.target instanceof Element) {
+        const settingsDropdown = document.querySelector('.settings-dropdown');
+        const settingsButton = document.querySelector('.settings-button');
+        
+        if (settingsDropdown && !settingsDropdown.contains(event.target) && 
+            settingsButton && !settingsButton.contains(event.target)) {
+          handleCloseSettings();
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSettings, editorSettings]);
+
   const handleRun = async () => {
     if (!code.trim()) {
       toast.error("Please write some code before running!", {
@@ -1119,14 +1187,9 @@ const ProblemDetail: React.FC = () => {
                   onChange={setCode}
                   language={language}
                   disabled={false}
+                  settings={editorSettings} // Pass settings
                   className="h-full w-full"
                   height="100%"
-                  style={{ height: "100%" }}
-                  options={{
-                    scrollbarStyle: "native",
-                    viewportMargin: 10,
-                    lineWrapping: true,
-                  }}
                 />
               </div>
             </div>
@@ -1661,14 +1724,13 @@ const ProblemDetail: React.FC = () => {
             <div className="flex-1 relative p-4">
               <div className="absolute inset-4 border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden shadow-inner">
                 <CodeMirrorEditor
-                  value={complexityCodeInput}
-                  onChange={setComplexityCodeInput}
+                  value={code}
+                  onChange={setCode}
                   language={language}
                   disabled={false}
+                  settings={editorSettings} // Pass settings
                   className="h-full w-full"
                   height="100%"
-                  style={{ height: "100%" }}
-                  options={{ scrollbarStyle: "native", viewportMargin: 10, lineWrapping: true }}
                 />
               </div>
             </div>
@@ -1995,8 +2057,9 @@ const ProblemDetail: React.FC = () => {
                         </div>
                         <CodeMirrorEditor
                           value={solution.completeCode}
+                          onChange={() => {}} 
                           language={solution.language}
-                          options={{ readOnly: true, lineWrapping: true }}
+                          disabled={true}
                           className="border border-gray-300 dark:border-gray-700 rounded-lg"
                           height="400px"
                         />
@@ -2035,7 +2098,19 @@ const ProblemDetail: React.FC = () => {
                   <option value="c">C</option>
                 </select>
               </div>
-              <div className="flex items-center space-x-3">
+              
+              {/* Right side container with relative positioning for dropdown */}
+              <div className="flex items-center space-x-3 relative">
+                {/* Settings Button */}
+                <button
+                  onClick={handleOpenSettings}
+                  className="settings-button p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  title="Editor Settings"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+
+                {/* Action Buttons */}
                 {(runResult || submissionResult) && (
                   <button
                     onClick={() => {
@@ -2064,9 +2139,90 @@ const ProblemDetail: React.FC = () => {
                   <Maximize2 className="h-4 w-4 mr-2" />
                   Maximize
                 </button>
+
+                {/* Settings Dropdown - Now properly positioned relative to its container */}
+                {showSettings && (
+                  <div className="settings-dropdown absolute top-12 right-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 z-50 min-w-64">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold">Editor Settings</h3>
+                      <button
+                        onClick={handleCloseSettings}
+                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded"
+                        title="Close"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Tab Size</label>
+                        <select
+                          value={tempEditorSettings.tabSize}
+                          onChange={(e) => {
+                            setTempEditorSettings({ ...tempEditorSettings, tabSize: Number(e.target.value) });
+                          }}
+                          className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
+                        >
+                          <option value={2}>2 spaces</option>
+                          <option value={4}>4 spaces</option>
+                          <option value={8}>8 spaces</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Font Size</label>
+                        <select
+                          value={tempEditorSettings.fontSize}
+                          onChange={(e) => {
+                            setTempEditorSettings({ ...tempEditorSettings, fontSize: Number(e.target.value) });
+                          }}
+                          className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
+                        >
+                          <option value={12}>12px</option>
+                          <option value={14}>14px</option>
+                          <option value={16}>16px</option>
+                          <option value={18}>18px</option>
+                        </select>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="wordWrap"
+                          checked={tempEditorSettings.wordWrap}
+                          onChange={(e) => {
+                            setTempEditorSettings({ ...tempEditorSettings, wordWrap: e.target.checked });
+                          }}
+                          className="mr-2"
+                        />
+                        <label htmlFor="wordWrap" className="text-sm">Word Wrap</label>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-end space-x-2 mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+                      <button
+                        onClick={handleCloseSettings}
+                        className="px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm font-medium transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleApplySettings}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            {/* Warnings */}
+            
+            {/* Warnings Section */}
             {tabSwitchCount > 0 && (
               <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                 <p className="text-yellow-800 dark:text-yellow-300 text-sm">
@@ -2092,14 +2248,9 @@ const ProblemDetail: React.FC = () => {
                 onChange={setCode}
                 language={language}
                 disabled={false}
+                settings={editorSettings} // Pass settings
                 className="h-full w-full"
                 height="100%"
-                style={{ height: "100%" }}
-                options={{
-                  scrollbarStyle: "native",
-                  viewportMargin: 10,
-                  lineWrapping: true,
-                }}
               />
             </div>
           </div>
