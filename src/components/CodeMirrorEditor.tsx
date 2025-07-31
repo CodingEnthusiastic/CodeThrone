@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { basicSetup } from 'codemirror';
 import { EditorState, Extension } from '@codemirror/state';
-import { EditorView, keymap } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, indentWithTab } from '@codemirror/commands';
 import { cpp } from '@codemirror/lang-cpp';
 import { java } from '@codemirror/lang-java';
@@ -12,6 +12,15 @@ import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { searchKeymap } from '@codemirror/search';
 import { useTheme } from '../contexts/ThemeContext';
 import { EditorSelection } from '@codemirror/state';
+import { indentUnit } from '@codemirror/language';
+
+interface EditorSettings {
+  tabSize: number;
+  insertSpaces: boolean;
+  fontSize: number;
+  lineNumbers: boolean;
+  wordWrap: boolean;
+}
 
 interface CodeMirrorEditorProps {
   value: string;
@@ -21,7 +30,17 @@ interface CodeMirrorEditorProps {
   className?: string;
   contestMode?: boolean;
   height?: string;
+  settings?: Partial<EditorSettings>; // Add settings prop
 }
+
+// Add default settings
+const DEFAULT_SETTINGS: EditorSettings = {
+  tabSize: 2, // Default to 2 spaces (modern standard)
+  insertSpaces: true,
+  fontSize: 14,
+  lineNumbers: true,
+  wordWrap: false,
+};
 
 // Language configurations
 const getLanguageExtension = (language: string): Extension => {
@@ -660,11 +679,16 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   disabled = false,
   className = '',
   contestMode = false,
-  height = '400px'
+  height = '400px',
+  settings = {}, // Add settings prop
 }) => {
   const { isDark } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const isInitializedRef = useRef(false);
+  
+  // Merge user settings with defaults
+  const editorSettings = { ...DEFAULT_SETTINGS, ...settings };
 
   const customCompletions = useCallback(() => {
     return autocompletion({
@@ -710,59 +734,26 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     });
   }, [language]);
 
-  // Smart indentation keymap: auto-indent new line with same number of spaces as previous line (spaces only)
-    // Smart indentation keymap: auto-indent new line with same spaces/tabs as *current* line
-  const smartIndentKeymap = [
+  // Custom Tab handler for consistent indentation
+  const customTabKeymap = [
     {
-      key: "Enter",
+      key: "Tab",
       run: (view: EditorView) => {
-        // Debug: Print state and selection info
-        console.log("[SmartIndent] Enter key pressed");
-        // return false;
         const { state } = view;
         const { head } = state.selection.main;
-        const line = state.doc.lineAt(head);
-        console.log("[SmartIndent] Current line number:", line.number);
-        console.log("[SmartIndent] Current line text:", JSON.stringify(line.text));
-        // If at the start of the document, no indent
-        if (line.number === 1) {
-          console.log("[SmartIndent] At first line, no indent. line.number:", line.number);
-          view.dispatch({
-            changes: { from: head, to: head, insert: "\n" },
-            selection: EditorSelection.cursor(head + 1),
-            scrollIntoView: true,
-          });
-          return true;
-        }
-        const prevLine = state.doc.line(line.number - 1);
-        console.log("[SmartIndent] Previous line number:", prevLine.number);
-        console.log("[SmartIndent] Previous line text:", JSON.stringify(prevLine.text));
-        // Count spaces only (ignore tabs)
-        const spaceMatch = prevLine.text.match(/^( +)/);
-        const tabMatch = prevLine.text.match(/^(\t+)/);
-        const indentSpaces = spaceMatch ? spaceMatch[1] : "";
-        const indentTabs = tabMatch ? tabMatch[1] : "";
-        const indent = indentSpaces; // Only use spaces for indent
-
-      // Debug logs
-      console.log("[SmartIndent] Spaces at start:", JSON.stringify(indentSpaces), "Count:", indentSpaces.length);
-      console.log("[SmartIndent] Tabs at start:", JSON.stringify(indentTabs), "Count:", indentTabs.length);
-      console.log("[SmartIndent] Indent to insert (spaces only):", JSON.stringify(indent));
-      console.log("[SmartIndent] Cursor position before:", head);
-      console.log("[SmartIndent] Cursor position after:", head + 1 + indent.length);
-
-      view.dispatch({
-        changes: { from: head, to: head, insert: "\n" + indent },
-        selection: EditorSelection.cursor(head + 1 + indent.length),
-        scrollIntoView: true,
-      });
-      return true;
+        const tabString = editorSettings.insertSpaces 
+          ? ' '.repeat(editorSettings.tabSize) 
+          : '\t';
+          
+        view.dispatch({
+          changes: { from: head, to: head, insert: tabString },
+          selection: EditorSelection.cursor(head + tabString.length),
+          scrollIntoView: true,
+        });
+        return true;
+      }
     }
-  }
   ];
-
-
-
 
   const createEditorState = useCallback(() => {
     const extensions: Extension[] = [
@@ -770,7 +761,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       getLanguageExtension(language),
       customCompletions(),
       keymap.of([
-        ...smartIndentKeymap,
+        ...customTabKeymap,
         ...defaultKeymap,
         ...completionKeymap,
         ...searchKeymap,
@@ -779,7 +770,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       EditorView.theme({
         '&': {
           height: height,
-          fontSize: '14px',
+          fontSize: `${editorSettings.fontSize}px`,
           fontFamily: '"Fira Code", "JetBrains Mono", monospace',
         },
         '.cm-editor': {
@@ -791,7 +782,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         '.cm-content': {
           padding: '16px',
           minHeight: '100%',
-          whiteSpace: 'pre', 
+          whiteSpace: editorSettings.wordWrap ? 'pre-wrap' : 'pre',
+          tabSize: editorSettings.tabSize, // Set tab size
         },
         '.cm-focused': {
           outline: 'none',
@@ -837,6 +829,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           '&:after': { content: '"S"', color: '#007acc' }
         },
       }),
+      // Configure indentation
+      indentUnit.of(' '.repeat(editorSettings.tabSize)),
       EditorView.updateListener.of((update: any) => {
         if (update.docChanged && !disabled) {
           const newValue = update.state.doc.toString();
@@ -844,6 +838,11 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         }
       }),
     ];
+
+    // Add line numbers based on settings
+    if (editorSettings.lineNumbers) {
+      extensions.push(lineNumbers());
+    }
 
     // Add dark theme if needed
     if (isDark) {
@@ -874,7 +873,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       doc: value,
       extensions,
     });
-  }, [language, disabled, contestMode, isDark, height, customCompletions]);
+  }, [language, disabled, contestMode, isDark, editorSettings, height]);
 
   // Initialize editor only once
   useEffect(() => {
@@ -887,37 +886,181 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     });
 
     viewRef.current = view;
+    isInitializedRef.current = true;
 
     return () => {
       if (viewRef.current) {
         viewRef.current.destroy();
         viewRef.current = null;
       }
+      isInitializedRef.current = false;
     };
   }, []);
 
-  // Update editor configuration when dependencies change (simplified)
+  // Update editor configuration when dependencies change (but not on every render)
   useEffect(() => {
-    if (!viewRef.current) return;
+    if (!viewRef.current || !isInitializedRef.current) return;
 
-    // Only recreate if language or major config changes
-    const newState = createEditorState();
-    viewRef.current.setState(newState);
-  }, [language, disabled, contestMode, isDark]);
+    // For major configuration changes, we need to recreate the editor
+    // but we'll try to preserve the cursor position and content
+    const currentDoc = viewRef.current.state.doc.toString();
+    const currentSelection = viewRef.current.state.selection;
+    const cursorPos = currentSelection.main.head;
+
+    // Destroy current editor
+    viewRef.current.destroy();
+    viewRef.current = null;
+
+    // Create new editor state with preserved content and cursor position
+    const state = EditorState.create({
+      doc: currentDoc,
+      extensions: (() => {
+        const extensions: Extension[] = [
+          basicSetup,
+          getLanguageExtension(language),
+          customCompletions(),
+          keymap.of([
+            ...customTabKeymap,
+            ...defaultKeymap,
+            ...completionKeymap,
+            ...searchKeymap,
+            indentWithTab,
+          ]),
+          EditorView.theme({
+            '&': {
+              height: height,
+              fontSize: `${editorSettings.fontSize}px`,
+              fontFamily: '"Fira Code", "JetBrains Mono", monospace',
+            },
+            '.cm-editor': {
+              height: '100%',
+            },
+            '.cm-scroller': {
+              height: '100%',
+            },
+            '.cm-content': {
+              padding: '16px',
+              minHeight: '100%',
+              whiteSpace: editorSettings.wordWrap ? 'pre-wrap' : 'pre',
+              tabSize: editorSettings.tabSize,
+            },
+            '.cm-focused': {
+              outline: 'none',
+            },
+            '.cm-editor.cm-focused': {
+              outline: 'none',
+            },
+            '.cm-tooltip': {
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              backgroundColor: isDark ? '#374151' : '#ffffff',
+              color: isDark ? '#ffffff' : '#000000',
+            },
+            '.cm-tooltip-autocomplete': {
+              '& > ul': {
+                maxHeight: '200px',
+              },
+              '& > ul > li': {
+                padding: '4px 8px',
+              },
+              '& > ul > li[aria-selected]': {
+                backgroundColor: isDark ? '#4f46e5' : '#3b82f6',
+                color: '#ffffff',
+              }
+            },
+            '.cm-completionIcon': {
+              fontSize: '16px',
+              width: '16px',
+              height: '16px',
+              marginRight: '8px',
+            },
+            '.cm-completionIcon-type': {
+              '&:after': { content: '"T"', color: '#007acc' }
+            },
+            '.cm-completionIcon-function': {
+              '&:after': { content: '"F"', color: '#652d90' }
+            },
+            '.cm-completionIcon-variable': {
+              '&:after': { content: '"V"', color: '#10b981' }
+            },
+            '.cm-completionIcon-snippet': {
+              '&:after': { content: '"S"', color: '#007acc' }
+            },
+          }),
+          indentUnit.of(' '.repeat(editorSettings.tabSize)),
+          EditorView.updateListener.of((update: any) => {
+            if (update.docChanged && !disabled) {
+              const newValue = update.state.doc.toString();
+              onChange(newValue);
+            }
+          }),
+        ];
+
+        if (editorSettings.lineNumbers) {
+          extensions.push(lineNumbers());
+        }
+
+        if (isDark) {
+          extensions.push(oneDark);
+        }
+
+        if (contestMode) {
+          extensions.push(
+            EditorView.domEventHandlers({
+              paste: () => {
+                alert('Pasting is disabled in contest mode!');
+                return true;
+              },
+              contextmenu: () => {
+                return true;
+              }
+            })
+          );
+        }
+
+        if (disabled) {
+          extensions.push(EditorState.readOnly.of(true));
+        }
+
+        return extensions;
+      })(),
+      selection: EditorSelection.cursor(Math.min(cursorPos, currentDoc.length)),
+    });
+
+    const view = new EditorView({
+      state,
+      parent: editorRef.current!,
+    });
+
+    viewRef.current = view;
+  }, [language, disabled, contestMode, isDark, JSON.stringify(editorSettings), height, customCompletions, onChange]);
 
   useEffect(() => {
     // Update editor content when value changes externally
     if (viewRef.current) {
       const currentDoc = viewRef.current.state.doc.toString();
       if (currentDoc !== value) {
-        const transaction = viewRef.current.state.update({
-          changes: {
-            from: 0,
-            to: viewRef.current.state.doc.length,
-            insert: value,
-          },
-        });
-        viewRef.current.dispatch(transaction);
+        // Only update if the change is not from user input
+        // This prevents cursor jumping during typing
+        const isUserInput = viewRef.current.hasFocus;
+        
+        if (!isUserInput) {
+          // Store current cursor position
+          const currentSelection = viewRef.current.state.selection;
+          const cursorPos = Math.min(currentSelection.main.head, value.length);
+          
+          const transaction = viewRef.current.state.update({
+            changes: {
+              from: 0,
+              to: viewRef.current.state.doc.length,
+              insert: value,
+            },
+            selection: EditorSelection.cursor(cursorPos), // Restore cursor position
+            scrollIntoView: true,
+          });
+          viewRef.current.dispatch(transaction);
+        }
       }
     }
   }, [value]);
@@ -990,5 +1133,3 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
 };
 
 export default CodeMirrorEditor;
-// export default CodeMirrorEditor;
-// export default CodeMirrorEditor;
