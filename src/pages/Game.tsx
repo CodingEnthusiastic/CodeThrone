@@ -657,7 +657,7 @@ useEffect(() => {
         } catch (error) {
           console.error("❌ Error refreshing game state:", error)
         }
-      }, 2000) // Refresh every 2 seconds
+      }, 20000000) // Refresh every 20000 seconds
     }
     
     return () => {
