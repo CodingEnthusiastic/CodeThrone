@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
+import MarqueeLogos from "../pages/MarqueeLogos"
 import StarsBackground from "../components/StarsBackground"
 import axios from "axios"
 import {
@@ -2041,6 +2042,8 @@ const Home: React.FC = () => {
           </div>
         </div>
 
+          <MarqueeLogos />
+          
         {/* Learn and Upskill Section */}
         <div
           className={`relative overflow-hidden rounded-3xl p-12 mb-20 ${
