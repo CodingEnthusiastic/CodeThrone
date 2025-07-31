@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
+import { useTheme } from "../contexts/ThemeContext"
 import axios from "axios"
 import { Trophy, Clock, Users, Calendar, Star, Play, Award, Eye, Timer, MapPin } from "lucide-react"
 // import { useParams } from "react-router-dom"
@@ -130,6 +131,7 @@ const Badge: React.FC<{
 
 const Contest: React.FC = () => {
   const { user } = useAuth()
+  const { isDark } = useTheme()
   const navigate = useNavigate()
   const [contests, setContests] = useState<Contest[]>([])
   const [loading, setLoading] = useState(true)
@@ -277,6 +279,27 @@ const Contest: React.FC = () => {
   }
   console.log(loading, "Loading state for contests:", contests);
   if (loading) {
+    if (isDark) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 animate-pulse rounded-full bg-gradient-to-br from-blue-900 via-purple-900 to-gray-900 blur-2xl opacity-60"></div>
+              <div className="relative z-10 flex items-center justify-center">
+                <Trophy className="h-16 w-16 text-yellow-400 animate-bounce drop-shadow-lg" />
+              </div>
+            </div>
+            <div className="bg-gray-800/80 rounded-xl shadow-2xl p-8 border border-gray-700 max-w-xs mx-auto">
+              <p className="text-lg font-bold text-yellow-300 mb-2">Loading Contests...</p>
+              <p className="text-gray-300 mb-4">Please wait while we fetch the latest programming competitions.</p>
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-4 border-yellow-400 border-t-transparent"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
