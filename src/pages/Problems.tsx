@@ -137,15 +137,148 @@ const Problems: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 dark:border-blue-400"></div>
+      <div className="min-h-screen flex items-center justify-center dark:bg-gray-900 relative overflow-hidden">
+        {/* Animated Background for Loading */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Light mode blinking shapes */}
+          <div className="dark:hidden">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={`light-${i}`}
+                className="absolute animate-pulse"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`
+                }}
+              >
+                <div className={`w-2 h-2 rounded-full ${
+                  i % 4 === 0 ? 'bg-blue-200' :
+                  i % 4 === 1 ? 'bg-green-200' :
+                  i % 4 === 2 ? 'bg-purple-200' : 'bg-pink-200'
+                } opacity-60`}></div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Dark mode moving stars */}
+          <div className="hidden dark:block">
+            {[...Array(50)].map((_, i) => (
+              <div
+                key={`dark-${i}`}
+                className="absolute w-1 h-1 bg-white rounded-full opacity-70 animate-pulse"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${1 + Math.random()}s`
+                }}
+              >
+                <div className="w-full h-full bg-white rounded-full animate-ping"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 dark:border-blue-400 relative z-10"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 md:py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Light mode blinking shapes */}
+        <div className="dark:hidden">
+          <style jsx>{`
+            @keyframes float-blink {
+              0%, 100% { opacity: 0.3; transform: translateY(0px) scale(1); }
+              25% { opacity: 0.8; transform: translateY(-10px) scale(1.1); }
+              50% { opacity: 0.6; transform: translateY(-20px) scale(0.9); }
+              75% { opacity: 0.9; transform: translateY(-5px) scale(1.05); }
+            }
+            .float-blink { animation: float-blink 4s ease-in-out infinite; }
+          `}</style>
+          
+          {[...Array(25)].map((_, i) => (
+            <div
+              key={`light-shape-${i}`}
+              className="absolute float-blink"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 4}s`,
+                animationDuration: `${3 + Math.random() * 3}s`
+              }}
+            >
+              {i % 5 === 0 ? (
+                <div className="w-3 h-3 bg-gradient-to-br from-blue-200 to-blue-300 rounded-full opacity-40"></div>
+              ) : i % 5 === 1 ? (
+                <div className="w-2 h-2 bg-gradient-to-br from-green-200 to-green-300 rotate-45 opacity-40"></div>
+              ) : i % 5 === 2 ? (
+                <div className="w-4 h-1 bg-gradient-to-r from-purple-200 to-purple-300 rounded-full opacity-40"></div>
+              ) : i % 5 === 3 ? (
+                <div className="w-2 h-4 bg-gradient-to-b from-pink-200 to-pink-300 rounded-full opacity-40"></div>
+              ) : (
+                <div className="w-2 h-2 bg-gradient-to-br from-yellow-200 to-yellow-300 rounded-sm opacity-40"></div>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        {/* Dark mode moving stars */}
+        <div className="hidden dark:block">
+          <style jsx>{`
+            @keyframes shooting-star {
+              0% { transform: translateX(0) translateY(0) scale(0); opacity: 1; }
+              10% { transform: translateX(10px) translateY(-10px) scale(1); opacity: 1; }
+              100% { transform: translateX(300px) translateY(-300px) scale(0); opacity: 0; }
+            }
+            .shooting-star { animation: shooting-star 3s linear infinite; }
+            
+            @keyframes twinkle {
+              0%, 100% { opacity: 0.3; transform: scale(1); }
+              50% { opacity: 1; transform: scale(1.2); }
+            }
+            .twinkle { animation: twinkle 2s ease-in-out infinite; }
+          `}</style>
+          
+          {/* Regular twinkling stars */}
+          {[...Array(60)].map((_, i) => (
+            <div
+              key={`star-${i}`}
+              className="absolute w-1 h-1 bg-white rounded-full twinkle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1.5 + Math.random() * 2}s`
+              }}
+            ></div>
+          ))}
+          
+          {/* Shooting stars */}
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={`shooting-${i}`}
+              className="absolute shooting-star"
+              style={{
+                left: `${Math.random() * 50}%`,
+                top: `${50 + Math.random() * 50}%`,
+                animationDelay: `${Math.random() * 8}s`,
+                animationDuration: `${2 + Math.random() * 3}s`
+              }}
+            >
+              <div className="w-2 h-2 bg-gradient-to-r from-white to-blue-200 rounded-full"></div>
+              <div className="absolute top-0 left-0 w-8 h-0.5 bg-gradient-to-r from-white to-transparent opacity-60 -rotate-45"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 md:py-8 relative z-10">
         <div className="mb-6 md:mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Problems</h1>
           <p className="text-gray-600 dark:text-gray-300">Practice coding problems and improve your skills</p>
@@ -223,7 +356,7 @@ const Problems: React.FC = () => {
         )}
 
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-300" />
@@ -271,7 +404,7 @@ const Problems: React.FC = () => {
         </div>
 
         {/* Problems List */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
           <div className="min-w-[600px] md:overflow-x-auto">
             <table className="w-full text-xs md:text-sm">
               <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10">
