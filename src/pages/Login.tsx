@@ -236,8 +236,10 @@ const Login: React.FC = () => {
       <div className="absolute inset-0 w-full h-full z-0">
         {isDark ? <Galaxy /> : <LightThemeBackground />}
       </div>
-      {/* Robot Animation */}
-      <RobotAnimation />
+      {/* Robot Animation: hidden on mobile, visible on sm+ */}
+      <div className="hidden sm:block">
+        <RobotAnimation />
+      </div>
       <div className="relative z-10 w-full max-w-md mx-auto px-6">
         <div className="flex justify-center mb-6">
           <div className="flex items-center space-x-2">
