@@ -628,7 +628,7 @@ const Chat: React.FC = () => {
         {/* Header */}
         <div className="p-4 border-b border-gray-800">
           <div className="flex items-center justify-between mb-4">
-            <h1 className={`text-2xl font-bold ${isDark ? "text-gray-100" : "text-gradient bg-gradient-to-r from-indigo-600 via-blue-500 to-purple-500 bg-clip-text text-transparent"}`}>DevChat</h1>
+            <h1 className={`text-2xl font-bold ${isDark ? "text-gray-100" : "text-gradient bg-gradient-to-r from-indigo-600 via-blue-500 to-purple-500 bg-clip-text text-transparent"}`}>Discord</h1>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowUserSearch(!showUserSearch)}
