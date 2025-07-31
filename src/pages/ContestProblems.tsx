@@ -324,11 +324,12 @@ const ContestProblems: React.FC = () => {
   }
 
   if (!contest) {
+    // Show loading card instead of "Contest not found"
     return (
       <div className={`min-h-screen flex items-center justify-center ${pageBackgroundClass}`}>
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Contest not found</h2>
-          <p className="text-gray-600 dark:text-gray-300">The contest you're looking for doesn't exist.</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Loading contest...</p>
         </div>
       </div>
     )
@@ -522,10 +523,10 @@ const ContestProblems: React.FC = () => {
           <div
             key={`gaming-pulse-${i}`}
             className={`gaming-pulse absolute ${
-              i % 4 === 0 ? 'w-4 h-4 bg-gradient-to-br from-green-500/40 to-blue-500/40' :
-              i % 4 === 1 ? 'w-3 h-3 bg-gradient-to-br from-purple-500/40 to-pink-500/40' :
-              i % 4 === 2 ? 'w-3.5 h-3.5 bg-gradient-to-br from-cyan-500/40 to-green-500/40' :
-              'w-4 h-4 bg-gradient-to-br from-red-500/40 to-orange-500/40'
+              i % 4 === 0 ? 'w-4 h-4 bg-gradient-to-br from-green-500 to-blue-500/40' :
+              i % 4 === 1 ? 'w-3 h-3 bg-gradient-to-br from-purple-500 to-pink-500/40' :
+              i % 4 === 2 ? 'w-3.5 h-3.5 bg-gradient-to-br from-cyan-500 to-green-500/40' :
+              'w-4 h-4 bg-gradient-to-br from-red-500 to-orange-500/40'
             } rounded-full blur-sm`}
             style={{
               left: `${Math.random() * 100}%`,
