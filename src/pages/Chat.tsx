@@ -124,7 +124,7 @@ const Chat: React.FC = () => {
   const [roomIsPrivate, setRoomIsPrivate] = useState(false)
   const [roomCreating, setRoomCreating] = useState(false)
   const [roomError, setRoomError] = useState<string | null>(null)
-
+  const [joiningRoom, setJoiningRoom] = useState(false);
   // Enhanced socket connection with reconnection logic
   const connectSocket = useCallback(() => {
     if (!token || !user) {
@@ -1333,31 +1333,45 @@ const Chat: React.FC = () => {
                 Join this room to participate in the conversation and send messages.
               </p>
               <button
-                className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 ${
-                  isDark
-                    ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-                    : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                } shadow-lg hover:shadow-xl`}
-                onClick={async () => {
-                  try {
-                    const response = await fetch(`${API_URL}/chats/rooms/${activeRoom._id}/join`, {
-                      method: "POST",
-                      headers: { Authorization: `Bearer ${token}` },
-                    })
-                    if (response.ok) {
-                      window.location.reload()
-                    } else {
-                      const errorData = await response.json()
-                      alert(`Failed to join room: ${errorData.message || response.statusText}`)
-                    }
-                  } catch (error) {
-                    console.error("Error joining room:", error)
-                    alert("An error occurred while trying to join the room.")
-                  }
-                }}
-              >
-                Join Room
-              </button>
+  className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 ${
+    isDark
+      ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+      : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+  } shadow-lg hover:shadow-xl flex items-center justify-center`}
+  onClick={async () => {
+    setJoiningRoom(true);
+    try {
+      const response = await fetch(`${API_URL}/chats/rooms/${activeRoom._id}/join`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to join room: ${errorData.message || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error joining room:", error);
+      alert("An error occurred while trying to join the room.");
+    } finally {
+      setJoiningRoom(false);
+    }
+  }}
+  disabled={joiningRoom}
+>
+  {joiningRoom ? (
+    <span className="flex items-center space-x-2">
+      <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 01-8 8z"/>
+      </svg>
+      <span>Joining...</span>
+    </span>
+  ) : (
+    "Join Room"
+  )}
+</button>
             </div>
           )
         )}
