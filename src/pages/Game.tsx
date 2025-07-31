@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
@@ -657,7 +657,7 @@ useEffect(() => {
         } catch (error) {
           console.error("❌ Error refreshing game state:", error)
         }
-      }, 20000000) // Refresh every 20000 seconds
+      }, 2000) // Refresh every 2 seconds (was 20000000)
     }
     
     return () => {
@@ -877,8 +877,8 @@ int main() {
   })
 }
 
-  // Code change handler
-  const handleCodeChange = (newCode: string) => {
+  // Memoize code change handler so it doesn't change on every render
+  const memoizedHandleCodeChange = React.useCallback((newCode: string) => {
     setCode(newCode)
     if (socketRef.current && activeGame && socketRef.current.connected) {
       socketRef.current.emit("code-update", {
@@ -886,7 +886,24 @@ int main() {
         code: newCode,
       })
     }
-  }
+  }, [activeGame, socketRef.current])
+
+  // Memoize CodeMirrorEditor so it only re-renders when its props change
+  const codeEditor = React.useMemo(() => (
+    <div className="relative">
+      <CodeMirrorEditor
+        value={code}
+        onChange={memoizedHandleCodeChange}
+        language={language}
+        disabled={gameFinished || !gameStarted}
+        contestMode={true}
+        height="400px"
+      />
+      <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
+        Copy/Paste Disabled
+      </div>
+    </div>
+  ), [code, language, gameFinished, gameStarted, memoizedHandleCodeChange])
 
   const findRandomMatch = async () => {
     console.log("🎲 Finding random match for user:", user?.username)
@@ -1417,19 +1434,7 @@ const getOpponentPlayer = () => {
               </div>
               
               <div className="mb-4">
-                <div className="relative">
-                  <CodeMirrorEditor
-                    value={code}
-                    onChange={handleCodeChange}
-                    language={language}
-                    disabled={gameFinished || !gameStarted}
-                    contestMode={true}
-                    height="400px"
-                  />
-                  <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
-                    Copy/Paste Disabled
-                  </div>
-                </div>
+                {codeEditor}
               </div>
               <div className="flex space-x-4 mb-4">
                 <button
