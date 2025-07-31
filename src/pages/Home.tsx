@@ -1985,13 +1985,14 @@ const Home: React.FC = () => {
                   </div>
                 ) : contests.length > 0 ? (
                   contests.map((contest) => (
-                    <div
+                    <Link
                       key={contest._id}
+                      to="/contest"
                       className={`group relative overflow-hidden p-6 rounded-2xl transition-all duration-300 hover:scale-105 ${
                         isDark
                           ? "bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-2 border-white/20 hover:border-white/40"
-                          : "bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-black/20 hover:border-black/40"
-                      } hover:shadow-lg`}
+                          : "bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-black/20 hover:bg-blue-100 hover:border-black/40"
+                      } hover:shadow-lg block`}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
@@ -2023,7 +2024,7 @@ const Home: React.FC = () => {
                           <span>{contest.participants.length} registered</span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="text-center py-12">
