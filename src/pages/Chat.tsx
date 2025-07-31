@@ -1020,11 +1020,26 @@ const Chat: React.FC = () => {
         </div>
 
         {/* Messages */}
-        <div className={`flex-1 overflow-y-auto p-4 space-y-6 ${
-          isDark
-            ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-            : "bg-gradient-to-br from-blue-25 via-white to-indigo-25"
-        }`}>
+        <div 
+          className={`flex-1 overflow-y-auto p-4 space-y-6 ${
+            isDark
+              ? "whatsapp-dark-bg"
+              : "whatsapp-light-bg"
+          }`}
+          style={isDark ? {
+            backgroundImage: "url('/whatsapp-bg-dark.jpg')",
+            backgroundSize: "400px 400px",
+            backgroundPosition: "center",
+            backgroundRepeat: "repeat",
+            backgroundColor: "#0e1419"
+          } : {
+            backgroundImage: "url('/whatsapp-bg-light.png')",
+            backgroundSize: "400px 400px",
+            backgroundPosition: "center",
+            backgroundRepeat: "repeat",
+            backgroundColor: "#e5ddd5"
+          }}
+        >
           {messages.map((message) => {
             const isMe = message.sender._id === user._id
             return (

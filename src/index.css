@@ -119,3 +119,21 @@
 }
 .animate-blob-move { animation: blob-move 8s ease-in-out infinite; }
 .animate-blob-move2 { animation: blob-move2 10s ease-in-out infinite; }
+
+/* WhatsApp light theme background */
+.whatsapp-light-bg {
+  background-image: url('/whatsapp-bg-light.png') !important;
+  background-size: 400px 400px !important;
+  background-position: center !important;
+  background-repeat: repeat !important;
+  background-color: #e5ddd5 !important;
+}
+
+/* WhatsApp dark theme background */
+.whatsapp-dark-bg {
+  background-image: url('/whatsapp-bg-dark.jpg') !important;
+  background-size: 400px 400px !important;
+  background-position: center !important;
+  background-repeat: repeat !important;
+  background-color: #0e1419 !important;
+}
