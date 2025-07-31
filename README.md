@@ -1,4 +1,4 @@
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/2eca7424-caed-4186-9c26-447df2fa958d" /># CodeThrone - Your Coder Army
+# CodeThrone - Your Coder Army
 
 Welcome to **CodeThrone**, a comprehensive platform designed to enhance coding, collaboration, and learning through interactive contests, discussions, and real-time chat features. This project is built with modern web technologies and follows best practices for scalability, maintainability, and user experience.
 
