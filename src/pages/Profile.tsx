@@ -1047,7 +1047,7 @@ const Profile: React.FC = () => {
                 </div>
               </div>
             </div>
-
+          <div className="pt-6"></div>
             <div className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
               <div className="p-6 pb-2">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
