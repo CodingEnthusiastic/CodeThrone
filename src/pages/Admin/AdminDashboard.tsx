@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 import axios, { AxiosError } from 'axios';
 import { API_URL, SOCKET_URL } from "../../config/api";
 import { useTheme } from '../../contexts/ThemeContext'
+
 import { 
   Plus, 
   Edit, 
@@ -15,10 +16,7 @@ import {
   Megaphone,
   Code,
   Calendar,
-  Settings,
-  Star,
-  List,
-  User as UserIcon
+  Settings
 } from 'lucide-react';
 
 interface Problem {
@@ -58,23 +56,6 @@ interface Announcement {
   createdAt: string;
 }
 
-interface User {
-  _id: string;
-  username: string;
-  email: string;
-  role: string;
-  coins: number;
-  createdAt: string;
-}
-
-interface GameHistory {
-  _id: string;
-  user: { username: string };
-  score: number;
-  date: string;
-  details?: string;
-}
-
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isDark } = useTheme();
@@ -83,9 +64,6 @@ const AdminDashboard: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [gameHistory, setGameHistory] = useState<GameHistory[]>([]);
-  const [coinsLeaderboard, setCoinsLeaderboard] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateProblem, setShowCreateProblem] = useState(false);
   const [showCreateContest, setShowCreateContest] = useState(false);
@@ -94,7 +72,7 @@ const AdminDashboard: React.FC = () => {
     type: 'success' | 'error' | 'info';
     message: string;
   } | null>(null);
-  
+
   const [newProblem, setNewProblem] = useState({
     title: '',
     description: '',
@@ -127,7 +105,7 @@ const AdminDashboard: React.FC = () => {
       duration: 0
     }
   });
-  
+
   const [newContest, setNewContest] = useState({
     name: '',
     description: '',
@@ -142,7 +120,7 @@ const AdminDashboard: React.FC = () => {
     rules: '',
     allowedLanguages: ['cpp', 'python', 'java', 'c']
   });
-  
+
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: '',
     content: '',
@@ -179,15 +157,7 @@ const AdminDashboard: React.FC = () => {
     console.log('📊 Admin: Fetching dashboard data...');
     try {
       console.log('📡 Making API calls to fetch admin data...');
-      const [
-        problemsRes,
-        contestsRes,
-        discussionsRes,
-        announcementsRes,
-        usersRes,
-        gameHistoryRes,
-        leaderboardRes
-      ] = await Promise.all([
+      const [problemsRes, contestsRes, discussionsRes, announcementsRes] = await Promise.all([
         axios.get(`${API_URL}/problems`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }),
@@ -199,15 +169,6 @@ const AdminDashboard: React.FC = () => {
         }),
         axios.get(`${API_URL}/announcements`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        }),
-        axios.get(`${API_URL}/users`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        }),
-        axios.get(`${API_URL}/game/history`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        }),
-        axios.get(`${API_URL}/users/leaderboard/coins`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
 
@@ -216,17 +177,11 @@ const AdminDashboard: React.FC = () => {
       console.log('📊 Contests count:', contestsRes.data.length);
       console.log('📊 Discussions count:', discussionsRes.data.discussions?.length || discussionsRes.data.length);
       console.log('📊 Announcements count:', announcementsRes.data.length);
-      console.log('📊 Users count:', usersRes.data.length);
-      console.log('📊 Game History count:', gameHistoryRes.data.length);
-      console.log('📊 Coins Leaderboard count:', leaderboardRes.data.length);
-      
+
       setProblems(problemsRes.data.problems || []);
       setContests(contestsRes.data || []);
       setDiscussions(discussionsRes.data.discussions || []);
       setAnnouncements(announcementsRes.data || []);
-      setUsers(usersRes.data || []);
-      setGameHistory(gameHistoryRes.data || []);
-      setCoinsLeaderboard(leaderboardRes.data || []);
     } catch (error: any) {
       console.error('Error fetching admin data:', error);
       console.error('📊 Error details:', error.response?.data);
@@ -234,13 +189,13 @@ const AdminDashboard: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleCreateProblem = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('📝 Admin: Creating new problem...');
     console.log('👤 Current user role:', user?.role);
     console.log('🔑 Token exists:', !!localStorage.getItem('token'));
-    
+
     try {
       const problemData = {
         title: newProblem.title,
@@ -259,9 +214,9 @@ const AdminDashboard: React.FC = () => {
         isFeatured: newProblem.isFeatured,
         editorial: newProblem.editorial.written ? newProblem.editorial : undefined
       };
-      
+
       console.log('📤 Sending problem data:', problemData);
-      
+
       const token = localStorage.getItem('token');
       if (!token) {
         console.error('❌ No authentication token');
@@ -276,7 +231,7 @@ const AdminDashboard: React.FC = () => {
         }
       });
       console.log('✅ Admin: Problem created successfully');
-      
+
       setProblems([response.data, ...problems]);
       setShowCreateProblem(false);
       setNewProblem({
@@ -315,7 +270,7 @@ const AdminDashboard: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Admin: Error creating problem:', error);
       console.error('📊 Error response:', error.response?.data);
-      
+
       if (error.response?.status === 401) {
         showNotification('error', 'Authentication failed. Please logout and login again.');
       } else {
@@ -323,16 +278,16 @@ const AdminDashboard: React.FC = () => {
       }
     }
   };
-  
+
   const handleCreateContest = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('🏆 Admin: Creating new contest...');
     console.log('👤 Current user role:', user?.role);
     console.log('🔑 Token exists:', !!localStorage.getItem('token'));
-    
+
     try {
       console.log('📤 Sending contest data:', newContest);
-      
+
       const token = localStorage.getItem('token');
       if (!token) {
         console.error('❌ No authentication token');
@@ -347,7 +302,7 @@ const AdminDashboard: React.FC = () => {
         }
       });
       console.log('✅ Admin: Contest created successfully');
-      
+
       setContests([response.data, ...contests]);
       setShowCreateContest(false);
       setNewContest({
@@ -368,7 +323,7 @@ const AdminDashboard: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Admin: Error creating contest:', error);
       console.error('📊 Error response:', error.response?.data);
-      
+
       if (error.response?.status === 401) {
         showNotification('error', 'Authentication failed. Please logout and login again.');
       } else {
@@ -376,14 +331,14 @@ const AdminDashboard: React.FC = () => {
       }
     }
   };
-  
+
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('📢 Admin: Creating new announcement...');
     console.log('👤 Current user in admin dashboard:', user);
     console.log('🔑 Token from localStorage:', localStorage.getItem('token'));
     console.log('🔍 User role check:', user?.role);
-    
+
     try {
       const announcementData = {
         title: newAnnouncement.title,
@@ -397,9 +352,9 @@ const AdminDashboard: React.FC = () => {
         visibleToRoles: newAnnouncement.visibleToRoles,
         pinned: newAnnouncement.pinned
       };
-      
+
       console.log('📤 Sending announcement data:', announcementData);
-      
+
       // Double-check authentication
       const token = localStorage.getItem('token');
       if (!token) {
@@ -407,13 +362,13 @@ const AdminDashboard: React.FC = () => {
         alert('Authentication required. Please login again.');
         return;
       }
-      
+
       if (user?.role !== 'admin') {
         console.error('❌ User is not admin:', user?.role);
         alert('Admin access required.');
         return;
       }
-      
+
       const response = await axios.post(`${API_URL}/announcements`, announcementData, {
         headers: { 
           Authorization: `Bearer ${token}`,
@@ -421,7 +376,7 @@ const AdminDashboard: React.FC = () => {
         }
       });
       console.log('✅ Admin: Announcement created successfully');
-      
+
       setAnnouncements([response.data, ...announcements]);
       setShowCreateAnnouncement(false);
       setNewAnnouncement({
@@ -442,7 +397,7 @@ const AdminDashboard: React.FC = () => {
       console.error('📊 Error response:', error.response?.data);
       console.error('📊 Error status:', error.response?.status);
       console.error('📊 Error headers:', error.response?.headers);
-      
+
       if (error.response?.status === 401) {
         console.error('🔒 Authentication failed - token may be invalid');
         showNotification('error', 'Authentication failed. Please logout and login again.');
@@ -490,11 +445,11 @@ const AdminDashboard: React.FC = () => {
       showNotification('error', 'Failed to update announcement.');
     }
   };
-  
+
   const handleDeleteProblem = async (problemId: string) => {
     console.log('🗑️ Admin: Deleting problem:', problemId);
     if (!confirm('Are you sure you want to delete this problem?')) return;
-    
+
     try {
       await axios.delete(`${API_URL}/problems/${problemId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -511,7 +466,7 @@ const AdminDashboard: React.FC = () => {
   const handleDeleteContest = async (contestId: string) => {
     console.log('🗑️ Admin: Deleting contest:', contestId);
     if (!confirm('Are you sure you want to delete this contest?')) return;
-    
+
     try {
       await axios.delete(`${API_URL}/contests/${contestId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -528,7 +483,7 @@ const AdminDashboard: React.FC = () => {
   const handleDeleteAnnouncement = async (announcementId: string) => {
     console.log('🗑️ Admin: Deleting announcement:', announcementId);
     if (!confirm('Are you sure you want to delete this announcement?')) return;
-    
+
     try {
       await axios.delete(`${API_URL}/announcements/${announcementId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -591,10 +546,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'problems', label: 'Problems', icon: <Code className="h-4 w-4" /> },
     { id: 'contests', label: 'Contests', icon: <Trophy className="h-4 w-4" /> },
     { id: 'discussions', label: 'Discussions', icon: <MessageSquare className="h-4 w-4" /> },
-    { id: 'announcements', label: 'Announcements', icon: <Megaphone className="h-4 w-4" /> },
-    { id: 'users', label: 'Users', icon: <UserIcon className="h-4 w-4" /> },
-    { id: 'gamehistory', label: 'Game History', icon: <List className="h-4 w-4" /> },
-    { id: 'coinsleaderboard', label: 'Coins Leaderboard', icon: <Star className="h-4 w-4" /> }
+    { id: 'announcements', label: 'Announcements', icon: <Megaphone className="h-4 w-4" /> }
   ];
 
   if (loading) {
@@ -885,7 +837,7 @@ const AdminDashboard: React.FC = () => {
             <p className="font-medium">{notification.message}</p>
           </div>
         )}
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
@@ -986,7 +938,7 @@ const AdminDashboard: React.FC = () => {
                       Add Problem
                     </button>
                   </div>
-                  
+
                   {showCreateProblem && (
                     <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg max-h-96 overflow-y-auto">
                       <h4 className="text-lg font-semibold mb-4">Create New Problem</h4>
@@ -1016,7 +968,7 @@ const AdminDashboard: React.FC = () => {
                             </select>
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium mb-2">Description *</label>
                           <textarea
@@ -1028,7 +980,7 @@ const AdminDashboard: React.FC = () => {
                             placeholder="Describe the problem..."
                           />
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium mb-2">Tags (comma-separated)</label>
@@ -1051,7 +1003,7 @@ const AdminDashboard: React.FC = () => {
                             />
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium mb-2">Constraints *</label>
                           <textarea
@@ -1187,7 +1139,7 @@ const AdminDashboard: React.FC = () => {
                             </label>
                           </div>
                         </div>
-                        
+
                         <div className="flex space-x-4">
                           <button
                             type="submit"
@@ -1206,7 +1158,7 @@ const AdminDashboard: React.FC = () => {
                       </form>
                     </div>
                   )}
-                  
+
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-gray-50">
@@ -1281,7 +1233,7 @@ const AdminDashboard: React.FC = () => {
                       Create Contest
                     </button>
                   </div>
-                  
+
                   {showCreateContest && (
                     <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <h4 className="text-lg font-semibold mb-4">Create New Contest</h4>
@@ -1308,7 +1260,7 @@ const AdminDashboard: React.FC = () => {
                             />
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium mb-2">Description *</label>
                           <textarea
@@ -1331,7 +1283,7 @@ const AdminDashboard: React.FC = () => {
                             placeholder="https://example.com/banner.jpg"
                           />
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium mb-2">Start Time *</label>
@@ -1431,7 +1383,7 @@ const AdminDashboard: React.FC = () => {
                             ))}
                           </div>
                         </div>
-                        
+
                         <div className="flex space-x-4">
                           <button
                             type="submit"
@@ -1450,7 +1402,7 @@ const AdminDashboard: React.FC = () => {
                       </form>
                     </div>
                   )}
-                  
+
                   <div className="space-y-4">
                     {contests.map((contest) => (
                       <div key={contest._id} className="p-4 border border-gray-200 rounded-lg">
@@ -1535,7 +1487,7 @@ const AdminDashboard: React.FC = () => {
                       Create Announcement
                     </button>
                   </div>
-                  
+
                   {showCreateAnnouncement && (
                     <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <h4 className="text-lg font-semibold mb-4">Create New Announcement</h4>
@@ -1550,7 +1502,7 @@ const AdminDashboard: React.FC = () => {
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium mb-2">Content *</label>
                           <textarea
@@ -1562,7 +1514,7 @@ const AdminDashboard: React.FC = () => {
                             placeholder="Announcement content (supports Markdown)"
                           />
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium mb-2">Type</label>
@@ -1683,7 +1635,7 @@ const AdminDashboard: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="flex space-x-4">
                           <button
                             type="submit"
@@ -1702,7 +1654,7 @@ const AdminDashboard: React.FC = () => {
                       </form>
                     </div>
                   )}
-                  
+
                   {/* Edit Announcement Form */}
                   {editingAnnouncementId && editAnnouncementData && (
                     <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -1824,90 +1776,6 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               )}
-
-              {activeTab === 'users' && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-6">User List</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coins</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {users.map((user) => (
-                          <tr key={user._id}>
-                            <td className="px-6 py-4 whitespace-nowrap">{user.username}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{user.role}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{user.coins}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'gamehistory' && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-6">Game History</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {gameHistory.map((game) => (
-                          <tr key={game._id}>
-                            <td className="px-6 py-4 whitespace-nowrap">{game.user?.username || '-'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{game.score}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{new Date(game.date).toLocaleString()}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{game.details || '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'coinsleaderboard' && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-6">Coins Leaderboard</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coins</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {coinsLeaderboard.map((user, idx) => (
-                          <tr key={user._id}>
-                            <td className="px-6 py-4 whitespace-nowrap font-bold">{idx + 1}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{user.username}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{user.coins}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1916,4 +1784,4 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-export default AdminDashboard;
+export default AdminDashboard
