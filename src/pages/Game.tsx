@@ -697,29 +697,29 @@ useEffect(() => {
 using namespace std;
 
 int main() {
-    // Read input
+  // Read input
 
-    // Process and solve
+  // Process and solve
 
-    // Output result
+  // Output result
 
-    return 0;
+  return 0;
 }`,
       java: `import java.util.*;
 import java.io.*;
 
 public class Solution {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
+  public static void main(String[] args) {
+    Scanner sc = new Scanner(System.in);
 
-        // Read input
+    // Read input
+    
+    // Process and solve
 
-        // Process and solve
+    // Output result
 
-        // Output result
-
-        sc.close();
-    }
+    sc.close();
+  }
 }`,
       python: `# Read input
 # Process and solve
@@ -729,13 +729,13 @@ public class Solution {
 #include <string.h>
 
 int main() {
-    // Read input
+  // Read input
 
-    // Process and solve
+  // Process and solve
 
-    // Output result
+  // Output result
 
-    return 0;
+  return 0;
 }`,
     }
 
