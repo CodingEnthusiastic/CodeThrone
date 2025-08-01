@@ -1318,7 +1318,7 @@ const Chat: React.FC = () => {
                   : "text-amber-700 bg-amber-50 border border-amber-200"
               }`}>
                 <AlertCircle className="h-3.5 w-3.5 mr-2" />
-                Chat is {connectionStatus}. Messages cannot be sent.
+                Chat is {connectionStatus}. Tip : You can send Message by joining any existing room , create your own Discord room or start Private Chat.
               </div>
             )}
           </div>
