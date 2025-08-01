@@ -406,6 +406,15 @@ const Home: React.FC = () => {
       // Fallback data
       setCompanyStats([
         {
+          company: "Netflix",
+          count: 89,
+          avgAcceptanceRate: 38.4,
+          totalSubmissions: 234567,
+          easyCount: 23,
+          mediumCount: 45,
+          hardCount: 21,
+        },
+        {
           company: "Google",
           count: 234,
           avgAcceptanceRate: 42.3,
@@ -449,15 +458,6 @@ const Home: React.FC = () => {
           easyCount: 43,
           mediumCount: 56,
           hardCount: 35,
-        },
-        {
-          company: "Netflix",
-          count: 89,
-          avgAcceptanceRate: 38.4,
-          totalSubmissions: 234567,
-          easyCount: 23,
-          mediumCount: 45,
-          hardCount: 21,
         },
         {
           company: "Tesla",
