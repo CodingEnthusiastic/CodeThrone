@@ -501,20 +501,25 @@ const ProblemDetail: React.FC = () => {
     setAiResponse("")
 
     try {
-      const problemData = {
-        title: problem.title,
-        description: problem.description,
-        difficulty: problem.difficulty,
-        tags: problem.tags,
-        companies: problem.companies,
-        constraints: problem.constraints,
-        examples: problem.examples,
-      }
+      const examplesText = problem.examples
+      .map((ex, i) => `Example ${i + 1}:\nInput: ${ex.input}\nOutput: ${ex.output}\nExplanation: ${ex.explanation || ""}`)
+      .join("\n\n");
 
-      // Direct Gemini API call for general AI chat
-      let chatHistoryForGemini = [];
-      chatHistoryForGemini.push({ role: "user", parts: [{ text: aiPrompt }] });
-      const payload = { contents: chatHistoryForGemini };
+    const context = `
+Here is the problem statement:
+Title: ${problem.title}
+Description: ${problem.description}
+Constraints: ${problem.constraints}
+Examples:
+${examplesText}
+
+User question: ${aiPrompt}
+    `.trim();
+
+    // Direct Gemini API call for general AI chat
+    let chatHistoryForGemini = [];
+    chatHistoryForGemini.push({ role: "user", parts: [{ text: context }] });
+    const payload = { contents: chatHistoryForGemini };
       // const apiKey = process.env.GEMINI_API_KEY || ""; // Using the provided API key
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`; // Using gemini-2.0-flash as per default
