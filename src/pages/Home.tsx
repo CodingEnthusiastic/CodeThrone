@@ -586,6 +586,17 @@ const Home: React.FC = () => {
 
     const companyConfigs = [
       {
+        name: "Netflix",
+        logo: "https://images.pexels.com/photos/265685/pexels-photo-265685.jpeg?auto=compress&cs=tinysrgb&w=400&h=300",
+        color: "from-red-600 via-red-700 to-red-800",
+        bgGradient: "from-red-50 to-red-100",
+        darkBgGradient: "from-red-900/20 to-red-800/20",
+        borderColor: "border-red-200",
+        darkBorderColor: "border-red-700/30",
+        textColor: "text-red-700",
+        darkTextColor: "text-red-300",
+      },
+      {
         name: "Google",
         logo: "https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=400&h=300",
         color: "from-blue-500 via-red-500 to-yellow-500",
@@ -639,17 +650,6 @@ const Home: React.FC = () => {
         darkBorderColor: "border-blue-700/30",
         textColor: "text-blue-700",
         darkTextColor: "text-blue-300",
-      },
-      {
-        name: "Netflix",
-        logo: "https://images.pexels.com/photos/265685/pexels-photo-265685.jpeg?auto=compress&cs=tinysrgb&w=400&h=300",
-        color: "from-red-600 via-red-700 to-red-800",
-        bgGradient: "from-red-50 to-red-100",
-        darkBgGradient: "from-red-900/20 to-red-800/20",
-        borderColor: "border-red-200",
-        darkBorderColor: "border-red-700/30",
-        textColor: "text-red-700",
-        darkTextColor: "text-red-300",
       },
       {
         name: "Tesla",
