@@ -186,6 +186,12 @@ const RobotAnimation: React.FC = () => {
   );
 };
 
+// Background component that only depends on dark mode
+const LoginBackground: React.FC<{ isDark: boolean }> = ({ isDark }) => (
+  <div className="absolute inset-0 w-full h-full z-0 bg-white dark:bg-gray-900">
+    {isDark ? <Galaxy /> : <LightThemeBackground />}
+  </div>
+);
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -231,11 +237,9 @@ const Login: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative h-screen w-screen flex items-center justify-center overflow-hidden bg-white dark:bg-gray-900 transition-colors duration-500">
-      {/* Animated Backgrounds */}
-      <div className="absolute inset-0 w-full h-full z-0">
-        {isDark ? <Galaxy /> : <LightThemeBackground />}
-      </div>
+    <div className="relative h-screen w-screen flex items-center justify-center overflow-hidden bg-transparent">
+      {/* Animated Backgrounds - only depends on isDark, never rerenders on input */}
+      <LoginBackground isDark={isDark} />
       {/* Robot Animation: hidden on mobile, visible on sm+ */}
       <div className="hidden sm:block">
         <RobotAnimation />
