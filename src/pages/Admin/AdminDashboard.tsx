@@ -4,7 +4,6 @@ import { Navigate } from 'react-router-dom';
 import axios, { AxiosError } from 'axios';
 import { API_URL, SOCKET_URL } from "../../config/api";
 import { useTheme } from '../../contexts/ThemeContext'
-
 import { 
   Plus, 
   Edit, 
@@ -16,7 +15,10 @@ import {
   Megaphone,
   Code,
   Calendar,
-  Settings
+  Settings,
+  Star,
+  List,
+  User as UserIcon
 } from 'lucide-react';
 
 interface Problem {
@@ -56,6 +58,23 @@ interface Announcement {
   createdAt: string;
 }
 
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+  role: string;
+  coins: number;
+  createdAt: string;
+}
+
+interface GameHistory {
+  _id: string;
+  user: { username: string };
+  score: number;
+  date: string;
+  details?: string;
+}
+
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isDark } = useTheme();
@@ -64,6 +83,9 @@ const AdminDashboard: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [gameHistory, setGameHistory] = useState<GameHistory[]>([]);
+  const [coinsLeaderboard, setCoinsLeaderboard] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateProblem, setShowCreateProblem] = useState(false);
   const [showCreateContest, setShowCreateContest] = useState(false);
@@ -157,7 +179,15 @@ const AdminDashboard: React.FC = () => {
     console.log('📊 Admin: Fetching dashboard data...');
     try {
       console.log('📡 Making API calls to fetch admin data...');
-      const [problemsRes, contestsRes, discussionsRes, announcementsRes] = await Promise.all([
+      const [
+        problemsRes,
+        contestsRes,
+        discussionsRes,
+        announcementsRes,
+        usersRes,
+        gameHistoryRes,
+        leaderboardRes
+      ] = await Promise.all([
         axios.get(`${API_URL}/problems`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }),
@@ -169,6 +199,15 @@ const AdminDashboard: React.FC = () => {
         }),
         axios.get(`${API_URL}/announcements`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        }),
+        axios.get(`${API_URL}/users`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        }),
+        axios.get(`${API_URL}/game/history`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        }),
+        axios.get(`${API_URL}/users/leaderboard/coins`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
 
@@ -177,11 +216,17 @@ const AdminDashboard: React.FC = () => {
       console.log('📊 Contests count:', contestsRes.data.length);
       console.log('📊 Discussions count:', discussionsRes.data.discussions?.length || discussionsRes.data.length);
       console.log('📊 Announcements count:', announcementsRes.data.length);
+      console.log('📊 Users count:', usersRes.data.length);
+      console.log('📊 Game History count:', gameHistoryRes.data.length);
+      console.log('📊 Coins Leaderboard count:', leaderboardRes.data.length);
       
       setProblems(problemsRes.data.problems || []);
       setContests(contestsRes.data || []);
       setDiscussions(discussionsRes.data.discussions || []);
       setAnnouncements(announcementsRes.data || []);
+      setUsers(usersRes.data || []);
+      setGameHistory(gameHistoryRes.data || []);
+      setCoinsLeaderboard(leaderboardRes.data || []);
     } catch (error: any) {
       console.error('Error fetching admin data:', error);
       console.error('📊 Error details:', error.response?.data);
@@ -546,7 +591,10 @@ const AdminDashboard: React.FC = () => {
     { id: 'problems', label: 'Problems', icon: <Code className="h-4 w-4" /> },
     { id: 'contests', label: 'Contests', icon: <Trophy className="h-4 w-4" /> },
     { id: 'discussions', label: 'Discussions', icon: <MessageSquare className="h-4 w-4" /> },
-    { id: 'announcements', label: 'Announcements', icon: <Megaphone className="h-4 w-4" /> }
+    { id: 'announcements', label: 'Announcements', icon: <Megaphone className="h-4 w-4" /> },
+    { id: 'users', label: 'Users', icon: <UserIcon className="h-4 w-4" /> },
+    { id: 'gamehistory', label: 'Game History', icon: <List className="h-4 w-4" /> },
+    { id: 'coinsleaderboard', label: 'Coins Leaderboard', icon: <Star className="h-4 w-4" /> }
   ];
 
   if (loading) {
@@ -1773,6 +1821,90 @@ const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'users' && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-6">User List</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coins</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {users.map((user) => (
+                          <tr key={user._id}>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.username}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.role}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.coins}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'gamehistory' && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-6">Game History</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {gameHistory.map((game) => (
+                          <tr key={game._id}>
+                            <td className="px-6 py-4 whitespace-nowrap">{game.user?.username || '-'}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{game.score}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{new Date(game.date).toLocaleString()}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{game.details || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'coinsleaderboard' && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-6">Coins Leaderboard</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coins</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {coinsLeaderboard.map((user, idx) => (
+                          <tr key={user._id}>
+                            <td className="px-6 py-4 whitespace-nowrap font-bold">{idx + 1}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.username}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.coins}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
