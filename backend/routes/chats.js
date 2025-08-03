@@ -17,7 +17,7 @@ router.get("/rooms", authenticateToken, async (req, res) => {
     const rooms = await ChatRoom.find({
       $or: [{ participants: req.user._id }, { isPrivate: false }],
     })
-      .select("name participants.length messageCount lastActivity isPrivate")
+      .select("name messageCount lastActivity isPrivate")
       .populate("participants", "username profile.avatar")
       .sort({ lastActivity: -1 })
       .lean() // Use lean for faster queries
