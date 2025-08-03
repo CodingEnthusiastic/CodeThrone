@@ -514,7 +514,7 @@ const ProblemDetail: React.FC = () => {
     ${examplesText}
     
     INSTRUCTION:
-    - DO NOT use Markdown symbols like "**", "__", "*", or "```".
+    - DO NOT use Markdown symbols like "**", "__", "*", or "\\`\\`\\`".
     - DO NOT format code using triple backticks or indentation blocks.
     - WHENEVER you give a code block:
       - First write: PYTHON CODE (or the language name)
