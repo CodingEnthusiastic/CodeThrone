@@ -17,9 +17,10 @@ router.get("/rooms", authenticateToken, async (req, res) => {
     const rooms = await ChatRoom.find({
       $or: [{ participants: req.user._id }, { isPrivate: false }],
     })
+      .select("name participants.length messageCount lastActivity isPrivate")
       .populate("participants", "username profile.avatar")
-      .populate("createdBy", "username profile.avatar")
       .sort({ lastActivity: -1 })
+      .lean() // Use lean for faster queries
 
     console.log(`✅ Found ${rooms.length} chat rooms for user`)
     res.json(rooms)
@@ -106,7 +107,7 @@ router.post("/rooms/:roomId/join", authenticateToken, async (req, res) => {
 // Get messages for a room
 router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query
+    // const { page = 1, limit = 50 } = req.query
     console.log(`📨 Fetching messages for room ${req.params.roomId}, page ${page}, limit ${limit}`)
 
     const room = await ChatRoom.findById(req.params.roomId)
@@ -127,8 +128,8 @@ router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
       .populate("sender", "username profile.avatar")
       .populate("replyTo", "content sender")
       .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
+      .limit(50)
+      .lean() // Use lean for faster queries
 
     console.log(`✅ Found ${messages.length} messages for room ${req.params.roomId}`)
     res.json(messages.reverse())
