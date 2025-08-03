@@ -518,11 +518,16 @@ const ProblemDetail: React.FC = () => {
     - DO NOT format code using triple backticks or indentation blocks.
     - WHENEVER you give a code block:
       - First write: PYTHON CODE (or the language name)
+      - Then leave one line
       - Then, write the code on a new line, plain text, no formatting
+      - After code , if there is further text , again leave one line
       - Wrap code between comment lines like:
+    PYTHON CODE
+
     // START OF CODE
     (code goes here)
     // END OF CODE
+
     - Everything else should be in plain readable text.
     
     User question: ${aiPrompt}
