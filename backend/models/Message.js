@@ -12,7 +12,7 @@ const messageSchema = new mongoose.Schema(
       enum: ["text", "code", "image", "file", "system"],
       default: "text",
     },
-    language: String, // For code messages
+    language: String,
     isEdited: { type: Boolean, default: false },
     editedAt: Date,
     replyTo: { type: mongoose.Schema.Types.ObjectId, ref: "Message" },
@@ -31,6 +31,11 @@ const messageSchema = new mongoose.Schema(
   },
   { timestamps: true },
 )
+
+// ✅ Performance Indexes
+messageSchema.index({ room: 1, createdAt: -1 }) // fast room load
+messageSchema.index({ sender: 1 })              // for user-based queries
+messageSchema.index({ replyTo: 1 })             // optional, reply lookup
 
 console.log("✅ Message model schema defined")
 
