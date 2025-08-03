@@ -574,7 +574,7 @@ const Chat: React.FC = () => {
           }`}>Authentication Required</h2>
           <p className={`text-lg mb-4 ${
             isDark ? 'text-slate-300' : 'text-gray-600'
-          }`}>Please log in to access the chat feature.</p>
+          }`}>Please log in to access the chat feature. If already logged in , please refresh once..</p>
           <p className={`text-sm font-mono px-4 py-2 rounded-lg ${
             isDark ? 'text-red-400 bg-red-900/20' : 'text-red-600 bg-red-50'
           }`}>
