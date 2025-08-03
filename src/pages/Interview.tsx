@@ -142,8 +142,6 @@ const Interview: React.FC = () => {
   const recognitionRef = useRef<any>(null)
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null)
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
-  const finalTranscriptRef = useRef<string>("")
-  const keepAliveRef = useRef<number | null>(null)
 
   // Helper to handle API errors
 const handleApiError = (error: any, context: string) => {
@@ -410,7 +408,7 @@ const handleApiError = (error: any, context: string) => {
         console.log(`🎤 Result ${i}: "${transcript}", isFinal: ${event.results[i].isFinal}`)
         
         if (event.results[i].isFinal) {
-          finalText += transcript + " "
+          finalText += transcript
           console.log("🎤 Final transcript added:", transcript)
         } else {
           interimText += transcript
@@ -419,12 +417,16 @@ const handleApiError = (error: any, context: string) => {
 
       if (finalText.trim()) {
         console.log("🎤 Adding final text to answer:", finalText.trim())
+        // Only add to currentAnswer, remove duplicate addition to finalTranscriptRef
         setCurrentAnswer((prev) => {
-          const newAnswer = (prev + " " + finalText).trim()
+          // Remove any interim text first to prevent duplication
+          const cleanPrev = prev.replace(interimTranscript.trim(), "").trim()
+          const newAnswer = cleanPrev + (cleanPrev ? " " : "") + finalText.trim()
           console.log("🎤 New answer:", newAnswer)
           return newAnswer
         })
-        finalTranscriptRef.current = finalTranscriptRef.current + " " + finalText.trim()
+        // Clear interim transcript since it's now final
+        setInterimTranscript("")
       }
       
       if (interimText !== interimTranscript) {
@@ -1918,7 +1920,7 @@ const handleApiError = (error: any, context: string) => {
                     setIsListening(false)
                     setRecognitionRestarting(false)
                     setManualStop(false)
-                    finalTranscriptRef.current = ""
+                    setInterimTranscript("")
                     disableVideo()
                   }}
                   className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors"
