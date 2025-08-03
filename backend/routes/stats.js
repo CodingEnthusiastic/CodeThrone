@@ -131,108 +131,118 @@ router.get('/recent-activity', async (req, res) => {
 });
 
 // FIXED: Get leaderboard with real data
-router.get("/leaderboard", async (req, res) => {
-  console.log("🏆 Fetching leaderboard...")
-
+router.get('/leaderboard', async (req, res) => {
+  console.log('🏆 Fetching leaderboard...');
+  
   try {
+    // ASSUMPTION: Users have gameHistory array for calculating win rates
     const users = await User.find(
-      { "ratings.gameRating": { $gt: 0 } },
-      {
-        username: 1,
-        "ratings.gameRating": 1,
-        "gameHistory.result": 1,
-        "stats.gamesPlayed": 1,
+      { 'ratings.gameRating': { $exists: true, $gt: 0 } },
+      { 
+        username: 1, 
+        'ratings.gameRating': 1, 
+        gameHistory: 1,
+        'stats.gamesPlayed': 1
       }
-    )
-      .sort({ "ratings.gameRating": -1 })
-      .limit(50)
-      .lean()
+    ).sort({ 'ratings.gameRating': -1 }).limit(50);
 
-    const leaderboard = users.map((user) => {
-      const gamesPlayed = user.stats?.gamesPlayed || user.gameHistory?.length || 0
-      const wins = user.gameHistory?.reduce((acc, game) => acc + (game.result === "win" ? 1 : 0), 0) || 0
-      const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0
+    const leaderboard = users.map(user => {
+      const gamesPlayed = user.stats?.gamesPlayed || user.gameHistory?.length || 0;
+      const wins = user.gameHistory?.filter(game => game.result === 'win').length || 0;
+      const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
 
       return {
         username: user.username,
         rating: user.ratings?.gameRating || 1200,
         gamesPlayed,
-        winRate,
-      }
-    })
+        winRate
+      };
+    });
 
-    console.log("✅ Leaderboard ready:", leaderboard.length, "users")
-    res.json(leaderboard)
+    console.log('✅ Leaderboard fetched:', leaderboard.length, 'players');
+    res.json(leaderboard);
+
   } catch (error) {
-    console.error("❌ Leaderboard error:", error)
-    res.status(500).json({ message: "Failed to fetch leaderboard", error: error.message })
+    console.error('❌ Error fetching leaderboard:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch leaderboard',
+      error: error.message 
+    });
   }
-})
+});
 
-// ✅ Optimized: User-specific stats
-router.get("/user/:userId", async (req, res) => {
-  console.log("👤 Fetching user stats:", req.params.userId)
-
+// Get user-specific statistics
+router.get('/user/:userId', async (req, res) => {
+  console.log('👤 Fetching user statistics for:', req.params.userId);
+  
   try {
-    const userId = req.params.userId
+    const userId = req.params.userId;
+    
+    const [user, userSubmissions, userGames] = await Promise.all([
+      User.findById(userId, { 
+        username: 1, 
+        'ratings.gameRating': 1, 
+        'stats': 1,
+        gameHistory: 1 
+      }),
+      Submission.countDocuments({ user: userId, status: 'Accepted' }),
+      Game.countDocuments({ 
+        'players.user': userId, 
+        status: 'finished' 
+      })
+    ]);
 
-    const [user, acceptedCount, finishedGames] = await Promise.all([
-      User.findById(userId, {
-        username: 1,
-        "ratings.gameRating": 1,
-        stats: 1,
-        "gameHistory.result": 1,
-      }).lean(),
-      Submission.countDocuments({ user: userId, status: "Accepted" }),
-      Game.countDocuments({ "players.user": userId, status: "finished" }),
-    ])
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-    if (!user) return res.status(404).json({ message: "User not found" })
-
-    const wins = user.gameHistory?.reduce((acc, g) => acc + (g.result === "win" ? 1 : 0), 0) || 0
-    const winRate = finishedGames > 0 ? Math.round((wins / finishedGames) * 100) : 0
+    const wins = user.gameHistory?.filter(game => game.result === 'win').length || 0;
+    const winRate = userGames > 0 ? Math.round((wins / userGames) * 100) : 0;
 
     const userStats = {
       username: user.username,
       rating: user.ratings?.gameRating || 1200,
-      problemsSolved: acceptedCount,
-      gamesPlayed: finishedGames,
+      problemsSolved: userSubmissions,
+      gamesPlayed: userGames,
       winRate,
-      totalSubmissions: user.stats?.totalSubmissions || 0,
-    }
+      totalSubmissions: user.stats?.totalSubmissions || 0
+    };
 
-    console.log("✅ Stats ready for", user.username)
-    res.json(userStats)
+    console.log('✅ User statistics fetched:', userStats);
+    res.json(userStats);
+
   } catch (error) {
-    console.error("❌ User stats error:", error)
-    res.status(500).json({ message: "Failed to fetch user statistics", error: error.message })
+    console.error('❌ Error fetching user statistics:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch user statistics',
+      error: error.message 
+    });
   }
-})
+});
 
-// ✅ Optimized: Global leaderboard (contest + game)
-router.get("/global-leaderboard", async (req, res) => {
-  console.log("🌍 Fetching global leaderboard...")
-
+router.get('/global-leaderboard', async (req, res) => {
   try {
-    const [topContest, topGame] = await Promise.all([
-      User.find({ "ratings.contestRating": { $gt: 0 } })
-        .select("username ratings.profile profile.avatar")
-        .sort({ "ratings.contestRating": -1 })
-        .limit(5)
-        .lean(),
-      User.find({ "ratings.gameRating": { $gt: 0 } })
-        .select("username ratings.profile profile.avatar")
-        .sort({ "ratings.gameRating": -1 })
-        .limit(5)
-        .lean(),
-    ])
-
-    res.json({ topContest, topGame })
+    // Fetch all users with ratings
+    const users = await User.find({}, 'username ratings profile');
+    console.log("Leaderboard userrs",users);
+    // Sort by contest rating and get top 5
+    const topContest = users
+      .filter(u => typeof u.ratings?.contestRating === 'number')
+      .sort((a, b) => b.ratings.contestRating - a.ratings.contestRating)
+      .slice(0, 5);
+    console.log(topContest);
+    // Sort by game rating and get top 5
+    const topGame = users
+      .filter(u => typeof u.ratings?.gameRating === 'number')
+      .sort((a, b) => b.ratings.gameRating - a.ratings.gameRating)
+      .slice(0, 5);
+    console.log(topGame);
+    res.json({ topContest, topGame });
   } catch (error) {
-    console.error("❌ Global leaderboard error:", error)
-    res.status(500).json({ message: "Server error", error: error.message })
+    res.status(500).json({ message: "Server error", error: error.message });
   }
-})
-
+});
 
 export default router;
+
+
