@@ -187,7 +187,7 @@ const ProblemDetail: React.FC = () => {
   const [complexityAiResponse, setComplexityAiResponse] = useState("");
   const [complexityAiLoading, setComplexityAiLoading] = useState(false);
   const [complexityChatHistory, setComplexityChatHistory] = useState<{ prompt: string; response: string }[]>([]);
-
+  const [potdCoinsEarned, setPotdCoinsEarned] = useState<number | null>(null);
   // New state variable for visualizer
   const [isVisualizerMaximized, setIsVisualizerMaximized] = useState(false);
 
@@ -901,11 +901,22 @@ User question: ${aiPrompt}
         setIsSolved(true);
 
         // 🎉 Trigger confetti animation
-        confetti({
-          particleCount: 200,
-          spread: 100,
-          origin: { y: 0.6 },
-        });
+        let duration = 3000; // 3 seconds
+        let animationEnd = Date.now() + duration;
+        let defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999999 };
+
+        let interval: any = setInterval(function () {
+          let timeLeft = animationEnd - Date.now();
+
+          if (timeLeft <= 0) {
+            clearInterval(interval);
+            return;
+          }
+
+          let particleCount = 50 * (timeLeft / duration);
+          confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() * 0.6 } }));
+        }, 250);
+
 
         // ✅ Show success toast
         toast.success("🎉 Solution Accepted!", {
@@ -922,11 +933,12 @@ User question: ${aiPrompt}
 
         if (response.data.potd && response.data.potd.awarded) {
           updateCoins(response.data.potd.totalCoins);
-          setTimeout(() => {
-            alert(
-              `🎉 Congratulations! You solved today's Problem of the Day and earned ${response.data.potd.coinsEarned} coins! 🪙`
-            );
-          }, 1000);
+          setPotdCoinsEarned(response.data.potd.coinsEarned); // <-- This is missing
+          // setTimeout(() => {
+          //   alert(
+          //     `🎉 Congratulations! You solved today's Problem of the Day and earned ${response.data.potd.coinsEarned} coins! 🪙`
+          //   );
+          // }, 1000);
         }
       }
 
@@ -1808,6 +1820,46 @@ User question: ${aiPrompt}
       </div>
     );
   }
+
+  {(submissionResult || runResult) && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] transition-opacity duration-300">
+    <div className="bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-700 rounded-xl shadow-2xl p-6 w-[90%] max-w-md text-center animate-fade-in">
+      <div className="text-4xl mb-4">
+        {submissionResult?.status === "Accepted" ? "🎉" : "⚠️"}
+      </div>
+      <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+  {submissionResult?.status === "Accepted" ? (
+    potdCoinsEarned ? (
+      <>
+        🎉 Congratulations! Your POTD solution was accepted.
+        <div className="mt-2 text-yellow-500 text-sm">
+  💰 You’ve earned <span className="font-semibold">{potdCoinsEarned}</span> CodeCoins!
+</div>
+
+      </>
+    ) : (
+      "🎉 Congratulations! Your solution was accepted."
+    )
+  ) : (
+    "❌ Oops! Your submission didn’t pass."
+  )}
+</h2>
+
+      <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+        {submissionResult?.status || runResult?.status}
+      </p>
+      <button
+        onClick={() => {
+          setSubmissionResult(null);
+          setRunResult(null);
+        }}
+        className="px-4 py-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 shadow-sm"
+      >
+        OK
+      </button>
+    </div>
+  </div>
+)}
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex flex-col transition-colors duration-200">
