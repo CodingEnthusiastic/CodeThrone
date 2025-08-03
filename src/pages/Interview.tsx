@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import axios from "axios"
-import { Video, Mic, MicOff, VideoOff, User, Bot, Send, RotateCcw, X } from "lucide-react"
+import { Video, Mic, MicOff, VideoOff, User, Bot, Send, RotateCcw, X, Volume2, VolumeX } from "lucide-react"
 import { useAuth } from '../contexts/AuthContext' // Import your auth context
 import { useTheme } from '../contexts/ThemeContext' // Import theme context
 import { API_URL, SOCKET_URL } from "../config/api";
@@ -2007,7 +2007,15 @@ const handleApiError = (error: any, context: string) => {
                 {/* AI Status indicator */}
                 {!isAISpeaking && (
                   <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                    AI: Ready
+                    {speechEnabled ? "AI: Ready" : "AI: Muted"}
+                  </div>
+                )}
+
+                {/* Speech status indicator */}
+                {!speechEnabled && (
+                  <div className="absolute bottom-4 right-4 bg-red-500 bg-opacity-90 text-white px-2 py-1 rounded text-xs flex items-center">
+                    <VolumeX className="h-3 w-3 mr-1" />
+                    Speech Off
                   </div>
                 )}
               </div>
@@ -2033,8 +2041,26 @@ const handleApiError = (error: any, context: string) => {
                 <h3 className="font-semibold text-gray-900">Current Question:</h3>
                 <div className="flex space-x-2">
                   <button
+                    onClick={() => {
+                      const newSpeechEnabled = !speechEnabled
+                      setSpeechEnabled(newSpeechEnabled)
+                      // If disabling speech, stop any current speech
+                      if (!newSpeechEnabled && isAISpeaking) {
+                        stopSpeaking()
+                      }
+                    }}
+                    className={`p-2 rounded-full transition-colors ${
+                      speechEnabled 
+                        ? "text-blue-600 hover:bg-blue-100" 
+                        : "text-gray-400 hover:bg-gray-100"
+                    }`}
+                    title={speechEnabled ? "Mute AI speech" : "Unmute AI speech"}
+                  >
+                    {speechEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                  </button>
+                  <button
                     onClick={() => speakText(session.question)}
-                    disabled={isAISpeaking}
+                    disabled={isAISpeaking || !speechEnabled}
                     className="p-2 text-blue-600 hover:bg-blue-100 rounded-full disabled:opacity-50"
                     title="Repeat question"
                   >
