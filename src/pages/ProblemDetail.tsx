@@ -506,14 +506,26 @@ const ProblemDetail: React.FC = () => {
       .join("\n\n");
 
     const context = `
-Here is the problem statement:
-Title: ${problem.title}
-Description: ${problem.description}
-Constraints: ${problem.constraints}
-Examples:
-${examplesText}
-
-User question: ${aiPrompt}
+    Here is the problem statement:
+    Title: ${problem.title}
+    Description: ${problem.description}
+    Constraints: ${problem.constraints}
+    Examples:
+    ${examplesText}
+    
+    INSTRUCTION:
+    - DO NOT use Markdown symbols like "**", "__", "*", or "```".
+    - DO NOT format code using triple backticks or indentation blocks.
+    - WHENEVER you give a code block:
+      - First write: PYTHON CODE (or the language name)
+      - Then, write the code on a new line, plain text, no formatting
+      - Wrap code between comment lines like:
+    // START OF CODE
+    (code goes here)
+    // END OF CODE
+    - Everything else should be in plain readable text.
+    
+    User question: ${aiPrompt}
     `.trim();
 
     // Direct Gemini API call for general AI chat
