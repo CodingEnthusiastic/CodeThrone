@@ -108,7 +108,7 @@ router.post("/rooms/:roomId/join", authenticateToken, async (req, res) => {
 router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
   try {
     // const { page = 1, limit = 50 } = req.query
-    console.log(`📨 Fetching messages for room ${req.params.roomId}, page ${page}, limit ${limit}`)
+    // console.log(`📨 Fetching messages for room ${req.params.roomId}, page ${page}, limit ${limit}`)
 
     const room = await ChatRoom.findById(req.params.roomId)
 
