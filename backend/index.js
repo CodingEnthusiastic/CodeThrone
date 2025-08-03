@@ -181,3 +181,12 @@ server.listen(PORT, () => {
   console.log("🔌 Socket.IO transports: websocket, polling")
   console.log("🔌 Socket.IO CORS origins: localhost:5173, codethrone.netlify.app")
 })
+
+setInterval(async () => {
+  try {
+    const res = await axios.get("https://codestar-qlq6.onrender.com/api/health")
+    console.log(`🔄 Self-ping at ${new Date().toISOString()} | status: ${res.data.status}`)
+  } catch (error) {
+    console.error("⚠️ Self-ping failed:", error.message)
+  }
+}, 4 * 60 * 1000) // every 4 minutes
