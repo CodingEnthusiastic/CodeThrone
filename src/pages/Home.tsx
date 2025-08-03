@@ -136,6 +136,39 @@ interface UserCoins {
   totalEarned: number
 }
 
+const tips = [
+  "Tip 1: Solve problems daily to build consistency.",
+  "Tip 2: Write clean and readable code.",
+  "Tip 3: Debug systematically, not randomly.",
+  "Tip 4: Learn by explaining your solution.",
+  "Tip 5: Focus on time and space optimization."
+];
+
+function LoadingCard() {
+  const [tipIndex, setTipIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % tips.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="text-center">
+        <div className="relative inline-block mb-6">
+          <div className="animate-spin rounded-full h-32 w-32 border-4 border-t-transparent border-orange-600 mx-auto"></div>
+          <Trophy className="text-orange-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" size={40} />
+        </div>
+        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">Loading <span className="text-orange-600">CodeThrone</span>...</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">This will take 15 seconds</p>
+        <p className="italic text-sm text-gray-600 dark:text-gray-300 transition-all duration-500">{tips[tipIndex]}</p>
+      </div>
+    </div>
+  );
+}
+
 const Home: React.FC = () => {
   const { user, loading: authLoading } = useAuth()
   const { isDark } = useTheme()
@@ -158,6 +191,7 @@ const Home: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [error, setError] = useState<string | null>(null)
   const [dynamicText, setDynamicText] = useState("P");
+   const [tipIndex, setTipIndex] = useState(0);
   console.log("🏠 Home component rendered")
 
   const carouselItems = [
@@ -211,6 +245,14 @@ const Home: React.FC = () => {
       fetchUserCoins()
     }
   }, [user])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % tips.length);
+    }, 2000); // Change tip every 2 seconds
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
 
   // ...existing code...
   useEffect(() => {
@@ -733,14 +775,19 @@ const Home: React.FC = () => {
   const isInitialLoading = authLoading && user === null && !localStorage.getItem('token');
   
   if (isInitialLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+  return(
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="text-center">
+        <div className="relative inline-block mb-6">
+          <div className="animate-spin rounded-full h-32 w-32 border-4 border-t-transparent border-orange-600 mx-auto"></div>
+          <Trophy className="text-orange-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" size={40} />
         </div>
+        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">Loading <span className="text-orange-600">CodeThrone</span>...</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">This will take 15 seconds</p>
+        <p className="italic text-sm text-gray-600 dark:text-gray-300 transition-all duration-500">{tips[tipIndex]}</p>
       </div>
-    )
+    </div>
+  );
   }
 
   return (
