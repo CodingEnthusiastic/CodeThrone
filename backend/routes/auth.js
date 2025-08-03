@@ -175,11 +175,18 @@ router.post('/login', async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   console.log('👤 Get current user request');
   console.log('📊 User ID from token:', req.user._id);
-  
+
   try {
-    const user = await User.findById(req.user._id).select('-password');
-    
-    // Ensure user has a profile with default avatar if needed
+    const user = await User.findById(req.user._id)
+      .select('-password')
+      .lean(); // ✅ Use lean for faster, lighter query
+
+    if (!user) {
+      console.log('❌ User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // ✅ Compute default avatar on-the-fly, don't write to DB
     if (!user.profile) {
       user.profile = {
         firstName: '',
@@ -193,24 +200,18 @@ router.get('/me', authenticateToken, async (req, res) => {
         branch: '',
         graduationYear: null
       };
-      await user.save();
     } else if (!user.profile.avatar || user.profile.avatar.trim() === '') {
       user.profile.avatar = `default:${user.username.charAt(0).toUpperCase()}`;
-      await user.save();
     }
-    
+
     console.log('✅ User data retrieved:', user.username);
     res.json(user);
   } catch (error) {
     console.error('❌ Get user error:', error);
-    console.error('📊 Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
 
 // --- Google OAuth2 routes ---
 router.get('/google',
