@@ -9,63 +9,40 @@ const onlineUsers = new Set();
 
 // console.log("🛣️ Setting up chats routes...")
 
-// Get all chat rooms for user
+// ✅ Get all chat rooms for the user
 router.get("/rooms", authenticateToken, async (req, res) => {
-  try {
-    console.log(`📋 Fetching chat rooms for user: ${req.user._id}`)
+  console.log("📥 Fetching chat rooms for:", req.user._id)
 
+  try {
     const rooms = await ChatRoom.find({
       $or: [{ participants: req.user._id }, { isPrivate: false }],
     })
       .select("name description type isPrivate participants createdBy lastActivity")
-      .populate("participants", "username profile.avatar")
-      .populate("createdBy", "username profile.avatar")
       .sort({ lastActivity: -1 })
-      .lean()
+      .lean() // ✅ use lean to reduce Mongoose overhead
 
-    console.log(`✅ Found ${rooms.length} chat rooms`)
+    // Optionally map and format if you want avatars, but skip populate
     res.json(rooms)
-  } catch (error) {
-    console.error("❌ Error fetching chat rooms:", error)
-    res.status(500).json({ error: "Failed to fetch chat rooms" })
+  } catch (err) {
+    console.error("❌ Error fetching rooms:", err)
+    res.status(500).json({ message: "Server error", error: err.message })
   }
 })
 
-// Create new chat room
+// ✅ Create a new room
 router.post("/rooms", authenticateToken, async (req, res) => {
   try {
-    const { name, description, type, isPrivate, participants } = req.body
-    console.log(`🏗️ Creating new chat room: ${name} by user ${req.user._id}`)
-
     const room = new ChatRoom({
-      name,
-      description,
-      type,
-      isPrivate,
-      participants: [req.user._id, ...(participants || [])],
-      admins: [req.user._id],
+      ...req.body,
       createdBy: req.user._id,
+      participants: [req.user._id],
     })
 
     await room.save()
-    await room.populate("participants", "username profile.avatar")
-    await room.populate("createdBy", "username profile.avatar")
-
-    console.log(`✅ Chat room created successfully: ${room.name} (${room._id})`)
-
-    // Emit to all participants
-    const io = req.app.get("io")
-    if (io) {
-      room.participants.forEach((participant) => {
-        io.to(`user_${participant._id}`).emit("roomCreated", room)
-      })
-      console.log(`📡 Room creation event emitted to ${room.participants.length} participants`)
-    }
-
     res.status(201).json(room)
-  } catch (error) {
-    console.error("❌ Error creating chat room:", error)
-    res.status(500).json({ error: "Failed to create chat room" })
+  } catch (err) {
+    console.error("❌ Room creation error:", err)
+    res.status(500).json({ message: "Server error", error: err.message })
   }
 })
 
@@ -105,81 +82,50 @@ router.post("/rooms/:roomId/join", authenticateToken, async (req, res) => {
   }
 })
 
-// Get messages for a room
-// ✅ Get messages (optimized)
+// ✅ Get messages from a room (paginated)
 router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
+  const page = parseInt(req.query.page) || 1
+  const limit = parseInt(req.query.limit) || 50
+
   try {
-    const { page = 1, limit = 50 } = req.query
-    console.log(`📨 Fetching messages for room ${req.params.roomId}, page ${page}`)
-
-    const room = await ChatRoom.findById(req.params.roomId).select("isPrivate participants")
-    if (!room) return res.status(404).json({ error: "Room not found" })
-
-    if (room.isPrivate && !room.participants.includes(req.user._id)) {
-      console.log(`❌ Access denied to private room ${req.params.roomId}`)
-      return res.status(403).json({ error: "Access denied" })
-    }
-
     const messages = await Message.find({ room: req.params.roomId })
-      .populate("sender", "username profile.avatar")
-      // ✅ replyTo removed for speed
+      .select("content sender createdAt type replyTo reactions isEdited editedAt language") // ✅ keep it light
       .sort({ createdAt: -1 })
-      .limit(Number(limit))
       .skip((page - 1) * limit)
+      .limit(limit)
       .lean()
 
-    console.log(`✅ Fetched ${messages.length} messages`)
-    res.json(messages.reverse())
-  } catch (error) {
-    console.error("❌ Error fetching messages:", error)
-    res.status(500).json({ error: "Failed to fetch messages" })
+    res.json(messages)
+  } catch (err) {
+    console.error("❌ Fetch messages error:", err)
+    res.status(500).json({ message: "Server error", error: err.message })
   }
 })
 
 // ✅ Send message (unchanged, but fast)
+// ✅ Send a message in a room
 router.post("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
   try {
-    const { content, type = "text", language, replyTo } = req.body
-    console.log(`📤 Sending message to room ${req.params.roomId}`)
-
-    const room = await ChatRoom.findById(req.params.roomId)
-    if (!room) return res.status(404).json({ error: "Room not found" })
-
-    if (room.isPrivate && !room.participants.includes(req.user._id)) {
-      return res.status(403).json({ error: "Access denied" })
-    }
-
     const message = new Message({
-      content,
+      ...req.body,
       sender: req.user._id,
       room: req.params.roomId,
-      type,
-      language,
-      replyTo,
     })
 
     await message.save()
-    await message.populate("sender", "username profile.avatar")
-    if (replyTo) {
-      await message.populate("replyTo", "content sender")
-    }
 
-    // update room metadata
-    room.lastActivity = new Date()
-    room.messageCount += 1
-    await room.save()
-
-    const io = req.app.get("io")
-    if (io) {
-      io.to(`room_${req.params.roomId}`).emit("newMessage", message)
-    }
+    // Update room's lastActivity timestamp
+    await ChatRoom.findByIdAndUpdate(req.params.roomId, {
+      lastActivity: new Date(),
+    })
 
     res.status(201).json(message)
-  } catch (error) {
-    console.error("❌ Error sending message:", error)
-    res.status(500).json({ error: "Failed to send message" })
+  } catch (err) {
+    console.error("❌ Send message error:", err)
+    res.status(500).json({ message: "Server error", error: err.message })
   }
 })
+
 
 // ✅ Optional: replyTo message fetch route
 router.get("/messages/:messageId/reply", authenticateToken, async (req, res) => {
