@@ -17,13 +17,11 @@ router.get("/rooms", authenticateToken, async (req, res) => {
     const rooms = await ChatRoom.find({
       $or: [{ participants: req.user._id }, { isPrivate: false }],
     })
-      .select("name description type isPrivate participants createdBy lastActivity")
       .populate("participants", "username profile.avatar")
       .populate("createdBy", "username profile.avatar")
       .sort({ lastActivity: -1 })
-      .lean()
 
-    console.log(`✅ Found ${rooms.length} chat rooms`)
+    console.log(`✅ Found ${rooms.length} chat rooms for user`)
     res.json(rooms)
   } catch (error) {
     console.error("❌ Error fetching chat rooms:", error)
@@ -106,29 +104,33 @@ router.post("/rooms/:roomId/join", authenticateToken, async (req, res) => {
 })
 
 // Get messages for a room
-// ✅ Get messages (optimized)
 router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 50 } = req.query
-    console.log(`📨 Fetching messages for room ${req.params.roomId}, page ${page}`)
+    console.log(`📨 Fetching messages for room ${req.params.roomId}, page ${page}, limit ${limit}`)
 
-    const room = await ChatRoom.findById(req.params.roomId).select("isPrivate participants")
-    if (!room) return res.status(404).json({ error: "Room not found" })
+    const room = await ChatRoom.findById(req.params.roomId)
 
+    if (!room) {
+      console.log(`❌ Room not found: ${req.params.roomId}`)
+      return res.status(404).json({ error: "Room not found" })
+    }
+
+    // Check if user has access to room
     if (room.isPrivate && !room.participants.includes(req.user._id)) {
-      console.log(`❌ Access denied to private room ${req.params.roomId}`)
+      room.participants.push(req.user._id);
+      console.log(`❌ Access denied to private room ${req.params.roomId} for user ${req.user._id}`)
       return res.status(403).json({ error: "Access denied" })
     }
 
     const messages = await Message.find({ room: req.params.roomId })
       .populate("sender", "username profile.avatar")
-      // ✅ replyTo removed for speed
+      .populate("replyTo", "content sender")
       .sort({ createdAt: -1 })
-      .limit(Number(limit))
+      .limit(limit * 1)
       .skip((page - 1) * limit)
-      .lean()
 
-    console.log(`✅ Fetched ${messages.length} messages`)
+    console.log(`✅ Found ${messages.length} messages for room ${req.params.roomId}`)
     res.json(messages.reverse())
   } catch (error) {
     console.error("❌ Error fetching messages:", error)
@@ -136,16 +138,21 @@ router.get("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
   }
 })
 
-// ✅ Send message (unchanged, but fast)
+// Send message
 router.post("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
   try {
     const { content, type = "text", language, replyTo } = req.body
-    console.log(`📤 Sending message to room ${req.params.roomId}`)
+    console.log(`📤 Sending message to room ${req.params.roomId} from user ${req.user._id}`)
 
     const room = await ChatRoom.findById(req.params.roomId)
-    if (!room) return res.status(404).json({ error: "Room not found" })
+    if (!room) {
+      console.log(`❌ Room not found: ${req.params.roomId}`)
+      return res.status(404).json({ error: "Room not found" })
+    }
 
+    // Check if user has access to room
     if (room.isPrivate && !room.participants.includes(req.user._id)) {
+      console.log(`❌ Access denied to private room ${req.params.roomId} for user ${req.user._id}`)
       return res.status(403).json({ error: "Access denied" })
     }
 
@@ -164,36 +171,24 @@ router.post("/rooms/:roomId/messages", authenticateToken, async (req, res) => {
       await message.populate("replyTo", "content sender")
     }
 
-    // update room metadata
+    // Update room last activity
     room.lastActivity = new Date()
     room.messageCount += 1
     await room.save()
 
+    console.log(`✅ Message sent successfully to room ${room.name}`)
+
+    // Emit to room
     const io = req.app.get("io")
     if (io) {
       io.to(`room_${req.params.roomId}`).emit("newMessage", message)
+      console.log(`📡 New message event emitted to room ${room.name}`)
     }
 
     res.status(201).json(message)
   } catch (error) {
     console.error("❌ Error sending message:", error)
     res.status(500).json({ error: "Failed to send message" })
-  }
-})
-
-// ✅ Optional: replyTo message fetch route
-router.get("/messages/:messageId/reply", authenticateToken, async (req, res) => {
-  try {
-    const msg = await Message.findById(req.params.messageId)
-      .populate("sender", "username profile.avatar")
-      .populate("replyTo", "content sender")
-      .lean()
-
-    if (!msg) return res.status(404).json({ error: "Message not found" })
-    res.json(msg.replyTo || {})
-  } catch (error) {
-    console.error("❌ Error fetching replyTo message:", error)
-    res.status(500).json({ error: "Failed to fetch replyTo message" })
   }
 })
 
