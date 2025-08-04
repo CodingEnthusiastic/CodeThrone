@@ -39,6 +39,26 @@ import {
 } from "lucide-react"
 import { API_URL } from "../config/api"
 
+// Common emojis for the picker
+const COMMON_EMOJIS = [
+  '😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂',
+  '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛',
+  '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏',
+  '😒', '😞', '😔', '😟', '😕', '🙁', '😣', '😖', '😫', '😩',
+  '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵',
+  '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫',
+  '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮',
+  '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮',
+  '🤧', '😷', '🤒', '🤕', '👍', '👎', '👌', '✌️', '🤞', '🤟',
+  '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️',
+  '🖖', '👋', '🤝', '👏', '🙌', '👐', '🤲', '🤜', '🤛', '✊',
+  '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🙏', '✍️', '💪',
+  '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁',
+  '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
+  '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️',
+  '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐'
+]
+
 interface User {
   _id: string
   username: string
@@ -115,8 +135,9 @@ const Chat: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
-  const typingTimeoutRef = useRef<NodeJS.Timeout>()
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
 
   const [roomName, setRoomName] = useState("")
   const [roomDescription, setRoomDescription] = useState("")
@@ -124,7 +145,9 @@ const Chat: React.FC = () => {
   const [roomIsPrivate, setRoomIsPrivate] = useState(false)
   const [roomCreating, setRoomCreating] = useState(false)
   const [roomError, setRoomError] = useState<string | null>(null)
-  const [joiningRoom, setJoiningRoom] = useState(false);
+  const [joiningRoom, setJoiningRoom] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState("")
   // Enhanced socket connection with reconnection logic
   const connectSocket = useCallback(() => {
     if (!token || !user) {
@@ -365,6 +388,23 @@ const Chat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false)
+        setEmojiSearchQuery("") // Clear search when closing
+      }
+    }
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showEmojiPicker])
+
   // Join rooms on socket connection
   useEffect(() => {
     if (socket && rooms.length > 0 && connectionStatus === "connected") {
@@ -456,7 +496,7 @@ const Chat: React.FC = () => {
 
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("typing", { roomId: activeRoom._id, isTyping: false })
-    }, 10000)
+    }, 1000)
   }
 
   const searchUsers = async (query: string) => {
@@ -495,6 +535,161 @@ const Chat: React.FC = () => {
     if (socket && connectionStatus === "connected") {
       socket.emit("reactToMessage", { messageId, emoji })
     }
+  }
+
+  const insertEmoji = (emoji: string) => {
+    setNewMessage((prev) => prev + emoji)
+    // Don't close the picker, keep it open for multiple emoji selections
+    messageInputRef.current?.focus()
+  }
+
+  const getFilteredEmojis = () => {
+    if (!emojiSearchQuery.trim()) {
+      return COMMON_EMOJIS
+    }
+    
+    // Create a simple emoji name mapping for search
+    const emojiNames: { [key: string]: string[] } = {
+      '😀': ['grinning', 'smile', 'happy'],
+      '😃': ['grinning', 'smile', 'happy', 'smiley'],
+      '😄': ['grinning', 'smile', 'happy', 'joy'],
+      '😁': ['grinning', 'smile', 'happy', 'beaming'],
+      '😅': ['grinning', 'smile', 'sweat', 'nervous'],
+      '😂': ['joy', 'laugh', 'tears', 'funny'],
+      '🤣': ['rofl', 'laugh', 'rolling', 'funny'],
+      '😊': ['blush', 'smile', 'happy'],
+      '😇': ['innocent', 'angel', 'halo'],
+      '🙂': ['slight', 'smile', 'happy'],
+      '😉': ['wink', 'flirt'],
+      '😌': ['relieved', 'peaceful'],
+      '😍': ['heart', 'eyes', 'love'],
+      '🥰': ['smiling', 'hearts', 'love'],
+      '😘': ['kiss', 'blow', 'love'],
+      '😗': ['kiss', 'whistling'],
+      '😙': ['kiss', 'smile'],
+      '😚': ['kiss', 'closed', 'eyes'],
+      '😋': ['yum', 'delicious', 'savoring'],
+      '😛': ['tongue', 'playful'],
+      '😝': ['tongue', 'wink', 'playful'],
+      '😜': ['tongue', 'wink', 'crazy'],
+      '🤪': ['zany', 'crazy', 'goofy'],
+      '🤨': ['raised', 'eyebrow', 'suspicious'],
+      '🧐': ['monocle', 'thinking'],
+      '🤓': ['nerd', 'glasses'],
+      '😎': ['cool', 'sunglasses'],
+      '🤩': ['star', 'struck', 'excited'],
+      '🥳': ['party', 'celebration'],
+      '😏': ['smirk', 'mischievous'],
+      '😒': ['unamused', 'annoyed'],
+      '😞': ['disappointed', 'sad'],
+      '😔': ['pensive', 'sad'],
+      '😟': ['worried', 'concerned'],
+      '😕': ['confused', 'slight', 'frown'],
+      '🙁': ['slight', 'frown', 'sad'],
+      '😣': ['persevering', 'struggling'],
+      '😖': ['confounded', 'frustrated'],
+      '😫': ['tired', 'exhausted'],
+      '😩': ['weary', 'tired'],
+      '🥺': ['pleading', 'puppy', 'eyes'],
+      '😢': ['cry', 'tear', 'sad'],
+      '😭': ['sob', 'cry', 'tears'],
+      '😤': ['huff', 'triumph', 'steam'],
+      '😠': ['angry', 'mad'],
+      '😡': ['rage', 'angry', 'red'],
+      '🤬': ['swearing', 'cursing', 'symbols'],
+      '🤯': ['exploding', 'head', 'mind', 'blown'],
+      '😳': ['flushed', 'embarrassed'],
+      '🥵': ['hot', 'sweat'],
+      '🥶': ['cold', 'freezing'],
+      '😱': ['scream', 'fear'],
+      '😨': ['fearful', 'scared'],
+      '😰': ['anxious', 'sweat'],
+      '😥': ['sad', 'relieved'],
+      '😓': ['downcast', 'sweat'],
+      '🤗': ['hug', 'embrace'],
+      '🤔': ['thinking', 'hmm'],
+      '🤭': ['hand', 'over', 'mouth'],
+      '🤫': ['shush', 'quiet'],
+      '🤥': ['lying', 'pinocchio'],
+      '😶': ['no', 'mouth', 'silent'],
+      '😐': ['neutral', 'expressionless'],
+      '😑': ['expressionless', 'blank'],
+      '😬': ['grimace', 'awkward'],
+      '🙄': ['eye', 'roll', 'annoyed'],
+      '😯': ['hushed', 'surprised'],
+      '😦': ['frowning', 'open', 'mouth'],
+      '😧': ['anguished', 'shocked'],
+      '😮': ['open', 'mouth', 'surprised'],
+      '😲': ['astonished', 'shocked'],
+      '🥱': ['yawn', 'tired'],
+      '😴': ['sleep', 'zzz'],
+      '🤤': ['drool', 'sleep'],
+      '😪': ['sleepy', 'tired'],
+      '😵': ['dizzy', 'knocked', 'out'],
+      '🤐': ['zipper', 'mouth', 'secret'],
+      '🥴': ['woozy', 'drunk'],
+      '🤢': ['nauseous', 'sick'],
+      '🤮': ['vomit', 'sick'],
+      '🤧': ['sneeze', 'sick'],
+      '😷': ['mask', 'sick'],
+      '🤒': ['thermometer', 'sick'],
+      '🤕': ['bandage', 'hurt'],
+      '👍': ['thumbs', 'up', 'good', 'yes'],
+      '👎': ['thumbs', 'down', 'bad', 'no'],
+      '👌': ['ok', 'okay', 'perfect'],
+      '✌️': ['peace', 'victory'],
+      '🤞': ['fingers', 'crossed', 'luck'],
+      '🤟': ['love', 'you', 'sign'],
+      '🤘': ['rock', 'on', 'metal'],
+      '🤙': ['call', 'me', 'hang', 'loose'],
+      '👈': ['point', 'left'],
+      '👉': ['point', 'right'],
+      '👆': ['point', 'up'],
+      '👇': ['point', 'down'],
+      '☝️': ['index', 'point', 'up'],
+      '✋': ['hand', 'stop'],
+      '🤚': ['raised', 'back', 'hand'],
+      '🖐️': ['hand', 'splayed'],
+      '🖖': ['vulcan', 'spock'],
+      '👋': ['wave', 'hello', 'goodbye'],
+      '🤝': ['handshake', 'deal'],
+      '👏': ['clap', 'applause'],
+      '🙌': ['praise', 'celebration'],
+      '👐': ['open', 'hands'],
+      '🤲': ['palms', 'up'],
+      '🤜': ['right', 'fist', 'bump'],
+      '🤛': ['left', 'fist', 'bump'],
+      '✊': ['raised', 'fist'],
+      '👊': ['fist', 'bump'],
+      '🙏': ['pray', 'thanks', 'please'],
+      '✍️': ['write', 'writing'],
+      '💪': ['muscle', 'strong', 'flex'],
+      '❤️': ['heart', 'love', 'red'],
+      '🧡': ['orange', 'heart', 'love'],
+      '💛': ['yellow', 'heart', 'love'],
+      '💚': ['green', 'heart', 'love'],
+      '💙': ['blue', 'heart', 'love'],
+      '💜': ['purple', 'heart', 'love'],
+      '🖤': ['black', 'heart'],
+      '🤍': ['white', 'heart'],
+      '🤎': ['brown', 'heart'],
+      '💔': ['broken', 'heart', 'sad'],
+      '❣️': ['heart', 'exclamation'],
+      '💕': ['two', 'hearts', 'love'],
+      '💞': ['revolving', 'hearts'],
+      '💓': ['beating', 'heart'],
+      '💗': ['growing', 'heart'],
+      '💖': ['sparkling', 'heart'],
+      '💘': ['heart', 'arrow', 'cupid'],
+      '💝': ['heart', 'ribbon', 'gift'],
+      '💟': ['heart', 'decoration']
+    }
+    
+    const query = emojiSearchQuery.toLowerCase()
+    return COMMON_EMOJIS.filter(emoji => {
+      const names = emojiNames[emoji] || []
+      return names.some(name => name.includes(query))
+    })
   }
 
   const formatTime = (dateString: string) => {
@@ -1272,7 +1467,7 @@ const Chat: React.FC = () => {
             )}
 
             <div className="flex items-end space-x-3">
-              <div className="flex-1">
+              <div className="flex-1 relative">
                 <textarea
                   ref={messageInputRef}
                   value={newMessage}
@@ -1289,13 +1484,120 @@ const Chat: React.FC = () => {
                   rows={1}
                   placeholder={activeRoom ? `Message ${activeRoom.name}...` : "Select a room to start chatting"}
                   disabled={!activeRoom || connectionStatus !== "connected" || isSendingMessage}
-                  className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 resize-none disabled:opacity-60 disabled:cursor-not-allowed ${
+                  className={`w-full px-4 py-3 pr-12 rounded-xl border transition-all duration-200 resize-none disabled:opacity-60 disabled:cursor-not-allowed ${
                     isDark
                       ? "bg-slate-700 text-slate-100 border-slate-600 focus:border-purple-500 placeholder-slate-400"
                       : "bg-white text-gray-900 border-gray-300 focus:border-blue-500 placeholder-gray-500"
                   } focus:ring-2 focus:ring-opacity-50`}
                   style={{ minHeight: '48px', maxHeight: '120px' }}
                 />
+                
+                {/* Emoji Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 ${
+                    isDark
+                      ? "text-slate-400 hover:text-slate-200 hover:bg-slate-600"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                  }`}
+                  title="Add Emoji"
+                >
+                  <Smile className="h-5 w-5" />
+                </button>
+
+                {/* Emoji Picker */}
+                {showEmojiPicker && (
+                  <div 
+                    ref={emojiPickerRef}
+                    className={`absolute bottom-full right-0 mb-2 w-80 rounded-xl border shadow-2xl backdrop-blur-xl z-50 overflow-hidden ${
+                      isDark
+                        ? "bg-slate-800/95 border-slate-600"
+                        : "bg-white/95 border-gray-200"
+                    }`}
+                    style={{ maxHeight: '320px' }}
+                  >
+                    <div className={`p-3 border-b ${isDark ? 'border-slate-600' : 'border-gray-200'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className={`text-sm font-medium ${
+                          isDark ? 'text-slate-200' : 'text-gray-700'
+                        }`}>
+                          Choose an emoji
+                        </h3>
+                        <button
+                          onClick={() => {
+                            setShowEmojiPicker(false)
+                            setEmojiSearchQuery("")
+                          }}
+                          className={`p-1 rounded-lg transition-colors ${
+                            isDark
+                              ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700"
+                              : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                          }`}
+                          title="Close"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <Search className={`absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 ${
+                          isDark ? 'text-slate-400' : 'text-gray-500'
+                        }`} />
+                        <input
+                          type="text"
+                          placeholder="Search emojis..."
+                          value={emojiSearchQuery}
+                          onChange={(e) => setEmojiSearchQuery(e.target.value)}
+                          className={`w-full pl-8 pr-8 py-2 text-sm rounded-lg border transition-all duration-200 ${
+                            isDark
+                              ? 'bg-slate-700 text-slate-100 border-slate-600 focus:border-purple-500 placeholder-slate-400'
+                              : 'bg-white text-gray-900 border-gray-300 focus:border-blue-500 placeholder-gray-500'
+                          } focus:ring-1 focus:ring-opacity-50`}
+                        />
+                        {emojiSearchQuery && (
+                          <button
+                            onClick={() => setEmojiSearchQuery("")}
+                            className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 rounded transition-colors ${
+                              isDark
+                                ? "text-slate-400 hover:text-slate-200"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
+                            title="Clear search"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="overflow-y-auto" style={{ maxHeight: '240px' }}>
+                      <div className="p-3">
+                        <div className="grid grid-cols-8 gap-1">
+                          {getFilteredEmojis().map((emoji, index) => (
+                            <button
+                              key={index}
+                              onClick={() => insertEmoji(emoji)}
+                              className={`w-9 h-9 text-lg rounded-lg transition-all duration-200 hover:scale-110 flex items-center justify-center ${
+                                isDark
+                                  ? "hover:bg-slate-700"
+                                  : "hover:bg-gray-100"
+                              }`}
+                              title={emoji}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                        {getFilteredEmojis().length === 0 && (
+                          <div className={`text-center py-4 text-sm ${
+                            isDark ? 'text-slate-400' : 'text-gray-500'
+                          }`}>
+                            No emojis found matching "{emojiSearchQuery}"
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <button
                 onClick={sendMessage}
