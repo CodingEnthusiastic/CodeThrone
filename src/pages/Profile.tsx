@@ -248,6 +248,7 @@ const Profile: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [leaderboard, setLeaderboard] = useState<{ topContest: any[]; topGame: any[] }>({ topContest: [], topGame: [] });
   const [editForm, setEditForm] = useState({
@@ -400,57 +401,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
-      return;
-    }
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
-    }
-
-    setImageUploading(true);
-    const formData = new FormData();
-    formData.append('profileImage', file);
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put(`${API_URL}/profile/upload-image`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      // Update the profile state with new avatar
-      if (profile) {
-        setProfile({
-          ...profile,
-          profile: {
-            ...profile.profile,
-            avatar: response.data.avatar
-          }
-        });
-      }
-      
-      // Refresh user data in AuthContext so navbar updates
-      await refreshUser();
-      
-      console.log('✅ Image uploaded successfully');
-    } catch (error) {
-      console.error('❌ Error uploading image:', error);
-      alert('Failed to upload image. Please try again.');
-    } finally {
-      setImageUploading(false);
-    }
-  };
+  // Avatar upload handler removed; now using avatar picker modal only
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -851,28 +802,74 @@ const Profile: React.FC = () => {
                       </span>
                     </div>
                   )}
-                  
+                  {/* Small avatar edit icon at bottom right */}
                   {isOwnProfile && (
-                    <div className="absolute bottom-0 right-0">
-                      <label htmlFor="profile-image-upload" className="cursor-pointer">
-                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg">
-                          <User className="h-4 w-4 text-white" />
-                        </div>
-                      </label>
-                      <input
-                        id="profile-image-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        disabled={imageUploading}
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg focus:outline-none border-2 border-white dark:border-gray-800"
+                      onClick={() => setShowAvatarModal(true)}
+                      title="Change avatar"
+                    >
+                      <User className="h-4 w-4 text-white" />
+                    </button>
                   )}
-                  
-                  {imageUploading && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                  {/* Avatar selection modal (outside avatar box, centered) */}
+                  {showAvatarModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full relative">
+                        <button
+                          className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xl font-bold"
+                          onClick={() => setShowAvatarModal(false)}
+                          aria-label="Close"
+                        >
+                          ×
+                        </button>
+                        <h2 className="text-lg font-bold mb-4 text-center text-gray-900 dark:text-white">Choose your avatar</h2>
+                        <div className="flex flex-wrap gap-4 justify-center mb-4">
+                          {[
+                            'https://png.pngtree.com/background/20230611/original/pngtree-cartoon-with-a-man-in-glasses-wearing-headphones-picture-image_3169569.jpg',
+                            'https://www.freepngimg.com/download/youtube/63841-profile-twitch-youtube-avatar-discord-free-download-image.png',
+                            'https://png.pngtree.com/png-clipart/20230531/original/pngtree-3d-avatar-a-nurse-female-png-image_9174297.png',
+                            'https://static.vecteezy.com/system/resources/previews/021/907/479/large_2x/anime-girl-avatar-ai-generated-photo.jpg',
+                            'https://wallpapers.com/images/hd/aesthetic-profile-picture-pjnvodm0tj798j1q.jpg',
+                            'https://toppng.com/uploads/preview/cool-avatar-transparent-image-cool-boy-avatar-11562893383qsirclznyw.png'
+                          ].map((url, idx) => (
+                            <button
+                              key={url}
+                              className={`focus:outline-none border-2 rounded-full w-16 h-16 p-1 transition-all duration-150 ${profile.profile.avatar === url ? 'border-blue-500 ring-2 ring-blue-400' : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'}`}
+                              onClick={async () => {
+                                setImageUploading(true);
+                                try {
+                                  // Save avatar to DB
+                                  const res = await fetch(`${API_URL}/profile/update`, {
+                                    method: 'PUT',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                    },
+                                    body: JSON.stringify({ profile: { ...profile.profile, avatar: url } })
+                                  });
+                                  if (res.ok) {
+                                    setProfile(p => p && ({ ...p, profile: { ...p.profile, avatar: url } }));
+                                    setShowAvatarModal(false);
+                                    if (typeof refreshUser === 'function') refreshUser();
+                                  }
+                                } finally {
+                                  setImageUploading(false);
+                                }
+                              }}
+                              disabled={imageUploading}
+                            >
+                              <img src={url} alt={`Avatar ${idx+1}`} className="w-full h-full rounded-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          className="w-full mt-2 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                          onClick={() => setShowAvatarModal(false)}
+                          disabled={imageUploading}
+                        >Cancel</button>
+                      </div>
                     </div>
                   )}
                 </div>
