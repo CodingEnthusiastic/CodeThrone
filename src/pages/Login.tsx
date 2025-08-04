@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Code, AlertCircle, Eye, EyeOff, Shield, User } from 'lucide-react';
 import { API_URL } from "../config/api";
 import Galaxy from './Galaxy';
-
+// import LoginBackground from "./pages/LoginBackground"; 
 // Animated Light Theme Background
 const LightThemeBackground: React.FC = () => {
   // Generate 18 random stars for each render
@@ -237,182 +237,188 @@ const Login: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative h-screen w-screen flex items-center justify-center overflow-hidden bg-transparent">
-      {/* Animated Backgrounds - only depends on isDark, never rerenders on input */}
-      <LoginBackground isDark={isDark} />
-      {/* Robot Animation: hidden on mobile, visible on sm+ */}
-      <div className="hidden sm:block">
-        <RobotAnimation />
-      </div>
-      <div className="relative z-10 w-full max-w-md mx-auto px-6">
-        <div className="flex justify-center mb-6">
-          <div className="flex items-center space-x-2">
-            <Code className="h-8 w-8 text-orange-500" />
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">CodeThrone</span>
-          </div>
+    <>
+      {/*
+        Background rendering moved out of Login component to prevent rerender/white flash on input change.
+        Please render <LoginBackground isDark={isDark} /> at the app/root level (e.g. in App.tsx or a layout component),
+        so it is not part of the Login component's render tree.
+      */}
+      {/* <LoginBackground isDark={isDark} /> */}
+      <div className="relative h-screen w-screen flex items-center justify-center overflow-hidden bg-transparent">
+        {/* Robot Animation: hidden on mobile, visible on sm+ */}
+        <div className="hidden sm:block">
+          <RobotAnimation />
         </div>
-        
-        <h2 className="text-center text-3xl font-extrabold text-gray-900 dark:text-white mb-8">
-          Sign in to CodeThrone
-        </h2>
-        
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm py-8 px-6 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md p-4">
-                <div className="flex">
-                  <AlertCircle className="h-5 w-5 text-red-400" />
-                  <div className="ml-3">
-                    <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+        <div className="relative z-10 w-full max-w-md mx-auto px-6">
+          <div className="flex justify-center mb-6">
+            <div className="flex items-center space-x-2">
+              <Code className="h-8 w-8 text-orange-500" />
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">CodeThrone</span>
+            </div>
+          </div>
+          
+          <h2 className="text-center text-3xl font-extrabold text-gray-900 dark:text-white mb-8">
+            Sign in to CodeThrone
+          </h2>
+          
+          <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm py-8 px-6 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md p-4">
+                  <div className="flex">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                    <div className="ml-3">
+                      <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Username or Email
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    required
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 dark:bg-gray-900/80 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm backdrop-blur-sm"
+                    placeholder="Enter your username or email"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Login as
+                </label>
+                <div className="mt-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRole('user')}
+                      className={`flex items-center justify-center px-3 py-2 border rounded-md text-sm font-medium transition-all duration-200 ${
+                        role === 'user'
+                          ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 shadow-md'
+                          : 'border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/80 backdrop-blur-sm'
+                      }`}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      User
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('admin')}
+                      className={`flex items-center justify-center px-3 py-2 border rounded-md text-sm font-medium transition-all duration-200 ${
+                        role === 'admin'
+                          ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 shadow-md'
+                          : 'border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/80 backdrop-blur-sm'
+                      }`}
+                    >
+                      <Shield className="h-4 w-4 mr-2" />
+                      Admin
+                    </button>
                   </div>
                 </div>
               </div>
-            )}
 
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Username or Email
-              </label>
-              <div className="mt-1">
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 dark:bg-gray-900/80 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm backdrop-blur-sm"
-                  placeholder="Enter your username or email"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Login as
-              </label>
-              <div className="mt-1">
-                <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Password
+                </label>
+                <div className="mt-1 relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    required
+                    className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 dark:bg-gray-900/80 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm backdrop-blur-sm"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                   <button
                     type="button"
-                    onClick={() => setRole('user')}
-                    className={`flex items-center justify-center px-3 py-2 border rounded-md text-sm font-medium transition-all duration-200 ${
-                      role === 'user'
-                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 shadow-md'
-                        : 'border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/80 backdrop-blur-sm'
-                    }`}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-md transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
                   >
-                    <User className="h-4 w-4 mr-2" />
-                    User
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole('admin')}
-                    className={`flex items-center justify-center px-3 py-2 border rounded-md text-sm font-medium transition-all duration-200 ${
-                      role === 'admin'
-                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 shadow-md'
-                        : 'border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/80 backdrop-blur-sm'
-                    }`}
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    Admin
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
                   </button>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Password
-              </label>
-              <div className="mt-1 relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 dark:bg-gray-900/80 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm backdrop-blur-sm"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+              <div>
                 <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-md transition-colors"
-                  onClick={() => setShowPassword(!showPassword)}
-                  tabIndex={-1}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Signing in...
+                    </div>
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    'Sign in'
                   )}
                 </button>
               </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95"
-              >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing in...
-                  </div>
-                ) : (
-                  'Sign in'
-                )}
-              </button>
-            </div>
-
-            {/* OAuth Login Button */}
-            <div>
-              <button
-                type="button"
-                onClick={() => window.location.href = `${API_URL}/auth/google`}
-                className="w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/90 dark:bg-gray-900/90 hover:bg-gray-50 dark:hover:bg-gray-800/90 transition-all duration-200 backdrop-blur-sm transform hover:scale-105 active:scale-95"
-              >
-                <svg className="h-5 w-5 mr-2" viewBox="0 0 48 48">
-                  <g>
-                    <path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.23l6.85-6.85C36.13 2.13 30.41 0 24 0 14.82 0 6.71 5.06 2.69 12.44l7.98 6.2C12.13 13.03 17.62 9.5 24 9.5z"/>
-                    <path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.91-2.17 5.38-4.62 7.04l7.13 5.55C43.94 37.03 46.1 31.33 46.1 24.55z"/>
-                    <path fill="#FBBC05" d="M10.67 28.64c-1.04-3.1-1.04-6.44 0-9.54l-7.98-6.2C.89 16.41 0 20.09 0 24c0 3.91.89 7.59 2.69 11.1l7.98-6.2z"/>
-                    <path fill="#EA4335" d="M24 48c6.41 0 12.13-2.13 16.67-5.81l-7.13-5.55c-2.01 1.35-4.59 2.16-7.54 2.16-6.38 0-11.87-3.53-14.33-8.74l-7.98 6.2C6.71 42.94 14.82 48 24 48z"/>
-                    <path fill="none" d="M0 0h48v48H0z"/>
-                  </g>
-                </svg>
-                Sign in with Google
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-700" />
+              {/* OAuth Login Button */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => window.location.href = `${API_URL}/auth/google`}
+                  className="w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/90 dark:bg-gray-900/90 hover:bg-gray-50 dark:hover:bg-gray-800/90 transition-all duration-200 backdrop-blur-sm transform hover:scale-105 active:scale-95"
+                >
+                  <svg className="h-5 w-5 mr-2" viewBox="0 0 48 48">
+                    <g>
+                      <path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.23l6.85-6.85C36.13 2.13 30.41 0 24 0 14.82 0 6.71 5.06 2.69 12.44l7.98 6.2C12.13 13.03 17.62 9.5 24 9.5z"/>
+                      <path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.91-2.17 5.38-4.62 7.04l7.13 5.55C43.94 37.03 46.1 31.33 46.1 24.55z"/>
+                      <path fill="#FBBC05" d="M10.67 28.64c-1.04-3.1-1.04-6.44 0-9.54l-7.98-6.2C.89 16.41 0 20.09 0 24c0 3.91.89 7.59 2.69 11.1l7.98-6.2z"/>
+                      <path fill="#EA4335" d="M24 48c6.41 0 12.13-2.13 16.67-5.81l-7.13-5.55c-2.01 1.35-4.59 2.16-7.54 2.16-6.38 0-11.87-3.53-14.33-8.74l-7.98 6.2C6.71 42.94 14.82 48 24 48z"/>
+                      <path fill="none" d="M0 0h48v48H0z"/>
+                    </g>
+                  </svg>
+                  Sign in with Google
+                </button>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white/90 dark:bg-gray-800/90 text-gray-500 dark:text-gray-300 backdrop-blur-sm">New to CodeThrone?</span>
-              </div>
-            </div>
+            </form>
 
-            <div className="mt-6 text-center">
-              <Link
-                to="/register"
-                className="font-medium text-orange-600 hover:text-orange-500 transition-colors duration-200 hover:underline"
-              >
-                Create your account
-              </Link>
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300 dark:border-gray-700" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white/90 dark:bg-gray-800/90 text-gray-500 dark:text-gray-300 backdrop-blur-sm">New to CodeThrone?</span>
+                </div>
+              </div>
+
+              <div className="mt-6 text-center">
+                <Link
+                  to="/register"
+                  className="font-medium text-orange-600 hover:text-orange-500 transition-colors duration-200 hover:underline"
+                >
+                  Create your account
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
