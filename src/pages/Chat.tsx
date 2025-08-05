@@ -792,13 +792,13 @@ const Chat: React.FC = () => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`fixed top-20 left-4 z-50 p-3 rounded-xl shadow-lg transition-all duration-300 lg:hidden ${
+        className={`fixed top-16 left-4 z-50 p-2.5 rounded-xl shadow-lg transition-all duration-300 lg:hidden ${
           isDark
             ? 'bg-slate-800/90 text-white border border-slate-700 hover:bg-slate-700'
             : 'bg-white/90 text-gray-900 border border-gray-200 hover:bg-gray-50'
         } backdrop-blur-sm`}
       >
-        {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        {isSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
 
       {/* Sidebar Overlay for Mobile */}
@@ -813,22 +813,22 @@ const Chat: React.FC = () => {
       <div
         className={`${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed lg:relative lg:translate-x-0 w-80 h-full flex flex-col transition-transform duration-300 z-40 ${
+        } fixed lg:relative lg:translate-x-0 w-full sm:w-80 lg:w-80 h-full flex flex-col transition-transform duration-300 z-40 ${
           isDark
             ? 'bg-slate-800/95 border-slate-700'
             : 'bg-white/95 border-gray-200'
         } backdrop-blur-xl border-r shadow-2xl`}
       >
         {/* Header */}
-        <div className={`p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-xl ${
+        <div className={`p-4 sm:p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className={`p-1.5 sm:p-2 rounded-xl ${
                 isDark ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'bg-gradient-to-r from-blue-600 to-purple-600'
               }`}>
-                <MessageCircle className="h-6 w-6 text-white" />
+                <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <h1 className={`text-2xl font-bold bg-gradient-to-r ${
+              <h1 className={`text-lg sm:text-2xl font-bold bg-gradient-to-r ${
                 isDark
                   ? 'from-purple-400 to-blue-400'
                   : 'from-blue-600 to-purple-600'
@@ -836,34 +836,34 @@ const Chat: React.FC = () => {
                 Discord Coding
               </h1>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <button
                 onClick={() => setShowUserSearch(!showUserSearch)}
-                className={`p-2 rounded-lg transition-all duration-200 ${
+                className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
                   isDark
                     ? 'text-slate-400 hover:text-purple-400 hover:bg-slate-700'
                     : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
                 }`}
                 title="Start Private Chat"
               >
-                <UserPlus className="h-5 w-5" />
+                <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <button
                 onClick={() => setShowCreateRoom(!showCreateRoom)}
-                className={`p-2 rounded-lg transition-all duration-200 ${
+                className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
                   isDark
                     ? 'text-slate-400 hover:text-purple-400 hover:bg-slate-700'
                     : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
                 }`}
                 title="Create Room"
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           </div>
 
           {/* Connection Status */}
-          <div className={`mb-6 p-4 rounded-xl border backdrop-blur-sm ${
+          <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl border backdrop-blur-sm ${
             isDark
               ? 'bg-slate-700/50 border-slate-600'
               : connectionStatus === "connected"
@@ -871,9 +871,9 @@ const Chat: React.FC = () => {
                 : 'bg-gray-50 border-gray-200'
           }`}>
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 {getConnectionStatusIcon()}
-                <span className={`text-sm font-medium ${
+                <span className={`text-xs sm:text-sm font-medium ${
                   isDark
                     ? 'text-slate-200'
                     : connectionStatus === "connected"
@@ -907,7 +907,7 @@ const Chat: React.FC = () => {
 
           {/* User Search */}
           {showUserSearch && (
-            <div className={`mb-6 p-4 rounded-xl border ${
+            <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl border ${
               isDark
                 ? 'bg-slate-700/50 border-slate-600'
                 : 'bg-orange-50 border-orange-200'
@@ -924,7 +924,7 @@ const Chat: React.FC = () => {
                     setSearchQuery(e.target.value)
                     searchUsers(e.target.value)
                   }}
-                  className={`w-full pl-10 pr-4 py-3 rounded-lg border transition-all duration-200 ${
+                  className={`w-full pl-10 pr-4 py-2 sm:py-3 rounded-lg border transition-all duration-200 text-sm sm:text-base ${
                     isDark
                       ? 'bg-slate-800 text-slate-100 border-slate-600 focus:border-purple-500 placeholder-slate-400'
                       : 'bg-white text-gray-900 border-gray-300 focus:border-blue-500 placeholder-gray-500'
@@ -1429,7 +1429,7 @@ const Chat: React.FC = () => {
         {activeRoom &&
           (activeRoom.isPrivate ||
             activeRoom.participants.some((u) => u._id === user._id)) ? (
-          <div className={`p-4 border-t backdrop-blur-xl ${
+          <div className={`p-3 sm:p-4 border-t backdrop-blur-xl ${
             isDark
               ? "border-slate-700 bg-slate-800/80"
               : "border-gray-200 bg-white/80"
@@ -1484,7 +1484,7 @@ const Chat: React.FC = () => {
                   rows={1}
                   placeholder={activeRoom ? `Message ${activeRoom.name}...` : "Select a room to start chatting"}
                   disabled={!activeRoom || connectionStatus !== "connected" || isSendingMessage}
-                  className={`w-full px-4 py-3 pr-12 rounded-xl border transition-all duration-200 resize-none disabled:opacity-60 disabled:cursor-not-allowed ${
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 pr-10 sm:pr-12 rounded-xl border transition-all duration-200 resize-none disabled:opacity-60 disabled:cursor-not-allowed text-sm sm:text-base ${
                     isDark
                       ? "bg-slate-700 text-slate-100 border-slate-600 focus:border-purple-500 placeholder-slate-400"
                       : "bg-white text-gray-900 border-gray-300 focus:border-blue-500 placeholder-gray-500"
@@ -1496,21 +1496,21 @@ const Chat: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 ${
+                  className={`absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 p-1 sm:p-1.5 rounded-lg transition-all duration-200 ${
                     isDark
                       ? "text-slate-400 hover:text-slate-200 hover:bg-slate-600"
                       : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                   title="Add Emoji"
                 >
-                  <Smile className="h-5 w-5" />
+                  <Smile className="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
 
                 {/* Emoji Picker */}
                 {showEmojiPicker && (
                   <div 
                     ref={emojiPickerRef}
-                    className={`absolute bottom-full right-0 mb-2 w-80 rounded-xl border shadow-2xl backdrop-blur-xl z-50 overflow-hidden ${
+                    className={`absolute bottom-full right-0 mb-2 w-72 sm:w-80 rounded-xl border shadow-2xl backdrop-blur-xl z-50 overflow-hidden ${
                       isDark
                         ? "bg-slate-800/95 border-slate-600"
                         : "bg-white/95 border-gray-200"
@@ -1602,19 +1602,19 @@ const Chat: React.FC = () => {
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected" || isSendingMessage}
-                className={`p-3 rounded-xl transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-105 ${
+                className={`p-2 sm:p-3 rounded-xl transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-105 ${
                   isDark
                     ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                     : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
                 } shadow-lg hover:shadow-xl`}
                 title="Send Message"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
 
             {connectionStatus !== "connected" && (
-              <div className={`mt-3 text-xs flex items-center justify-center p-2 rounded-lg ${
+              <div className={`mt-2 sm:mt-3 text-xs flex items-center justify-center p-2 rounded-lg ${
                 isDark
                   ? "text-amber-400 bg-amber-900/20 border border-amber-800"
                   : "text-amber-700 bg-amber-50 border border-amber-200"
@@ -1650,7 +1650,7 @@ const Chat: React.FC = () => {
                 Join this room to participate in the conversation and send messages.
               </p>
               <button
-  className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 ${
+  className={`px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 text-sm sm:text-base ${
     isDark
       ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
       : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
