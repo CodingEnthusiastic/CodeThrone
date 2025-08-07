@@ -36,6 +36,10 @@ import { API_URL } from "../config/api"
 import confetti from "canvas-confetti";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css'; // You can choose different themes
 
 
 interface Problem {
@@ -109,37 +113,218 @@ interface RunResult {
 function AnimatedAiResponse({ response }: { response: string }) {
   const [displayed, setDisplayed] = useState("")
 
+  // Function to clean and preprocess the response
+  const preprocessResponse = (rawResponse: string): string => {
+    let cleaned = String(rawResponse || "").trim()
+    
+    // Handle case where response might be an object
+    if (cleaned === '[object Object]' || cleaned.includes('[object Object]')) {
+      console.warn('Response contains object references, attempting to clean...')
+      cleaned = cleaned.replace(/\[object Object\]/g, '')
+      
+      // If cleaning resulted in empty string, provide fallback
+      if (!cleaned.trim()) {
+        return "I apologize, but there was an issue processing the response. Please try asking your question again."
+      }
+    }
+    
+    // Remove any remaining object references or malformed content - but be more careful
+    cleaned = cleaned.replace(/,\s*,/g, ',') // Remove double commas
+    cleaned = cleaned.replace(/\(\s*,/g, '(') // Remove leading commas in parentheses
+    cleaned = cleaned.replace(/,\s*\)/g, ')') // Remove trailing commas in parentheses
+    
+    // Be more selective about bracket cleaning to preserve code structure
+    // Only clean malformed brackets, not all brackets
+    cleaned = cleaned.replace(/\[,\s*,/g, '[') // Remove double commas in arrays
+    cleaned = cleaned.replace(/,\s*,\]/g, ']') // Remove double commas before closing brackets
+    
+    // Fix malformed markdown code blocks - but preserve content inside them
+    cleaned = cleaned.replace(/```\s*$/, '') // Remove trailing incomplete code blocks
+    cleaned = cleaned.replace(/^```\s*/, '') // Remove leading incomplete code blocks without language
+    cleaned = cleaned.replace(/```(\w+)?\s*\n?```/g, '') // Remove empty code blocks only
+    cleaned = cleaned.replace(/`{4,}/g, '```') // Fix multiple backticks
+    
+    // Fix broken code blocks that might truncate content - be more careful
+    cleaned = cleaned.replace(/``(\w+)/g, '```$1') // Fix incomplete opening
+    cleaned = cleaned.replace(/(\w+)``/g, '$1```') // Fix incomplete closing
+    
+    // Fix cases where markdown might be cutting off content
+    // If we have an odd number of triple backticks, it means markdown is broken
+    const tripleBacktickCount = (cleaned.match(/```/g) || []).length
+    if (tripleBacktickCount % 2 !== 0) {
+      // Add closing backticks to fix broken markdown
+      cleaned += '\n```'
+    }
+    
+    // Ensure proper spacing around code blocks - but don't modify content inside
+    cleaned = cleaned.replace(/```(\w+)?\n?([^`]*?)```/g, (_, lang, code) => {
+      const language = lang || '';
+      const cleanCode = code.trim();
+      return `\n\`\`\`${language}\n${cleanCode}\n\`\`\`\n`;
+    });
+    
+    // Only clean up obvious malformed characters, not normal punctuation
+    // Be much more conservative here
+    cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters only
+    
+    // Clean up extra whitespace
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
+    cleaned = cleaned.replace(/[ \t]{3,}/g, '  ') // Only clean excessive spaces/tabs, not single ones
+    
+    return cleaned.trim()
+  }
+
   useEffect(() => {
     let i = 0
     setDisplayed("")
+    
+    // Clean the response before processing
+    const cleanResponse = preprocessResponse(response)
+    
+    if (!cleanResponse || cleanResponse.trim().length === 0) {
+      setDisplayed("No response received.")
+      return
+    }
+
+    // For debugging: log the full response to ensure it's not truncated
+    console.log('Full AI response length:', cleanResponse.length)
+    console.log('Full AI response content:', cleanResponse) // Log full content for debugging
+    console.log('Full AI response preview:', cleanResponse.substring(0, 500) + '...')
+
+    // If response is very short, display immediately
+    if (cleanResponse.length < 10) {
+      setDisplayed(cleanResponse)
+      return
+    }
+
+    // Use a more conservative animation speed for longer responses to ensure full display
+    const animationSpeed = cleanResponse.length > 1000 ? 2 : 5 // Even slower for very long responses
+
     const interval = setInterval(() => {
-      if (i < response.length - 1) {
-        setDisplayed((prev) => prev + response[i])
-        i++
+      if (i < cleanResponse.length) {
+        setDisplayed(cleanResponse.substring(0, i + 1)) // Use substring instead of character-by-character
+        i += Math.max(1, Math.floor(cleanResponse.length / 200)) // Adaptive step size
       } else {
+        setDisplayed(cleanResponse) // Ensure we show the complete response
         clearInterval(interval)
+        console.log('Animation completed, final displayed length:', cleanResponse.length)
+        console.log('Final displayed content matches original:', displayed === cleanResponse)
       }
-    }, 12)
+    }, animationSpeed)
 
     return () => clearInterval(interval)
   }, [response])
 
   return (
-    <div className="flex justify-start">
-      <div className="max-w-3xl bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-gray-100 p-3 rounded-xl shadow-md">
-        <div className="flex items-center mb-1">
-          <Bot className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+    <div className="flex justify-start max-w-full">
+      <div className="max-w-full bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-gray-100 p-4 rounded-xl shadow-md overflow-hidden ai-response-container">
+        <div className="flex items-center mb-2">
+          <Bot className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400 flex-shrink-0" />
           <span className="text-sm font-medium">AI Assistant</span>
         </div>
-        <div
-          className="text-sm whitespace-pre-wrap break-words"
-          dangerouslySetInnerHTML={{
-            __html: displayed.replace(
-              /\*\*(.*?)\*\*/g,
-              "<strong class='font-bold text-gray-900 dark:text-gray-100'>$1</strong>",
-            ),
-          }}
-        />
+        <div className="markdown-content overflow-hidden">
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeHighlight]}
+            components={{
+              code({ node, inline, className, children, ...props }: any) {
+                const match = /language-(\w+)/.exec(className || '')
+                
+                // Safely convert children to string with more robust handling
+                let codeString = ''
+                try {
+                  if (Array.isArray(children)) {
+                    codeString = children
+                      .map(child => {
+                        if (typeof child === 'string') return child
+                        if (child && typeof child === 'object') {
+                          // Try to get text content from object
+                          if (child.props && child.props.children) {
+                            return String(child.props.children)
+                          }
+                          if (child.toString && typeof child.toString === 'function') {
+                            return child.toString()
+                          }
+                          // Don't stringify objects that might be React elements
+                          return ''
+                        }
+                        return String(child || '')
+                      })
+                      .join('')
+                      .replace(/\n$/, '')
+                  } else if (typeof children === 'string') {
+                    codeString = children.replace(/\n$/, '')
+                  } else if (children && typeof children === 'object') {
+                    // Handle React element children
+                    if (children.props && children.props.children) {
+                      codeString = String(children.props.children || '').replace(/\n$/, '')
+                    } else {
+                      codeString = String(children || '').replace(/\n$/, '')
+                    }
+                  } else {
+                    codeString = String(children || '').replace(/\n$/, '')
+                  }
+                  
+                  // Remove [object Object] if it appears but be careful not to remove valid content
+                  codeString = codeString.replace(/\[object Object\]/g, '')
+                  
+                  // Handle edge case where codeString might be empty but should show content
+                  if (!codeString && children) {
+                    // Try one more time to extract content
+                    const fallbackContent = String(children || '')
+                    if (fallbackContent && fallbackContent !== '[object Object]') {
+                      codeString = fallbackContent.replace(/\n$/, '')
+                    } else {
+                      codeString = 'Code content could not be rendered properly'
+                    }
+                  }
+                  
+                } catch (error) {
+                  console.warn('Error processing code content:', error)
+                  codeString = String(children || '').replace(/\n$/, '')
+                }
+                
+                // Handle potential markdown parsing errors gracefully
+                if (!inline && codeString.includes('```')) {
+                  // If we have triple backticks inside a code block, treat as preformatted text
+                  return (
+                    <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto border border-gray-300 dark:border-gray-600 max-w-full my-3 whitespace-pre-wrap">
+                      <code>{codeString}</code>
+                    </pre>
+                  )
+                }
+                
+                return !inline && match ? (
+                  <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto border border-gray-300 dark:border-gray-600 max-w-full my-3">
+                    <code className={className} {...props}>
+                      {codeString}
+                    </code>
+                  </pre>
+                ) : (
+                  <code className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 rounded text-sm break-words" {...props}>
+                    {codeString}
+                  </code>
+                )
+              },
+              h1: ({ children }) => <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-4 mb-2 break-words">{children}</h1>,
+              h2: ({ children }) => <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-3 mb-2 break-words">{children}</h2>,
+              h3: ({ children }) => <h3 className="text-md font-bold text-gray-900 dark:text-gray-100 mt-3 mb-2 break-words">{children}</h3>,
+              p: ({ children }) => <p className="text-gray-800 dark:text-gray-200 mb-2 leading-relaxed break-words">{children}</p>,
+              ul: ({ children }) => <ul className="list-disc list-inside text-gray-800 dark:text-gray-200 mb-2 ml-2 break-words">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal list-inside text-gray-800 dark:text-gray-200 mb-2 ml-2 break-words">{children}</ol>,
+              li: ({ children }) => <li className="mb-1 break-words">{children}</li>,
+              strong: ({ children }) => <strong className="font-bold text-gray-900 dark:text-gray-100">{children}</strong>,
+              em: ({ children }) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
+              blockquote: ({ children }) => <blockquote className="border-l-4 border-blue-500 pl-4 my-2 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 py-2 break-words">{children}</blockquote>,
+              pre: ({ children }) => <div className="max-w-full overflow-x-auto my-3">{children}</div>,
+              table: ({ children }) => <div className="overflow-x-auto my-3"><table className="w-full border-collapse border border-gray-300 dark:border-gray-600">{children}</table></div>,
+              th: ({ children }) => <th className="border border-gray-300 dark:border-gray-600 p-2 bg-gray-100 dark:bg-gray-700 font-semibold">{children}</th>,
+              td: ({ children }) => <td className="border border-gray-300 dark:border-gray-600 p-2">{children}</td>,
+            }}
+          >
+            {displayed}
+          </ReactMarkdown>
+        </div>
       </div>
     </div>
   )
@@ -498,7 +683,10 @@ const ProblemDetail: React.FC = () => {
     }
 
     setAiLoading(true)
-    setAiResponse("")
+    setAiResponse("") // Clear any previous response immediately
+    
+    // Small delay to ensure UI updates before starting the request
+    await new Promise(resolve => setTimeout(resolve, 50))
 
     try {
       const examplesText = problem.examples
@@ -506,31 +694,36 @@ const ProblemDetail: React.FC = () => {
       .join("\n\n");
 
     const context = `
-    Here is the problem statement:
-    Title: ${problem.title}
-    Description: ${problem.description}
-    Constraints: ${problem.constraints}
-    Examples:
+    Here is the coding problem:
+    
+    **Title:** ${problem.title}
+    
+    **Description:** ${problem.description}
+    
+    **Constraints:** ${problem.constraints}
+    
+    **Examples:**
     ${examplesText}
     
-    INSTRUCTION:
-    - DO NOT use Markdown symbols like "**", "__", "*", or "\`\`\`".
-    - DO NOT format code using triple backticks or indentation blocks.
-    - WHENEVER you give a code block:
-      - First write: PYTHON CODE (or the language name)
-      - Then leave one line
-      - Then, write the code on a new line, plain text, no formatting
-      - After code , if there is further text , again leave one line
-      - Wrap code between comment lines like:
-    PYTHON CODE
-
-    // START OF CODE
-    (code goes here)
-    // END OF CODE
-
-    - Everything else should be in plain readable text.
+    **IMPORTANT INSTRUCTIONS:**
+    - Provide accurate, grammatically correct responses
+    - Use proper Markdown formatting for readability
+    - Use **bold** for important concepts and keywords
+    - Use \`backticks\` for variable names, function names, and small code snippets
+    - For code examples, use proper code blocks with language specification:
+      \`\`\`python
+      def example_function():
+          return "Hello World"
+      \`\`\`
+    - Use clear headers (##, ###) to structure your response
+    - Use bullet points (-) or numbered lists (1.) for multiple items
+    - Check your grammar and spelling carefully
+    - Provide complete, well-structured explanations
+    - Avoid fragmented or incomplete sentences
     
-    User question: ${aiPrompt}
+    **User Question:** ${aiPrompt}
+    
+    Please provide a comprehensive, well-formatted answer with correct grammar and clear explanations.
     `.trim();
 
     // Direct Gemini API call for general AI chat
@@ -548,12 +741,75 @@ const ProblemDetail: React.FC = () => {
       });
 
       const result = await response.json();
+      
+      // Debug logging for API response
+      console.log('Gemini API response structure:', JSON.stringify(result, null, 2))
 
       let generatedText = "No response received.";
       if (result.candidates && result.candidates.length > 0 &&
           result.candidates[0].content && result.candidates[0].content.parts &&
           result.candidates[0].content.parts.length > 0) {
-        generatedText = result.candidates[0].content.parts[0].text;
+        
+        // Extract text more safely
+        const textPart = result.candidates[0].content.parts[0];
+        
+        let rawText = "";
+        
+        // Handle different response structures
+        if (typeof textPart === 'string') {
+          rawText = textPart;
+        } else if (textPart && textPart.text && typeof textPart.text === 'string') {
+          rawText = textPart.text;
+        } else if (textPart && typeof textPart === 'object') {
+          // Try to extract text from object structure
+          if ('text' in textPart) {
+            rawText = String(textPart.text || "");
+          } else {
+            // Last resort: stringify the object but clean it up
+            rawText = JSON.stringify(textPart, null, 2).replace(/[{}"\[\]]/g, '').replace(/\n/g, ' ');
+          }
+        } else {
+          rawText = String(textPart || "");
+        }
+        
+        // Debug logging for extracted text
+        console.log('Raw extracted text length:', rawText.length)
+        console.log('Raw extracted text preview:', rawText.substring(0, 500) + '...') // Show more content
+        
+        // Clean the extracted text
+        generatedText = rawText.trim();
+        
+        // Handle cases where response might contain object references
+        if (generatedText.includes('[object Object]') || generatedText === '[object Object]') {
+          console.warn('Detected object reference in AI response, attempting cleanup...');
+          generatedText = generatedText.replace(/\[object Object\]/g, '').trim();
+          
+          if (!generatedText || generatedText.length === 0) {
+            generatedText = "I apologize, but there was an issue formatting the response. Please try asking your question again with different wording.";
+          }
+        }
+        
+        // Additional cleanup for malformed responses
+        if (generatedText.startsWith('undefined') || generatedText === 'undefined') {
+          generatedText = "Unable to generate a proper response. Please try rephrasing your question.";
+        }
+        
+        // Check if response seems truncated or malformed
+        if (generatedText.length < 50 && !generatedText.includes('error') && !generatedText.includes('unable')) {
+          console.warn('Response seems unusually short, might be truncated:', generatedText)
+        }
+        
+        // Final debug log
+        console.log('Final processed text length:', generatedText.length)
+        console.log('Final processed text preview:', generatedText.substring(0, 500) + '...')
+        
+      } else {
+        console.error('Unexpected API response structure:', result)
+      }
+      
+      // Final validation and fallback
+      if (!generatedText || generatedText.trim().length === 0 || generatedText === 'null') {
+        generatedText = "Empty response received. Please try asking your question again.";
       }
 
       setAiResponse(generatedText)
@@ -564,6 +820,9 @@ const ProblemDetail: React.FC = () => {
       }
 
       setChatHistory((prev) => [...prev, newChatEntry])
+
+      // Clear the current aiResponse to prevent duplicate display
+      setAiResponse("")
 
       requestAnimationFrame(() => {
         const container = chatHistoryRef.current
@@ -614,7 +873,10 @@ const ProblemDetail: React.FC = () => {
     }
 
     setComplexityAiLoading(true);
-    setComplexityAiResponse("");
+    setComplexityAiResponse(""); // Clear any previous response immediately
+    
+    // Small delay to ensure UI updates before starting the request
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     try {
       const prompt = `Analyze the time and space complexity of the following code. Provide the complexities in Big O notation and a brief 3-4 line justification for each.
@@ -1588,7 +1850,7 @@ const ProblemDetail: React.FC = () => {
                 <AnimatedAiResponse response={chat.response} />
               </div>
             ))}
-            {aiLoading && (
+            {aiLoading && !aiResponse && (
               <div className="flex justify-start">
                 <div className="max-w-3xl bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-gray-100 p-3 rounded-xl shadow-md">
                   <div className="flex items-center mb-1">
@@ -1596,16 +1858,17 @@ const ProblemDetail: React.FC = () => {
                     <span className="text-sm font-medium">AI Assistant</span>
                   </div>
                   <div className="flex items-center mt-2">
-                    <div className="animate-pulse flex space-x-2">
-                      <div className="h-2 w-2 bg-blue-400 rounded-full"></div>
-                      <div className="h-2 w-2 bg-blue-400 rounded-full delay-75"></div>
-                      <div className="h-2 w-2 bg-blue-400 rounded-full delay-150"></div>
+                    <div className="thinking-dots">
+                      <div className="dot bg-blue-400"></div>
+                      <div className="dot bg-blue-400"></div>
+                      <div className="dot bg-blue-400"></div>
                     </div>
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">Thinking...</span>
                   </div>
                 </div>
               </div>
             )}
-            {aiResponse && !aiLoading && chatHistory[chatHistory.length -1]?.response !== aiResponse && (
+            {aiResponse && !aiLoading && (
               <AnimatedAiResponse response={aiResponse} />
             )}
              <div ref={bottomRef} /> {/* For auto-scrolling to bottom */}
@@ -1799,9 +2062,13 @@ const ProblemDetail: React.FC = () => {
               </h3>
             </div>
             <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-              {complexityAiLoading && (
+              {complexityAiLoading && !complexityAiResponse && (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent mx-auto mb-4"></div>
+                  <div className="thinking-dots justify-center mb-3">
+                    <div className="dot bg-orange-500"></div>
+                    <div className="dot bg-orange-500"></div>
+                    <div className="dot bg-orange-500"></div>
+                  </div>
                   <p className="text-gray-600 dark:text-gray-400">Analyzing your code for complexity...</p>
                 </div>
               )}

@@ -137,3 +137,377 @@
   background-repeat: repeat !important;
   background-color: #0e1419 !important;
 }
+
+/* Custom scrollbar for chat areas */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Animation for fade-in effect */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Markdown content styling for AI responses */
+.markdown-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  line-height: 1.6;
+  /* Prevent content truncation */
+  overflow: visible;
+  white-space: normal;
+}
+
+.markdown-content pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  max-width: 100%;
+  background: #f8f9fa !important;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  /* Ensure code blocks don't break the layout */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dark .markdown-content pre {
+  background: #1e1e1e !important;
+  border-color: #3e3e3e;
+  color: #d4d4d4;
+}
+
+.markdown-content code:not(pre code) {
+  background: #f1f3f4 !important;
+  color: #d73a49 !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  word-break: break-word;
+  /* Ensure inline code doesn't break layout */
+  display: inline;
+  white-space: pre-wrap;
+}
+
+.dark .markdown-content code:not(pre code) {
+  background: #3e3e3e !important;
+  color: #79b8ff !important;
+}
+
+.markdown-content h1, 
+.markdown-content h2, 
+.markdown-content h3, 
+.markdown-content h4 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-content h1 { font-size: 1.5em; }
+.markdown-content h2 { font-size: 1.3em; }
+.markdown-content h3 { font-size: 1.1em; }
+
+.markdown-content p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.markdown-content ul, 
+.markdown-content ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.markdown-content li {
+  margin: 4px 0;
+}
+
+.markdown-content blockquote {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-left: 4px solid #e1e4e8;
+  background: #f6f8fa;
+}
+
+.dark .markdown-content blockquote {
+  border-left-color: #3e3e3e;
+  background: #2d2d2d;
+}
+
+.markdown-content strong {
+  font-weight: 600;
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+/* Additional fixes for better markdown rendering */
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+  overflow-x: auto;
+  display: block;
+  white-space: nowrap;
+}
+
+.markdown-content th, 
+.markdown-content td {
+  border: 1px solid #e1e4e8;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.dark .markdown-content th,
+.dark .markdown-content td {
+  border-color: #3e3e3e;
+}
+
+.markdown-content th {
+  background: #f6f8fa;
+  font-weight: 600;
+}
+
+.dark .markdown-content th {
+  background: #2d2d2d;
+}
+
+/* Better handling of code language detection */
+.markdown-content pre[class*="language-"] {
+  position: relative;
+}
+
+.markdown-content pre[class*="language-"]::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Improve thinking animation */
+.thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.thinking-dots .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  opacity: 0.4;
+  animation: thinking-pulse 1.4s infinite ease-in-out;
+}
+
+.thinking-dots .dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.thinking-dots .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.thinking-dots .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes thinking-pulse {
+  0%, 80%, 100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Better handling of mixed markdown content */
+.markdown-content *:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-content *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Ensure code blocks in AI responses don't break layout */
+.markdown-content pre code {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Handle cases where markdown parsing might create nested elements */
+.markdown-content code code {
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Better handling for mixed text and code in AI responses */
+.markdown-content p code,
+.markdown-content li code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Handle malformed markdown content */
+.markdown-content {
+  /* Prevent content from breaking the layout */
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+/* Fix for broken markdown objects */
+.markdown-content [object] {
+  display: none;
+}
+
+/* Handle cases where AI might output malformed content */
+.markdown-content .malformed-content {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: #856404;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+.dark .markdown-content .malformed-content {
+  background: #4a4a4a;
+  border-color: #666;
+  color: #ffa726;
+}
+
+/* Ensure no content gets cut off due to markdown parsing */
+.markdown-content > * {
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* Fix for incomplete markdown rendering */
+.markdown-content p:last-child,
+.markdown-content div:last-child {
+  margin-bottom: 0;
+  /* Ensure the last element is fully visible */
+  overflow: visible;
+}
+
+/* Ensure code blocks preserve all content including function names and values */
+.markdown-content pre code,
+.markdown-content code {
+  /* Prevent any content from being hidden or truncated */
+  text-overflow: visible !important;
+  overflow: visible !important;
+  white-space: pre-wrap !important;
+}
+
+/* Handle malformed code blocks that might be missing opening backticks */
+.markdown-content p:has(+ pre),
+.markdown-content *:has(+ pre) {
+  /* If text appears right before a code block, ensure it's visible */
+  overflow: visible !important;
+}
+
+/* Better handling of AI response containers */
+.ai-response-container {
+  max-width: 100%;
+  overflow: visible; /* Changed from hidden to visible to prevent content truncation */
+  word-wrap: break-word;
+  /* Ensure content is fully displayed */
+  min-height: auto;
+}
+
+/* Improve code block rendering in AI responses */
+.markdown-content pre {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-height: 400px;
+}
+
+.markdown-content pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.markdown-content pre::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dark .markdown-content pre::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.markdown-content pre::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.dark .markdown-content pre::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+.markdown-content pre::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.dark .markdown-content pre::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
