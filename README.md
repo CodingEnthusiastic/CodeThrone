@@ -20,7 +20,7 @@ Welcome to **CodeThrone**, a comprehensive platform designed to enhance coding, 
 ---
 
 ## Overview
-**Building Wonders** is a full-stack web application that brings together competitive programming, collaborative problem-solving, and social interaction. Users can participate in coding contests, discuss solutions, chat in real-time, and track their progress. The platform is ideal for students, professionals, and coding enthusiasts looking to improve their skills and connect with others.
+**CodeThrone** is a full-stack web application that brings together competitive programming, collaborative problem-solving, and social interaction. Users can participate in coding contests, discuss solutions, chat in real-time, and track their progress. The platform is ideal for students, professionals, and coding enthusiasts looking to improve their skills and connect with others.
 
 ---
 
