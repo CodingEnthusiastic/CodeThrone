@@ -21,6 +21,7 @@ import chatsRoutes from "./routes/chats.js"
 import chatRoutes from "./routes/chat.js"
 import announcementsRouter from "./routes/announcements.js"
 import certificatesRouter from "./routes/certificates.js"
+import usersRouter from "./routes/users.js";
 console.log("🚀 Starting backend server...")
 import statsRouter from "./routes/stats.js"
 
@@ -120,6 +121,9 @@ console.log("✅ Interview routes mounted at /api/interview")
 
 app.use("/api/announcements", announcementsRouter)
 console.log("✅ Announcements routes mounted at /api/announcements")
+
+app.use('/api/users', usersRouter);
+console.log("✅ User routes mounted at /api/users")
 
 app.use("/api/certificates", certificatesRouter)
 console.log("✅ Certificate routes mounted at /api/certificates")
