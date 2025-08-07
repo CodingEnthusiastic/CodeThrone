@@ -7,18 +7,10 @@ const router = express.Router();
 // GET /api/users - List all users (admin only)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    console.log('🔐 [USERS] Authenticated user:', req.user);
     if (req.user.role !== 'admin') {
-      console.log('❌ [USERS] Forbidden: Not admin');
       return res.status(403).json({ message: 'Forbidden' });
     }
-    // Log current DB connection
-    console.log('🗄️ [USERS] DB name:', User.db.name);
     const users = await User.find({}).select('-password');
-    console.log('👥 [USERS] Users fetched:', users.length);
-    if (users.length > 0) {
-      console.log('👤 [USERS] First user:', users[0]);
-    }
     res.json(users);
   } catch (error) {
     console.error('❌ [USERS] Error fetching users:', error);
@@ -33,7 +25,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'Forbidden' });
     }
     const user = await User.findById(req.params.id).select('-password');
-    console.log(user);
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (error) {
