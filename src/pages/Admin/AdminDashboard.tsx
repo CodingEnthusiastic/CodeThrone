@@ -4,7 +4,6 @@ import { Navigate } from 'react-router-dom';
 import axios, { AxiosError } from 'axios';
 import { API_URL, SOCKET_URL } from "../../config/api";
 import { useTheme } from '../../contexts/ThemeContext'
-
 import { 
   Plus, 
   Edit, 
@@ -56,6 +55,29 @@ interface Announcement {
   createdAt: string;
 }
 
+interface UserProfile {
+  firstName?: string;
+  lastName?: string;
+  linkedIn?: string;
+  github?: string;
+  avatar?: string;
+  bio?: string;
+  location?: string;
+  college?: string;
+  branch?: string;
+  graduationYear?: number;
+}
+
+interface User {
+  _id: string;
+  username?: string;
+  email?: string;
+  role?: string;
+  createdAt?: string;
+  profile?: UserProfile;
+}
+  
+
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isDark } = useTheme();
@@ -72,6 +94,16 @@ const AdminDashboard: React.FC = () => {
     type: 'success' | 'error' | 'info';
     message: string;
   } | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editUserData, setEditUserData] = useState<any>(null);
+  const [newUser, setNewUser] = useState({
+    username: '',
+    email: '',
+    password: '',
+    role: 'user'
+  });
 
   const [newProblem, setNewProblem] = useState({
     title: '',
@@ -149,15 +181,71 @@ const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log('🔄 Admin dashboard mounted, fetching data...');
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    console.log('📊 Admin: Fetching dashboard data...');
+  // User CRUD handlers
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      console.log('📡 Making API calls to fetch admin data...');
-      const [problemsRes, contestsRes, discussionsRes, announcementsRes] = await Promise.all([
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/users`, newUser, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      setUsers([response.data, ...users]);
+      setShowCreateUser(false);
+      setNewUser({ username: '', email: '', password: '', role: 'user' });
+      showNotification('success', 'User created successfully!');
+    } catch (error: any) {
+      showNotification('error', `Failed to create user: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUserId(user._id);
+    setEditUserData({ ...user });
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUserId) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(`${API_URL}/users/${editingUserId}`, editUserData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      setUsers(users.map(u => u._id === editingUserId ? response.data : u));
+      setEditingUserId(null);
+      setEditUserData(null);
+      showNotification('success', 'User updated!');
+    } catch (error: any) {
+      showNotification('error', 'Failed to update user.');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsers(users.filter(u => u._id !== userId));
+      showNotification('success', 'User deleted successfully!');
+    } catch (error) {
+      showNotification('error', 'Failed to delete user.');
+    }
+  };
+
+  const fetchData = async () => {
+    try {
+      const [problemsRes, contestsRes, discussionsRes, announcementsRes, usersRes] = await Promise.all([
         axios.get(`${API_URL}/problems`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }),
@@ -169,22 +257,19 @@ const AdminDashboard: React.FC = () => {
         }),
         axios.get(`${API_URL}/announcements`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        }),
+        axios.get(`${API_URL}/users`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
-
-      console.log('✅ Admin: Data fetched successfully');
-      console.log('📊 Problems count:', problemsRes.data.problems?.length || problemsRes.data.length);
-      console.log('📊 Contests count:', contestsRes.data.length);
-      console.log('📊 Discussions count:', discussionsRes.data.discussions?.length || discussionsRes.data.length);
-      console.log('📊 Announcements count:', announcementsRes.data.length);
 
       setProblems(problemsRes.data.problems || []);
       setContests(contestsRes.data || []);
       setDiscussions(discussionsRes.data.discussions || []);
       setAnnouncements(announcementsRes.data || []);
+      setUsers(usersRes.data || []);
     } catch (error: any) {
-      console.error('Error fetching admin data:', error);
-      console.error('📊 Error details:', error.response?.data);
+      console.error('❌ [AdminDashboard] Error fetching admin data:', error);
     } finally {
       setLoading(false);
     }
@@ -543,6 +628,7 @@ const AdminDashboard: React.FC = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: <Settings className="h-4 w-4" /> },
+    { id: 'users', label: 'Users', icon: <Users className="h-4 w-4" /> },
     { id: 'problems', label: 'Problems', icon: <Code className="h-4 w-4" /> },
     { id: 'contests', label: 'Contests', icon: <Trophy className="h-4 w-4" /> },
     { id: 'discussions', label: 'Discussions', icon: <MessageSquare className="h-4 w-4" /> },
@@ -922,6 +1008,202 @@ const AdminDashboard: React.FC = () => {
                         ))}
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'users' && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold">Manage Users</h3>
+                    <button 
+                      onClick={() => setShowCreateUser(true)}
+                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add User
+                    </button>
+                  </div>
+
+                  {showCreateUser && (
+                    <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg max-w-lg">
+                      <h4 className="text-lg font-semibold mb-4">Create New User</h4>
+                      <form onSubmit={handleCreateUser} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Username *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newUser.username}
+                            onChange={e => setNewUser({ ...newUser, username: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Email *</label>
+                          <input
+                            type="email"
+                            required
+                            value={newUser.email}
+                            onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Password *</label>
+                          <input
+                            type="password"
+                            required
+                            value={newUser.password}
+                            onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Role</label>
+                          <select
+                            value={newUser.role}
+                            onChange={e => setNewUser({ ...newUser, role: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </div>
+                        <div className="flex space-x-4">
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                          >
+                            Create User
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowCreateUser(false)}
+                            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {editingUserId && (
+                    <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg max-w-lg">
+                      <h4 className="text-lg font-semibold mb-4">Edit User</h4>
+                      <form onSubmit={handleUpdateUser} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Username *</label>
+                          <input
+                            type="text"
+                            required
+                            value={editUserData?.username || ''}
+                            onChange={e => setEditUserData({ ...editUserData, username: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Email *</label>
+                          <input
+                            type="email"
+                            required
+                            value={editUserData?.email || ''}
+                            onChange={e => setEditUserData({ ...editUserData, email: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Role</label>
+                          <select
+                            value={editUserData?.role || 'user'}
+                            onChange={e => setEditUserData({ ...editUserData, role: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </div>
+                        <div className="flex space-x-4">
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                          >
+                            Update User
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setEditingUserId(null); setEditUserData(null); }}
+                            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[700px] border border-gray-300 bg-white dark:bg-gray-900">
+                      <thead className="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {users.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="text-center py-8 text-gray-400">No users found.</td>
+                          </tr>
+                        ) : (
+                          users.map((user) => {
+                            // Safe display helpers
+                            const displayName =
+                              (typeof user.username === 'string' && user.username.trim()) ? user.username :
+                              (user.profile && typeof user.profile.firstName === 'string' && user.profile.firstName.trim() ? user.profile.firstName : '') +
+                              (user.profile && typeof user.profile.lastName === 'string' && user.profile.lastName.trim() ? ` ${user.profile.lastName}` : '') || 'N/A';
+                            const displayEmail = (typeof user.email === 'string' && user.email.trim()) ? user.email : 'N/A';
+                            const displayRole = (typeof user.role === 'string' && user.role.trim()) ? user.role : 'user';
+                            let displayCreated = 'N/A';
+                            if (user.createdAt) {
+                              try {
+                                displayCreated = new Date(user.createdAt).toLocaleDateString();
+                              } catch {
+                                displayCreated = 'N/A';
+                              }
+                            }
+                            return (
+                              <tr key={user._id}>
+                                <td className="px-6 py-4 whitespace-nowrap font-medium">{displayName}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{displayEmail}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{displayRole}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{displayCreated}</td>
+                                <td className="px-6 py-4 whitespace-nowrap flex space-x-2">
+                                  <button
+                                    onClick={() => handleEditUser(user)}
+                                    className="p-2 rounded-md bg-yellow-100 hover:bg-yellow-200 text-yellow-700"
+                                    title="Edit"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteUser(user._id)}
+                                    className="p-2 rounded-md bg-red-100 hover:bg-red-200 text-red-700"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
