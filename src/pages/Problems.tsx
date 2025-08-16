@@ -286,7 +286,7 @@ const Problems: React.FC = () => {
 
         {/* Problem of the Day */}
         {potd && (
-          <div className="relative rounded-3xl shadow-2xl border-4 border-yellow-400 dark:border-yellow-700 bg-gradient-to-br from-yellow-50 via-amber-100 to-orange-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 p-0 mb-8 overflow-hidden max-w-2xl mx-auto">
+          <div className="relative w-full max-w-2xl mx-auto md:max-w-none md:mx-0 md:w-full rounded-3xl shadow-2xl border-4 border-yellow-400 dark:border-yellow-700 bg-gradient-to-br from-yellow-50 via-amber-100 to-orange-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 p-0 mb-8 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400 dark:from-yellow-700 dark:via-yellow-800 dark:to-orange-800"></div>
             <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 md:p-8">
               <div className="flex flex-col items-center md:items-start flex-1">
