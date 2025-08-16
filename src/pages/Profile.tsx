@@ -1295,7 +1295,13 @@ const Profile: React.FC = () => {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Best Rank</span>
                         <span className="font-semibold text-purple-600 dark:text-purple-400">
-                          #{profile.contestHistory?.length > 0 ? Math.min(...profile.contestHistory.map(c => c.rank)) : 'N/A'}
+                          {(() => {
+                            if (!profile.contestHistory || profile.contestHistory.length === 0) return 'N/A';
+                            // Filter out ranks that are 0 or less
+                            const validRanks = profile.contestHistory.map(c => c.rank).filter(r => r > 0);
+                            if (validRanks.length === 0) return 'N/A';
+                            return `#${Math.min(...validRanks)}`;
+                          })()}
                         </span>
                       </div>
                     </div>
