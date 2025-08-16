@@ -286,67 +286,64 @@ const Problems: React.FC = () => {
 
         {/* Problem of the Day */}
         {potd && (
-          <div className="bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-orange-900/20 rounded-2xl shadow-lg border border-yellow-200/50 dark:border-yellow-600/30 p-6 mb-6 backdrop-blur-sm">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center mb-4">
-                  <div className="flex items-center justify-center w-10 h-10 bg-yellow-100 dark:bg-yellow-800/50 rounded-full mr-3">
-                    <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400 fill-current" />
+          <div className="relative rounded-3xl shadow-2xl border-4 border-yellow-400 dark:border-yellow-700 bg-gradient-to-br from-yellow-50 via-amber-100 to-orange-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 p-0 mb-8 overflow-hidden max-w-2xl mx-auto">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400 dark:from-yellow-700 dark:via-yellow-800 dark:to-orange-800"></div>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 md:p-8">
+              <div className="flex flex-col items-center md:items-start flex-1">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center justify-center w-16 h-16 bg-yellow-100 dark:bg-yellow-800/50 rounded-full shadow-lg">
+                    <Star className="h-10 w-10 text-yellow-500 dark:text-yellow-300" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-yellow-900 dark:text-yellow-100">Problem of the Day</h2>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Solve today's challenge and earn coins!</p>
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-yellow-900 dark:text-yellow-100 tracking-tight">Problem of the Day</h2>
+                    <p className="text-base md:text-lg text-yellow-700 dark:text-yellow-300 font-medium">Solve today's challenge and earn coins!</p>
                   </div>
-                  <span className="ml-auto px-3 py-1.5 bg-yellow-200 dark:bg-yellow-700 text-yellow-800 dark:text-yellow-200 text-sm font-semibold rounded-full shadow-sm">
-                    +10 Coins
-                  </span>
                 </div>
-                
-                <div className="bg-white/60 dark:bg-gray-800/40 rounded-xl p-4 mb-4 border border-yellow-200/30 dark:border-yellow-600/20">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                <span className="px-4 py-2 bg-yellow-200 dark:bg-yellow-700 text-yellow-800 dark:text-yellow-200 text-base font-bold rounded-full shadow-md mb-4">+10 Coins</span>
+                <div className="w-full bg-white/80 dark:bg-gray-800/60 rounded-2xl p-4 mb-4 border border-yellow-200/40 dark:border-yellow-700/30 shadow-sm">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 text-center md:text-left">
                     {potd.problem.title}
                   </h3>
-                  <div className="flex items-center flex-wrap gap-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-sm ${
-                      potd.problem.difficulty === 'Easy' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-800/50 dark:text-green-200 border border-green-200 dark:border-green-600/30' 
-                        : potd.problem.difficulty === 'Medium' 
-                        ? 'bg-orange-100 text-orange-800 dark:bg-orange-800/50 dark:text-orange-200 border border-orange-200 dark:border-orange-600/30' 
+                  <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-2">
+                    <span className={`px-4 py-1 rounded-full text-base font-semibold shadow ${
+                      potd.problem.difficulty === 'Easy'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-800/50 dark:text-green-200 border border-green-200 dark:border-green-600/30'
+                        : potd.problem.difficulty === 'Medium'
+                        ? 'bg-orange-100 text-orange-800 dark:bg-orange-800/50 dark:text-orange-200 border border-orange-200 dark:border-orange-600/30'
                         : 'bg-red-100 text-red-800 dark:bg-red-800/50 dark:text-red-200 border border-red-200 dark:border-red-600/30'
                     }`}>
                       {potd.problem.difficulty}
                     </span>
                     {potd.problem.tags && potd.problem.tags.slice(0, 3).map((tag: string) => (
-                      <span key={tag} className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm rounded-full border border-blue-200/50 dark:border-blue-600/30">
+                      <span key={tag} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-base rounded-full border border-blue-200/50 dark:border-blue-600/30">
                         {tag}
                       </span>
                     ))}
                     {potd.problem.tags && potd.problem.tags.length > 3 && (
-                      <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 text-sm rounded-full border border-gray-200 dark:border-gray-600/30">
+                      <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 text-base rounded-full border border-gray-200 dark:border-gray-600/30">
                         +{potd.problem.tags.length - 3} more
                       </span>
                     )}
                   </div>
                 </div>
               </div>
-              
-              <div className="ml-6 flex flex-col items-end">
+              <div className="flex flex-col items-center md:items-end gap-3">
                 {hasSolvedPOTD ? (
-                  <div className="flex items-center px-4 py-3 bg-green-100 dark:bg-green-800/50 text-green-800 dark:text-green-200 rounded-xl font-medium shadow-sm border border-green-200 dark:border-green-600/30">
-                    <CheckCircle className="h-5 w-5 mr-2" />
+                  <div className="flex items-center px-6 py-4 bg-green-100 dark:bg-green-800/50 text-green-800 dark:text-green-200 rounded-2xl font-bold shadow-lg border border-green-200 dark:border-green-600/30 text-lg">
+                    <CheckCircle className="h-6 w-6 mr-2" />
                     Completed Today
                   </div>
                 ) : (
                   <button
-                    onClick={() => window.open(`/problems/${potd.problem._id}`, '_blank')}
-                    className="flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 dark:from-yellow-600 dark:to-amber-600 dark:hover:from-yellow-700 dark:hover:to-amber-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    onClick={() => window.location.href = `/problems/${potd.problem._id}`}
+                    className="flex items-center px-8 py-4 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 dark:from-yellow-600 dark:to-amber-600 dark:hover:from-yellow-700 dark:hover:to-amber-700 text-white rounded-2xl font-extrabold text-lg transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:scale-105"
                   >
-                    <Trophy className="h-5 w-5 mr-2" />
+                    <Trophy className="h-6 w-6 mr-2" />
                     Solve Now
                   </button>
                 )}
-                <div className="mt-3 text-center">
-                  <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">
+                <div className="mt-2 text-center">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-400 font-semibold">
                     {potd.solvedCount || 0} solved today
                   </p>
                 </div>
@@ -357,7 +354,7 @@ const Problems: React.FC = () => {
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4 md:gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-300" />
               <input
@@ -368,63 +365,69 @@ const Problems: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <select
-              className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100 flex items-center justify-start text-left"
-              value={selectedDifficulty}
-              onChange={(e) => setSelectedDifficulty(e.target.value)}
-            >
-              <option value="">All Difficulties</option>
-              <option value="Easy">Easy</option>
-              <option value="Medium">Medium</option>
-              <option value="Hard">Hard</option>
-            </select>
-            <select
-              className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100 flex items-center justify-start text-left"
-              value={selectedTag}
-              onChange={(e) => setSelectedTag(e.target.value)}
-            >
-              <option value="">All Tags</option>
-              {allTags.map(tag => (
-                <option key={tag} value={tag}>{tag}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => {
-                setSelectedDifficulty('');
-                setSelectedTag('');
-                setSearchTerm('');
-                setSearchParams({});
-              }}
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors dark:text-gray-100"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Clear Filters
-            </button>
+            <div>
+              <select
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100 flex items-center justify-start text-left"
+                value={selectedDifficulty}
+                onChange={(e) => setSelectedDifficulty(e.target.value)}
+              >
+                <option value="">All Difficulties</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </div>
+            <div>
+              <select
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100 flex items-center justify-start text-left"
+                value={selectedTag}
+                onChange={(e) => setSelectedTag(e.target.value)}
+              >
+                <option value="">All Tags</option>
+                {allTags.map(tag => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <button
+                onClick={() => {
+                  setSelectedDifficulty('');
+                  setSelectedTag('');
+                  setSearchTerm('');
+                  setSearchParams({});
+                }}
+                className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors dark:text-gray-100"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Clear Filters
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Problems List */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
-          <div className="min-w-[600px] md:overflow-x-auto">
+          <div className="w-full md:min-w-[600px]">
             <table className="w-full text-xs md:text-sm">
               <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Problem
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Difficulty
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Acceptance Rate
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tags
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Companies
                   </th>
                 </tr>
@@ -434,7 +437,7 @@ const Problems: React.FC = () => {
                   <tr
                     key={problem._id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                    onClick={() => window.open(`/problems/${problem._id}`, '_blank')}
+                    onClick={() => window.location.href = `/problems/${problem._id}`}
                   >
                     <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                       {solvedProblems.has(problem._id) ? (
