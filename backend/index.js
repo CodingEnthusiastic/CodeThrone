@@ -1,5 +1,7 @@
 import "./loadenv.js" // <-- This must be first
 import axios from "axios"
+import User from "./models/User.js";
+import Contest from "./models/Contest.js";
 import express from "express"
 import mongoose from "mongoose"
 import cors from "cors"
@@ -194,3 +196,87 @@ setInterval(async () => {
     console.error("⚠️ Self-ping failed:", error.message)
   }
 }, 4 * 60 * 1000) // every 4 minutes
+
+// Call contest history sync every 10 minutes
+
+// Contest history and rating backfill logic
+async function backfillContestHistory() {
+  try {
+    const contests = await Contest.find({});
+    let updatedCount = 0;
+    for (const contest of contests) {
+      // Gather all participants for Elo calculation
+      const participantIds = contest.participants.map(p => p.user);
+      const users = await User.find({ _id: { $in: participantIds } });
+      // Prepare ratings map
+      const ratingsMap = {};
+      users.forEach(u => {
+        ratingsMap[u._id] = u.ratings?.contestRating || 1200;
+      });
+      // Elo calculation
+      const K = 40;
+      for (const participant of contest.participants) {
+        const user = users.find(u => u._id.toString() === participant.user.toString());
+        if (!user) continue;
+        let historyEntry = user.contestHistory.find(
+          (entry) => entry.contest && entry.contest.toString() === contest._id.toString()
+        );
+        if (!historyEntry) {
+          historyEntry = {
+            contest: contest._id,
+            rank: participant.rank || 0,
+            score: participant.score || 0,
+            ratingChange: 0,
+            problemsSolved: participant.problemsSolved || 0,
+            totalProblems: Array.isArray(contest.problems) ? contest.problems.length : 0,
+            date: contest.endTime || contest.startTime,
+          };
+          user.contestHistory.push(historyEntry);
+          updatedCount++;
+        }
+        // If score is 0 or rank is 0, no rating change
+        let ratingChange = 0;
+        if ((participant.score || 0) === 0 || (participant.rank || 0) === 0) {
+          ratingChange = 0;
+        } else {
+          for (const opponent of contest.participants) {
+            if (opponent.user.toString() === participant.user.toString()) continue;
+            const userRating = ratingsMap[participant.user] || 1200;
+            const oppRating = ratingsMap[opponent.user] || 1200;
+            const S = (participant.rank < opponent.rank) ? 1 : (participant.rank === opponent.rank ? 0.5 : 0);
+            const EA = 1 / (1 + Math.pow(10, (oppRating - userRating) / 400));
+            ratingChange += Math.round(K * (S - EA));
+          }
+          if (contest.participants.length > 1) {
+            ratingChange = Math.round(ratingChange / (contest.participants.length - 1));
+          }
+        }
+        historyEntry.ratingChange = ratingChange;
+        ratingsMap[participant.user] += ratingChange;
+      }
+      for (const user of users) {
+        const initialRating = 1200;
+        const totalRatingChange = user.contestHistory.reduce((acc, entry) => acc + (entry.ratingChange || 0), 0);
+        user.ratings.contestRating = initialRating + totalRatingChange;
+        await user.save();
+      }
+    }
+    console.log(`Backfill complete. Updated ${updatedCount} contestHistory entries and contest ratings with Elo calculation.`);
+  } catch (err) {
+    console.error('❌ Error in contest history backfill:', err.message);
+  }
+}
+
+// Run every 10 minutes
+setInterval(() => {
+  console.log('⏰ Running contest history backfill...');
+  backfillContestHistory();
+}, 10 * 60 * 1000);
+
+// Run once immediately on startup
+backfillContestHistory();
+
+// If you have any config for Render, comment it out or remove it
+// Example: const BASE_URL = 'https://your-app.onrender.com';
+// Change to:
+const BASE_URL = 'http://localhost:5000';
