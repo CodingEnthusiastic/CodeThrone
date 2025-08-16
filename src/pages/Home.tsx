@@ -7,6 +7,11 @@ import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
 import MarqueeLogos from "../pages/MarqueeLogos"
 import StarsBackground from "../components/StarsBackground"
+// Utility to detect mobile device
+function isMobile() {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth < 768;
+}
 import axios from "axios"
 import {
   Code,
@@ -1371,14 +1376,13 @@ const Home: React.FC = () => {
       {/* Hero Section with Enhanced Carousel */}
       {/* Hero Section with Enhanced Carousel */}
       <div className="relative overflow-hidden">
-        {isDark ? (
+        {isDark && !isMobile() ? (
           <StarsBackground />
         ) : (
           <>
             {/* Fixed Gradient Background for Light Mode */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-700 via-purple-600 to-pink-600"></div>
+            <div className={isDark ? "absolute inset-0 bg-black" : "absolute inset-0 bg-gradient-to-br from-blue-700 via-purple-600 to-pink-600"}></div>
           </>
-
         )}
       <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10"></div>
         {/* Light mode floating elements */}
