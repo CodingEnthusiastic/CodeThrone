@@ -649,6 +649,51 @@ router.post("/admin/cleanup-duplicate-history", authenticateToken, requireAdmin,
   }
 });
 
+// Scheduled job: Update all users' contest history for ended contests (call every 10 minutes)
+router.post("/admin/sync-contest-history", async (req, res) => {
+  try {
+    const contests = await Contest.find({ status: "ended" }).populate("participants.user").populate("problems");
+    let updatedUsers = 0;
+    for (const contest of contests) {
+      const validParticipants = contest.participants.filter(p => p.rank > 0 && p.user);
+      const ratingChanges = calculateCodeforcesElo(validParticipants);
+      for (let i = 0; i < validParticipants.length; i++) {
+        const participant = validParticipants[i];
+        const user = await User.findById(participant.user._id);
+        if (user) {
+          // Ensure contestHistory array exists
+          if (!Array.isArray(user.contestHistory)) {
+            user.contestHistory = [];
+          }
+          // Always update contest rating
+          user.ratings.contestRating = (user.ratings.contestRating || 1200) + ratingChanges[i];
+          // Check for duplicate contest history entry
+          const alreadyExists = user.contestHistory.some(h =>
+            h.contest && h.contest.toString() === contest._id.toString()
+          );
+          if (!alreadyExists) {
+            user.contestHistory.push({
+              contest: contest._id,
+              rank: participant.rank,
+              score: participant.score,
+              ratingChange: ratingChanges[i],
+              problemsSolved: participant.submissions.filter(s => s.score > 0).length,
+              totalProblems: contest.problems.length,
+              date: contest.endTime,
+            });
+          }
+          await user.save();
+          updatedUsers++;
+        }
+      }
+    }
+    res.json({ message: `Contest history sync complete. Updated ${updatedUsers} users.` });
+  } catch (error) {
+    console.error("❌ Contest history sync error:", error)
+    res.status(500).json({ message: "Server error", error: error.message })
+  }
+});
+
 export default router; 
 
-//last night changes here 
+//last night changes here
