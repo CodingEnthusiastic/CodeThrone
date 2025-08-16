@@ -5,8 +5,12 @@
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Contest from '../models/Contest.js';
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://rishabh10d58:Rishabh120805@cluster0.g61udov.mongodb.net/codearena?retryWrites=true&w=majority&appName=Cluster0';
+import dotenv from 'dotenv';
 
+// dotenv.config();
+dotenv.config({ path: '../.env' });
+const MONGO_URI = process.env.MONGODB_URI;
+console.log(MONGO_URI);
 async function backfillContestHistory() {
   await mongoose.connect(MONGO_URI);
   const contests = await Contest.find({});
