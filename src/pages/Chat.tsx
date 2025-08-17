@@ -148,6 +148,10 @@ const Chat: React.FC = () => {
   const [joiningRoom, setJoiningRoom] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [emojiSearchQuery, setEmojiSearchQuery] = useState("")
+  
+  // Mobile sidebar shrink/expand state
+  const [isSidebarShrunk, setIsSidebarShrunk] = useState(false)
+  
   // Enhanced socket connection with reconnection logic
   const connectSocket = useCallback(() => {
     if (!token || !user) {
@@ -318,6 +322,7 @@ const Chat: React.FC = () => {
         const data = await response.json()
         setRooms(data)
 
+        // Auto-select first room by default if no room is currently active
         if (data.length > 0 && !activeRoom) {
           setActiveRoom(data[0])
         }
@@ -813,7 +818,9 @@ const Chat: React.FC = () => {
       <div
         className={`${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed lg:relative lg:translate-x-0 w-full sm:w-80 lg:w-80 h-full flex flex-col transition-transform duration-300 z-40 ${
+        } fixed lg:relative lg:translate-x-0 ${
+          isSidebarShrunk ? 'w-16' : 'w-full sm:w-80 lg:w-80'
+        } h-full flex flex-col transition-all duration-300 z-40 ${
           isDark
             ? 'bg-slate-800/95 border-slate-700'
             : 'bg-white/95 border-gray-200'
@@ -822,32 +829,49 @@ const Chat: React.FC = () => {
         {/* Header */}
         <div className={`p-4 sm:p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className={`p-1.5 sm:p-2 rounded-xl ${
-                isDark ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'bg-gradient-to-r from-blue-600 to-purple-600'
-              }`}>
-                <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-              <h1 className={`text-lg sm:text-2xl font-bold bg-gradient-to-r ${
-                isDark
-                  ? 'from-purple-400 to-blue-400'
-                  : 'from-blue-600 to-purple-600'
-              } bg-clip-text text-transparent`}>
-                Discord Coding
-              </h1>
-            </div>
-            <div className="flex items-center space-x-1 sm:space-x-2">
+            {/* Shrink/Expand Button (mobile only) */}
+            <div className="md:hidden flex items-center space-x-2">
               <button
-                onClick={() => setShowUserSearch(!showUserSearch)}
-                className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
+                onClick={() => setIsSidebarShrunk(!isSidebarShrunk)}
+                className={`p-2 rounded-lg transition-all duration-200 ${
                   isDark
                     ? 'text-slate-400 hover:text-purple-400 hover:bg-slate-700'
                     : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
                 }`}
-                title="Start Private Chat"
+                title={isSidebarShrunk ? 'Expand sidebar' : 'Shrink sidebar'}
               >
-                <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
+                {isSidebarShrunk ? <Maximize2 className="h-5 w-5" /> : <Minimize2 className="h-5 w-5" />}
               </button>
+            </div>
+            
+            {!isSidebarShrunk && (
+              <>
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className={`p-1.5 sm:p-2 rounded-xl ${
+                    isDark ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'bg-gradient-to-r from-blue-600 to-purple-600'
+                  }`}>
+                    <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  </div>
+                  <h1 className={`text-lg sm:text-2xl font-bold bg-gradient-to-r ${
+                    isDark
+                      ? 'from-purple-400 to-blue-400'
+                      : 'from-blue-600 to-purple-600'
+                  } bg-clip-text text-transparent`}>
+                    Discord Coding
+                  </h1>
+                </div>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <button
+                    onClick={() => setShowUserSearch(!showUserSearch)}
+                    className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
+                      isDark
+                        ? 'text-slate-400 hover:text-purple-400 hover:bg-slate-700'
+                        : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
+                    }`}
+                    title="Start Private Chat"
+                  >
+                    <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </button>
               <button
                 onClick={() => setShowCreateRoom(!showCreateRoom)}
                 className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
@@ -860,6 +884,8 @@ const Chat: React.FC = () => {
                 <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
+            </>
+            )}
           </div>
 
           {/* Connection Status */}
@@ -1088,7 +1114,7 @@ const Chat: React.FC = () => {
                 setActiveRoom(room)
                 setIsSidebarOpen(false) // Close sidebar on mobile after selection
               }}
-              className={`w-full p-4 text-left border-b flex items-center space-x-3 transition-all duration-200 ${
+              className={`w-full ${isSidebarShrunk ? 'p-2' : 'p-4'} text-left border-b flex items-center ${isSidebarShrunk ? 'justify-center' : 'space-x-3'} transition-all duration-200 ${
                 isDark
                   ? activeRoom?._id === room._id
                     ? "bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-l-4 border-purple-500"
@@ -1097,22 +1123,27 @@ const Chat: React.FC = () => {
                     ? "bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500"
                     : "hover:bg-gray-50 border-gray-200"
               }`}
+              title={isSidebarShrunk ? room.name : undefined}
             >
               <div className="flex-shrink-0">{getRoomIcon(room)}</div>
-              <div className="flex-1 min-w-0">
-                <div className={`font-medium truncate ${
-                  isDark ? "text-slate-100" : "text-gray-900"
-                }`}>
-                  {room.name}
-                </div>
-                <div className={`text-sm flex items-center space-x-2 mt-1 ${
-                  isDark ? "text-slate-400" : "text-gray-600"
-                }`}>
-                  <span>{room.participants.length} members</span>
-                  {room.messageCount > 0 && <span>• {room.messageCount} messages</span>}
-                </div>
-              </div>
-              {room.isPrivate && <Lock className="h-3 w-3 text-gray-500" />}
+              {!isSidebarShrunk && (
+                <>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-medium truncate ${
+                      isDark ? "text-slate-100" : "text-gray-900"
+                    }`}>
+                      {room.name}
+                    </div>
+                    <div className={`text-sm flex items-center space-x-2 mt-1 ${
+                      isDark ? "text-slate-400" : "text-gray-600"
+                    }`}>
+                      <span>{room.participants.length} members</span>
+                      {room.messageCount > 0 && <span>• {room.messageCount} messages</span>}
+                    </div>
+                  </div>
+                  {room.isPrivate && <Lock className="h-3 w-3 text-gray-500" />}
+                </>
+              )}
             </button>
           ))}
         </div>
@@ -1153,8 +1184,203 @@ const Chat: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0 relative">
-        {/* Chat Header */}
+      <div className={`flex-1 flex flex-col h-full min-h-0 relative ${
+        isSidebarShrunk ? 'md:ml-16' : ''
+      }`}>
+        {/* Mobile Chat Overlay - Show when sidebar is shrunk */}
+        {isSidebarShrunk && activeRoom && (
+          <div className="fixed inset-0 z-50 bg-white dark:bg-slate-900 flex flex-col md:hidden">
+            {/* Mobile Chat Header with Expand Button */}
+            <div className={`p-4 border-b backdrop-blur-xl shadow-lg flex items-center justify-between ${
+              isDark
+                ? "border-slate-700 bg-slate-800/80"
+                : "border-gray-200 bg-white/80"
+            }`}>
+              <button
+                onClick={() => setIsSidebarShrunk(false)}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  isDark
+                    ? 'text-slate-400 hover:text-purple-400 hover:bg-slate-700'
+                    : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
+                }`}
+                title="Show sidebar"
+              >
+                <Maximize2 className="h-5 w-5" />
+              </button>
+              <div className="flex items-center space-x-3">
+                <div className={`p-2 rounded-lg ${
+                  isDark ? 'bg-slate-700' : 'bg-gray-100'
+                }`}>
+                  {getRoomIcon(activeRoom)}
+                </div>
+                <div>
+                  <h2 className={`font-semibold text-lg ${
+                    isDark ? "text-slate-100" : "text-gray-900"
+                  }`}>
+                    {activeRoom.name}
+                  </h2>
+                  <p className={`text-sm ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    {activeRoom.participants.length} members • {activeRoom.isPrivate ? (
+                      <>
+                        <Lock className="h-3 w-3 inline mr-1" />
+                        <span>Private Chat</span>
+                      </>
+                    ) : (
+                      <>
+                        <Users className="h-3 w-3 inline mr-1" />
+                        <span>Public Room</span>
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div /> {/* Spacer */}
+            </div>
+            
+            {/* Mobile Chat Content */}
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Messages for mobile */}
+              {/* <button
+                className="md:hidden p-2 rounded-full bg-blue-600 text-white shadow hover:bg-blue-700 transition absolute left-2 top-2 z-50"
+                onClick={() => setSidebarShrunk(false)}
+                aria-label="Show group chats"
+              >
+                Show Groups
+              </button> */}
+              {isSidebarShrunk && (
+                  <button
+                    className="md:hidden p-2 rounded-full bg-blue-600 text-white shadow hover:bg-blue-700 transition absolute left-2 top-2 z-50"
+                    onClick={() => {
+                      setIsSidebarOpen(true);
+                      setIsSidebarShrunk(false);
+                    }}
+                    aria-label="Show group chats"
+                  >
+                    Show Groups
+                  </button>
+                )}
+              <div 
+                className={`flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-6 ${
+                  isDark
+                    ? "whatsapp-dark-bg"
+                    : "whatsapp-light-bg"
+                }`}
+                style={isDark ? {
+                  backgroundImage: "url('/whatsapp-bg-dark.jpg')",
+                  backgroundSize: "400px 400px",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "repeat",
+                  backgroundColor: "#0e1419"
+                } : {
+                  backgroundImage: "url('/whatsapp-bg-light.png')",
+                  backgroundSize: "400px 400px",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "repeat",
+                  backgroundColor: "#e5ddd5"
+                }}
+              >
+                {messages.map((message) => {
+                  const isMe = message.sender._id === (user?._id || '')
+                  return (
+                    <div
+                      key={message._id}
+                      className={`group flex items-start space-x-3 animate-fade-in ${
+                        isMe ? "flex-row-reverse space-x-reverse" : ""
+                      }`}
+                    >
+                      {/* Avatar */}
+                      {message.sender.profile?.avatar && !message.sender.profile.avatar.startsWith('default:') ? (
+                        <img
+                          src={message.sender.profile.avatar || "https://thumbs.dreamstime.com/b/default-avatar-profile-icon-vector-social-media-user-photo-183042379.jpg"}
+                          alt={message.sender.username}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-purple-500 shadow-lg"
+                          onError={e => { e.currentTarget.src = "https://thumbs.dreamstime.com/b/default-avatar-profile-icon-vector-social-media-user-photo-183042379.jpg"; }}
+                        />
+                      ) : (
+                        <img
+                          src="https://thumbs.dreamstime.com/b/default-avatar-profile-icon-vector-social-media-user-photo-183042379.jpg"
+                          alt={message.sender.username}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-purple-500 shadow-lg"
+                        />
+                      )}
+  
+                      <div className="flex-1 min-w-0 max-w-2xl">
+                        <div
+                          className={`p-4 rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:shadow-xl ${
+                            isMe
+                              ? isDark
+                                ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white ml-auto rounded-br-md"
+                                : "bg-gradient-to-r from-blue-500 to-purple-500 text-white ml-auto rounded-br-md"
+                              : isDark
+                                ? "bg-slate-700/80 text-slate-100 rounded-bl-md border border-slate-600"
+                                : "bg-white/90 text-gray-900 rounded-bl-md border border-gray-200"
+                          }`}
+                          style={isMe ? { marginLeft: "auto" } : {}}
+                        >
+                          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+              
+              {/* Mobile Message Input */}
+              {activeRoom && (
+                <div className={`p-3 sm:p-4 border-t backdrop-blur-xl ${
+                  isDark
+                    ? "border-slate-700 bg-slate-800/80"
+                    : "border-gray-200 bg-white/80"
+                }`}>
+                  <div className="flex items-end space-x-3">
+                    <div className="flex-1 relative">
+                      <textarea
+                        ref={messageInputRef}
+                        value={newMessage}
+                        onChange={(e) => {
+                          setNewMessage(e.target.value)
+                          handleTyping()
+                        }}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            sendMessage()
+                          }
+                        }}
+                        rows={1}
+                        placeholder={`Message ${activeRoom.name}...`}
+                        disabled={!activeRoom || connectionStatus !== "connected" || isSendingMessage}
+                        className={`w-full px-3 py-2 sm:px-4 sm:py-3 pr-10 sm:pr-12 rounded-xl border transition-all duration-200 resize-none disabled:opacity-60 disabled:cursor-not-allowed text-sm sm:text-base ${
+                          isDark
+                            ? "bg-slate-700 text-slate-100 border-slate-600 focus:border-purple-500 placeholder-slate-400"
+                            : "bg-white text-gray-900 border-gray-300 focus:border-blue-500 placeholder-gray-500"
+                        } focus:ring-2 focus:ring-opacity-50`}
+                        style={{ minHeight: '48px', maxHeight: '120px' }}
+                      />
+                    </div>
+                    <button
+                      onClick={sendMessage}
+                      disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected" || isSendingMessage}
+                      className={`p-2 sm:p-3 rounded-xl transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-105 ${
+                        isDark
+                          ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                          : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                      } shadow-lg hover:shadow-xl`}
+                      title="Send Message"
+                    >
+                      <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Chat Header */}
         <div className={`p-4 border-b backdrop-blur-xl shadow-lg z-10 ${
           isDark
             ? "border-slate-700 bg-slate-800/80"
@@ -1216,7 +1442,7 @@ const Chat: React.FC = () => {
 
         {/* Messages */}
         <div 
-          className={`flex-1 overflow-y-auto p-4 space-y-6 ${
+          className={`flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-6 ${
             isDark
               ? "whatsapp-dark-bg"
               : "whatsapp-light-bg"
@@ -1247,14 +1473,17 @@ const Chat: React.FC = () => {
                 {/* Avatar */}
                 {message.sender.profile?.avatar && !message.sender.profile.avatar.startsWith('default:') ? (
                   <img
-                    src={message.sender.profile.avatar}
+                    src={message.sender.profile.avatar || "https://thumbs.dreamstime.com/b/default-avatar-profile-icon-vector-social-media-user-photo-183042379.jpg"}
+                    alt={message.sender.username}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-purple-500 shadow-lg"
+                    onError={e => { e.currentTarget.src = "https://thumbs.dreamstime.com/b/default-avatar-profile-icon-vector-social-media-user-photo-183042379.jpg"; }}
+                  />
+                ) : (
+                  <img
+                    src="https://thumbs.dreamstime.com/b/default-avatar-profile-icon-vector-social-media-user-photo-183042379.jpg"
                     alt={message.sender.username}
                     className="w-10 h-10 rounded-full object-cover border-2 border-purple-500 shadow-lg"
                   />
-                ) : (
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg">
-                    {message.sender.username[0]?.toUpperCase()}
-                  </div>
                 )}
 
                 <div className="flex-1 min-w-0 max-w-2xl">
