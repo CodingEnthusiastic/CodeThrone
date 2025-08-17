@@ -35,6 +35,7 @@ const Discussion: React.FC = () => {
   const { isDark } = useTheme();
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [discussionVoteLoading, setDiscussionVoteLoading] = useState<string | null>(null); // discussionId being voted
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
@@ -107,7 +108,7 @@ const Discussion: React.FC = () => {
 
   const handleVote = async (discussionId: string, voteType: 'up' | 'down') => {
     if (!user || !token) return;
-
+    setDiscussionVoteLoading(discussionId);
     try {
       await axios.post(
         `${API_URL}/discussion/${discussionId}/vote`,
@@ -119,11 +120,12 @@ const Discussion: React.FC = () => {
           }
         }
       );
-
       // Refresh discussions after voting
-      fetchDiscussions();
+      await fetchDiscussions();
     } catch (error) {
       console.error('Error voting:', error);
+    } finally {
+      setDiscussionVoteLoading(null);
     }
   };
 
@@ -595,7 +597,13 @@ const Discussion: React.FC = () => {
                 ? "bg-gradient-to-br from-[#23243a] to-[#181824] border border-[#6366f1]/20"
                 : "bg-gradient-to-br from-[#eaf0fa] to-[#f7faff] border border-[#38bdf8]/10"
             }`}>
-              <div className="flex justify-between items-start">
+              {/* Loader overlay for discussion vote */}
+              {discussionVoteLoading === discussion._id && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 dark:bg-black/40 z-10">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              )}
+              <div className="flex justify-between items-start relative">
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
                     {discussion.isPinned && <Pin className="h-4 w-4 text-[#6366f1] mr-1" />}
@@ -644,7 +652,7 @@ const Discussion: React.FC = () => {
                 <div className="ml-4 flex flex-col items-center space-y-1">
                   <button
                     onClick={() => handleVote(discussion._id, 'up')}
-                    disabled={!user}
+                    disabled={!user || discussionVoteLoading === discussion._id}
                     className={`p-1 rounded-full transition-all duration-200 shadow ${
                       !user 
                         ? isDark
@@ -674,7 +682,7 @@ const Discussion: React.FC = () => {
                   </span>
                   <button
                     onClick={() => handleVote(discussion._id, 'down')}
-                    disabled={!user}
+                    disabled={!user || discussionVoteLoading === discussion._id}
                     className={`p-1 rounded-full transition-all duration-200 shadow ${
                       !user 
                         ? isDark
