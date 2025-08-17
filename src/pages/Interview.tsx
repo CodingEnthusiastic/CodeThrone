@@ -100,6 +100,10 @@ declare global {
 }
 
 const Interview: React.FC = () => {
+  // Ref for result div
+  const resultDivRef = useRef<HTMLDivElement>(null);
+
+  
   const { token, user } = useAuth()
   const { isDark } = useTheme()
   const [session, setSession] = useState<InterviewSession | null>(null)
@@ -260,6 +264,16 @@ const handleApiError = (error: any, context: string) => {
           stopListening()
         }
         disableVideo()
+        {/* Mobile-only: Continue to Next Question button */}
+        {session?.evaluation && !session.isComplete && (
+          <button
+            className="w-full mt-2 py-3 rounded-md bg-green-600 text-white font-semibold text-lg shadow hover:bg-green-700 transition block md:hidden"
+            onClick={proceedToNextQuestion}
+            disabled={loading}
+          >
+            Continue to Next Question
+          </button>
+        )}
 
         // Clear all timeouts
         if (recordingIntervalRef.current) {
@@ -292,7 +306,13 @@ const handleApiError = (error: any, context: string) => {
   }
 
   
-
+  // Scroll to result div when result is shown
+  useEffect(() => {
+    if ((session?.evaluation || finalReport) && resultDivRef.current) {
+      resultDivRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [session?.evaluation, finalReport]);
+  
   useEffect(() => {
     return () => {
       // Enhanced cleanup for robust speech recognition
@@ -2364,6 +2384,43 @@ const handleApiError = (error: any, context: string) => {
         </div>
       </div>
       )}
+      {/* Mobile-only: Result feedback at the end */}
+      <div
+        ref={resultDivRef}
+        className="block md:hidden w-full px-2 py-4"
+        style={{ scrollMarginTop: 80 }}
+      >
+        {session?.evaluation && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 mb-4 border border-blue-200 dark:border-slate-700">
+            <div className="font-bold text-lg mb-2 text-blue-700 dark:text-blue-300">Previous Answer Score: {session.evaluation.score}/10</div>
+            <div className="text-gray-700 dark:text-gray-200 mb-2">{session.evaluation.feedback}</div>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">Technical: {session.evaluation.technicalAccuracy}/10</span>
+              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">Communication: {session.evaluation.communication}/10</span>
+              <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">Depth: {session.evaluation.depth}/10</span>
+              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">Video: {calculateVideoScore()}/10</span>
+            </div>
+            {session.evaluation.improvements?.length > 0 && (
+              <div className="mt-2">
+                <div className="font-semibold text-sm text-gray-800 dark:text-gray-300 mb-1">Improvements:</div>
+                <ul className="list-disc ml-5 text-gray-700 dark:text-gray-200 text-sm">
+                  {session.evaluation.improvements.map((imp, idx) => (
+                    <li key={idx}>{imp}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {session.evaluation && !session.isComplete && (
+                  <button
+                    onClick={proceedToNextQuestion}
+                    className="w-full mt-4 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors"
+                  >
+                    Continue to Next Question
+                  </button>
+                )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
