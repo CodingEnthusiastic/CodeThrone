@@ -40,6 +40,8 @@ const DiscussionDetail: React.FC = () => {
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
+  const [commentVoteLoading, setCommentVoteLoading] = useState<string | null>(null); // commentId being voted
+  const [discussionVoteLoading, setDiscussionVoteLoading] = useState<boolean>(false); // loader for main discussion vote
 
   useEffect(() => {
     if (id) {
@@ -60,7 +62,7 @@ const DiscussionDetail: React.FC = () => {
 
   const handleVote = async (voteType: 'up' | 'down') => {
     if (!user || !discussion || !token) return;
-
+    setDiscussionVoteLoading(true);
     try {
       await axios.post(`${API_URL}/discussion/${discussion._id}/vote`, {
         type: voteType
@@ -70,17 +72,18 @@ const DiscussionDetail: React.FC = () => {
           'Content-Type': 'application/json'
         }
       });
-
       // Refresh the discussion data
-      fetchDiscussion();
+      await fetchDiscussion();
     } catch (error) {
       console.error('Error voting:', error);
+    } finally {
+      setDiscussionVoteLoading(false);
     }
   };
 
   const handleCommentVote = async (commentId: string, voteType: 'up' | 'down') => {
     if (!user || !discussion || !token) return;
-
+    setCommentVoteLoading(commentId);
     try {
       await axios.post(`${API_URL}/discussion/${discussion._id}/comments/${commentId}/vote`, {
         type: voteType
@@ -90,11 +93,12 @@ const DiscussionDetail: React.FC = () => {
           'Content-Type': 'application/json'
         }
       });
-
       // Refresh the discussion data
-      fetchDiscussion();
+      await fetchDiscussion();
     } catch (error) {
       console.error('Error voting on comment:', error);
+    } finally {
+      setCommentVoteLoading(null);
     }
   };
 
@@ -170,7 +174,13 @@ const DiscussionDetail: React.FC = () => {
             ? "bg-gradient-to-br from-[#23243a] to-[#181824] border border-[#6366f1]/30"
             : "bg-gradient-to-br from-[#eaf0fa] to-[#f7faff] border border-[#38bdf8]/20"
         }`}>
-          <div className="flex items-start justify-between">
+          {/* Loader overlay for discussion vote */}
+          {discussionVoteLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 dark:bg-black/40 z-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          )}
+          <div className="flex items-start justify-between relative">
             <div className="flex-1">
               <div className="flex items-center mb-4">
                 {discussion.isPinned && (
@@ -229,7 +239,7 @@ const DiscussionDetail: React.FC = () => {
                       ? 'bg-[#23243a] border border-[#22c55e]/30 hover:bg-[#181824]'
                       : 'bg-gray-100 border border-[#22c55e]/20 hover:bg-[#eaf0fa]'
                 }`}
-                disabled={!user}
+                disabled={!user || discussionVoteLoading}
               >
                 <ThumbsUp
                   className={`h-5 w-5 ${
@@ -259,7 +269,7 @@ const DiscussionDetail: React.FC = () => {
                       ? 'bg-[#23243a] border border-[#ef4444]/30 hover:bg-[#181824]'
                       : 'bg-gray-100 border border-[#ef4444]/20 hover:bg-[#eaf0fa]'
                 }`}
-                disabled={!user}
+                disabled={!user || discussionVoteLoading}
               >
                 <ThumbsDown
                   className={`h-5 w-5 ${
@@ -326,7 +336,13 @@ const DiscussionDetail: React.FC = () => {
                 ? "bg-gradient-to-br from-[#23243a] to-[#181824] border border-[#6366f1]/20"
                 : "bg-gradient-to-br from-[#eaf0fa] to-[#f7faff] border border-[#38bdf8]/10"
             }`}>
-              <div className="flex items-start justify-between">
+              {/* Loader overlay for comment vote */}
+              {commentVoteLoading === comment._id && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 dark:bg-black/40 z-10">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              )}
+              <div className="flex items-start justify-between relative">
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
                     <span className={`font-medium ${
@@ -354,7 +370,7 @@ const DiscussionDetail: React.FC = () => {
                           ? 'bg-[#23243a] border border-[#22c55e]/30 hover:bg-[#181824]'
                           : 'bg-gray-50 border border-[#22c55e]/20 hover:bg-[#eaf0fa]'
                     }`}
-                    disabled={!user}
+                    disabled={!user || commentVoteLoading === comment._id}
                   >
                     <ThumbsUp
                       className={`h-4 w-4 ${
@@ -384,7 +400,7 @@ const DiscussionDetail: React.FC = () => {
                           ? 'bg-[#23243a] border border-[#ef4444]/30 hover:bg-[#181824]'
                           : 'bg-gray-50 border border-[#ef4444]/20 hover:bg-[#eaf0fa]'
                     }`}
-                    disabled={!user}
+                    disabled={!user || commentVoteLoading === comment._id}
                   >
                     <ThumbsDown
                       className={`h-4 w-4 ${
