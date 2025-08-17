@@ -36,10 +36,6 @@ import { API_URL } from "../config/api"
 import confetti from "canvas-confetti";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
-import 'highlight.js/styles/github-dark.css'; // You can choose different themes
 
 
 interface Problem {
@@ -113,218 +109,37 @@ interface RunResult {
 function AnimatedAiResponse({ response }: { response: string }) {
   const [displayed, setDisplayed] = useState("")
 
-  // Function to clean and preprocess the response
-  const preprocessResponse = (rawResponse: string): string => {
-    let cleaned = String(rawResponse || "").trim()
-    
-    // Handle case where response might be an object
-    if (cleaned === '[object Object]' || cleaned.includes('[object Object]')) {
-      console.warn('Response contains object references, attempting to clean...')
-      cleaned = cleaned.replace(/\[object Object\]/g, '')
-      
-      // If cleaning resulted in empty string, provide fallback
-      if (!cleaned.trim()) {
-        return "I apologize, but there was an issue processing the response. Please try asking your question again."
-      }
-    }
-    
-    // Remove any remaining object references or malformed content - but be more careful
-    cleaned = cleaned.replace(/,\s*,/g, ',') // Remove double commas
-    cleaned = cleaned.replace(/\(\s*,/g, '(') // Remove leading commas in parentheses
-    cleaned = cleaned.replace(/,\s*\)/g, ')') // Remove trailing commas in parentheses
-    
-    // Be more selective about bracket cleaning to preserve code structure
-    // Only clean malformed brackets, not all brackets
-    cleaned = cleaned.replace(/\[,\s*,/g, '[') // Remove double commas in arrays
-    cleaned = cleaned.replace(/,\s*,\]/g, ']') // Remove double commas before closing brackets
-    
-    // Fix malformed markdown code blocks - but preserve content inside them
-    cleaned = cleaned.replace(/```\s*$/, '') // Remove trailing incomplete code blocks
-    cleaned = cleaned.replace(/^```\s*/, '') // Remove leading incomplete code blocks without language
-    cleaned = cleaned.replace(/```(\w+)?\s*\n?```/g, '') // Remove empty code blocks only
-    cleaned = cleaned.replace(/`{4,}/g, '```') // Fix multiple backticks
-    
-    // Fix broken code blocks that might truncate content - be more careful
-    cleaned = cleaned.replace(/``(\w+)/g, '```$1') // Fix incomplete opening
-    cleaned = cleaned.replace(/(\w+)``/g, '$1```') // Fix incomplete closing
-    
-    // Fix cases where markdown might be cutting off content
-    // If we have an odd number of triple backticks, it means markdown is broken
-    const tripleBacktickCount = (cleaned.match(/```/g) || []).length
-    if (tripleBacktickCount % 2 !== 0) {
-      // Add closing backticks to fix broken markdown
-      cleaned += '\n```'
-    }
-    
-    // Ensure proper spacing around code blocks - but don't modify content inside
-    cleaned = cleaned.replace(/```(\w+)?\n?([^`]*?)```/g, (_, lang, code) => {
-      const language = lang || '';
-      const cleanCode = code.trim();
-      return `\n\`\`\`${language}\n${cleanCode}\n\`\`\`\n`;
-    });
-    
-    // Only clean up obvious malformed characters, not normal punctuation
-    // Be much more conservative here
-    cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters only
-    
-    // Clean up extra whitespace
-    cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
-    cleaned = cleaned.replace(/[ \t]{3,}/g, '  ') // Only clean excessive spaces/tabs, not single ones
-    
-    return cleaned.trim()
-  }
-
   useEffect(() => {
     let i = 0
     setDisplayed("")
-    
-    // Clean the response before processing
-    const cleanResponse = preprocessResponse(response)
-    
-    if (!cleanResponse || cleanResponse.trim().length === 0) {
-      setDisplayed("No response received.")
-      return
-    }
-
-    // For debugging: log the full response to ensure it's not truncated
-    console.log('Full AI response length:', cleanResponse.length)
-    console.log('Full AI response content:', cleanResponse) // Log full content for debugging
-    console.log('Full AI response preview:', cleanResponse.substring(0, 500) + '...')
-
-    // If response is very short, display immediately
-    if (cleanResponse.length < 10) {
-      setDisplayed(cleanResponse)
-      return
-    }
-
-    // Use a more conservative animation speed for longer responses to ensure full display
-    const animationSpeed = cleanResponse.length > 1000 ? 2 : 5 // Even slower for very long responses
-
     const interval = setInterval(() => {
-      if (i < cleanResponse.length) {
-        setDisplayed(cleanResponse.substring(0, i + 1)) // Use substring instead of character-by-character
-        i += Math.max(1, Math.floor(cleanResponse.length / 200)) // Adaptive step size
+      if (i < response.length - 1) {
+        setDisplayed((prev) => prev + response[i])
+        i++
       } else {
-        setDisplayed(cleanResponse) // Ensure we show the complete response
         clearInterval(interval)
-        console.log('Animation completed, final displayed length:', cleanResponse.length)
-        console.log('Final displayed content matches original:', displayed === cleanResponse)
       }
-    }, animationSpeed)
+    }, 12)
 
     return () => clearInterval(interval)
   }, [response])
 
   return (
-    <div className="flex justify-start max-w-full">
-      <div className="max-w-full bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-gray-100 p-4 rounded-xl shadow-md overflow-hidden ai-response-container">
-        <div className="flex items-center mb-2">
-          <Bot className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+    <div className="flex justify-start">
+      <div className="max-w-3xl bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-gray-100 p-3 rounded-xl shadow-md">
+        <div className="flex items-center mb-1">
+          <Bot className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
           <span className="text-sm font-medium">AI Assistant</span>
         </div>
-        <div className="markdown-content overflow-hidden">
-          <ReactMarkdown 
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeHighlight]}
-            components={{
-              code({ node, inline, className, children, ...props }: any) {
-                const match = /language-(\w+)/.exec(className || '')
-                
-                // Safely convert children to string with more robust handling
-                let codeString = ''
-                try {
-                  if (Array.isArray(children)) {
-                    codeString = children
-                      .map(child => {
-                        if (typeof child === 'string') return child
-                        if (child && typeof child === 'object') {
-                          // Try to get text content from object
-                          if (child.props && child.props.children) {
-                            return String(child.props.children)
-                          }
-                          if (child.toString && typeof child.toString === 'function') {
-                            return child.toString()
-                          }
-                          // Don't stringify objects that might be React elements
-                          return ''
-                        }
-                        return String(child || '')
-                      })
-                      .join('')
-                      .replace(/\n$/, '')
-                  } else if (typeof children === 'string') {
-                    codeString = children.replace(/\n$/, '')
-                  } else if (children && typeof children === 'object') {
-                    // Handle React element children
-                    if (children.props && children.props.children) {
-                      codeString = String(children.props.children || '').replace(/\n$/, '')
-                    } else {
-                      codeString = String(children || '').replace(/\n$/, '')
-                    }
-                  } else {
-                    codeString = String(children || '').replace(/\n$/, '')
-                  }
-                  
-                  // Remove [object Object] if it appears but be careful not to remove valid content
-                  codeString = codeString.replace(/\[object Object\]/g, '')
-                  
-                  // Handle edge case where codeString might be empty but should show content
-                  if (!codeString && children) {
-                    // Try one more time to extract content
-                    const fallbackContent = String(children || '')
-                    if (fallbackContent && fallbackContent !== '[object Object]') {
-                      codeString = fallbackContent.replace(/\n$/, '')
-                    } else {
-                      codeString = 'Code content could not be rendered properly'
-                    }
-                  }
-                  
-                } catch (error) {
-                  console.warn('Error processing code content:', error)
-                  codeString = String(children || '').replace(/\n$/, '')
-                }
-                
-                // Handle potential markdown parsing errors gracefully
-                if (!inline && codeString.includes('```')) {
-                  // If we have triple backticks inside a code block, treat as preformatted text
-                  return (
-                    <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto border border-gray-300 dark:border-gray-600 max-w-full my-3 whitespace-pre-wrap">
-                      <code>{codeString}</code>
-                    </pre>
-                  )
-                }
-                
-                return !inline && match ? (
-                  <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto border border-gray-300 dark:border-gray-600 max-w-full my-3">
-                    <code className={className} {...props}>
-                      {codeString}
-                    </code>
-                  </pre>
-                ) : (
-                  <code className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 rounded text-sm break-words" {...props}>
-                    {codeString}
-                  </code>
-                )
-              },
-              h1: ({ children }) => <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-4 mb-2 break-words">{children}</h1>,
-              h2: ({ children }) => <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-3 mb-2 break-words">{children}</h2>,
-              h3: ({ children }) => <h3 className="text-md font-bold text-gray-900 dark:text-gray-100 mt-3 mb-2 break-words">{children}</h3>,
-              p: ({ children }) => <p className="text-gray-800 dark:text-gray-200 mb-2 leading-relaxed break-words">{children}</p>,
-              ul: ({ children }) => <ul className="list-disc list-inside text-gray-800 dark:text-gray-200 mb-2 ml-2 break-words">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal list-inside text-gray-800 dark:text-gray-200 mb-2 ml-2 break-words">{children}</ol>,
-              li: ({ children }) => <li className="mb-1 break-words">{children}</li>,
-              strong: ({ children }) => <strong className="font-bold text-gray-900 dark:text-gray-100">{children}</strong>,
-              em: ({ children }) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
-              blockquote: ({ children }) => <blockquote className="border-l-4 border-blue-500 pl-4 my-2 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 py-2 break-words">{children}</blockquote>,
-              pre: ({ children }) => <div className="max-w-full overflow-x-auto my-3">{children}</div>,
-              table: ({ children }) => <div className="overflow-x-auto my-3"><table className="w-full border-collapse border border-gray-300 dark:border-gray-600">{children}</table></div>,
-              th: ({ children }) => <th className="border border-gray-300 dark:border-gray-600 p-2 bg-gray-100 dark:bg-gray-700 font-semibold">{children}</th>,
-              td: ({ children }) => <td className="border border-gray-300 dark:border-gray-600 p-2">{children}</td>,
-            }}
-          >
-            {displayed}
-          </ReactMarkdown>
-        </div>
+        <div
+          className="text-sm whitespace-pre-wrap break-words"
+          dangerouslySetInnerHTML={{
+            __html: displayed.replace(
+              /\*\*(.*?)\*\*/g,
+              "<strong class='font-bold text-gray-900 dark:text-gray-100'>$1</strong>",
+            ),
+          }}
+        />
       </div>
     </div>
   )
@@ -683,10 +498,7 @@ const ProblemDetail: React.FC = () => {
     }
 
     setAiLoading(true)
-    setAiResponse("") // Clear any previous response immediately
-    
-    // Small delay to ensure UI updates before starting the request
-    await new Promise(resolve => setTimeout(resolve, 50))
+    setAiResponse("")
 
     try {
       const examplesText = problem.examples
@@ -694,36 +506,31 @@ const ProblemDetail: React.FC = () => {
       .join("\n\n");
 
     const context = `
-    Here is the coding problem:
-    
-    **Title:** ${problem.title}
-    
-    **Description:** ${problem.description}
-    
-    **Constraints:** ${problem.constraints}
-    
-    **Examples:**
+    Here is the problem statement:
+    Title: ${problem.title}
+    Description: ${problem.description}
+    Constraints: ${problem.constraints}
+    Examples:
     ${examplesText}
     
-    **IMPORTANT INSTRUCTIONS:**
-    - Provide accurate, grammatically correct responses
-    - Use proper Markdown formatting for readability
-    - Use **bold** for important concepts and keywords
-    - Use \`backticks\` for variable names, function names, and small code snippets
-    - For code examples, use proper code blocks with language specification:
-      \`\`\`python
-      def example_function():
-          return "Hello World"
-      \`\`\`
-    - Use clear headers (##, ###) to structure your response
-    - Use bullet points (-) or numbered lists (1.) for multiple items
-    - Check your grammar and spelling carefully
-    - Provide complete, well-structured explanations
-    - Avoid fragmented or incomplete sentences
+    INSTRUCTION:
+    - DO NOT use Markdown symbols like "**", "__", "*", or "\`\`\`".
+    - DO NOT format code using triple backticks or indentation blocks.
+    - WHENEVER you give a code block:
+      - First write: PYTHON CODE (or the language name)
+      - Then leave one line
+      - Then, write the code on a new line, plain text, no formatting
+      - After code , if there is further text , again leave one line
+      - Wrap code between comment lines like:
+    PYTHON CODE
+
+    // START OF CODE
+    (code goes here)
+    // END OF CODE
+
+    - Everything else should be in plain readable text.
     
-    **User Question:** ${aiPrompt}
-    
-    Please provide a comprehensive, well-formatted answer with correct grammar and clear explanations.
+    User question: ${aiPrompt}
     `.trim();
 
     // Direct Gemini API call for general AI chat
@@ -741,75 +548,12 @@ const ProblemDetail: React.FC = () => {
       });
 
       const result = await response.json();
-      
-      // Debug logging for API response
-      console.log('Gemini API response structure:', JSON.stringify(result, null, 2))
 
       let generatedText = "No response received.";
       if (result.candidates && result.candidates.length > 0 &&
           result.candidates[0].content && result.candidates[0].content.parts &&
           result.candidates[0].content.parts.length > 0) {
-        
-        // Extract text more safely
-        const textPart = result.candidates[0].content.parts[0];
-        
-        let rawText = "";
-        
-        // Handle different response structures
-        if (typeof textPart === 'string') {
-          rawText = textPart;
-        } else if (textPart && textPart.text && typeof textPart.text === 'string') {
-          rawText = textPart.text;
-        } else if (textPart && typeof textPart === 'object') {
-          // Try to extract text from object structure
-          if ('text' in textPart) {
-            rawText = String(textPart.text || "");
-          } else {
-            // Last resort: stringify the object but clean it up
-            rawText = JSON.stringify(textPart, null, 2).replace(/[{}"\[\]]/g, '').replace(/\n/g, ' ');
-          }
-        } else {
-          rawText = String(textPart || "");
-        }
-        
-        // Debug logging for extracted text
-        console.log('Raw extracted text length:', rawText.length)
-        console.log('Raw extracted text preview:', rawText.substring(0, 500) + '...') // Show more content
-        
-        // Clean the extracted text
-        generatedText = rawText.trim();
-        
-        // Handle cases where response might contain object references
-        if (generatedText.includes('[object Object]') || generatedText === '[object Object]') {
-          console.warn('Detected object reference in AI response, attempting cleanup...');
-          generatedText = generatedText.replace(/\[object Object\]/g, '').trim();
-          
-          if (!generatedText || generatedText.length === 0) {
-            generatedText = "I apologize, but there was an issue formatting the response. Please try asking your question again with different wording.";
-          }
-        }
-        
-        // Additional cleanup for malformed responses
-        if (generatedText.startsWith('undefined') || generatedText === 'undefined') {
-          generatedText = "Unable to generate a proper response. Please try rephrasing your question.";
-        }
-        
-        // Check if response seems truncated or malformed
-        if (generatedText.length < 50 && !generatedText.includes('error') && !generatedText.includes('unable')) {
-          console.warn('Response seems unusually short, might be truncated:', generatedText)
-        }
-        
-        // Final debug log
-        console.log('Final processed text length:', generatedText.length)
-        console.log('Final processed text preview:', generatedText.substring(0, 500) + '...')
-        
-      } else {
-        console.error('Unexpected API response structure:', result)
-      }
-      
-      // Final validation and fallback
-      if (!generatedText || generatedText.trim().length === 0 || generatedText === 'null') {
-        generatedText = "Empty response received. Please try asking your question again.";
+        generatedText = result.candidates[0].content.parts[0].text;
       }
 
       setAiResponse(generatedText)
@@ -820,9 +564,6 @@ const ProblemDetail: React.FC = () => {
       }
 
       setChatHistory((prev) => [...prev, newChatEntry])
-
-      // Clear the current aiResponse to prevent duplicate display
-      setAiResponse("")
 
       requestAnimationFrame(() => {
         const container = chatHistoryRef.current
@@ -873,10 +614,7 @@ const ProblemDetail: React.FC = () => {
     }
 
     setComplexityAiLoading(true);
-    setComplexityAiResponse(""); // Clear any previous response immediately
-    
-    // Small delay to ensure UI updates before starting the request
-    await new Promise(resolve => setTimeout(resolve, 50));
+    setComplexityAiResponse("");
 
     try {
       const prompt = `Analyze the time and space complexity of the following code. Provide the complexities in Big O notation and a brief 3-4 line justification for each.
@@ -1850,7 +1588,7 @@ const ProblemDetail: React.FC = () => {
                 <AnimatedAiResponse response={chat.response} />
               </div>
             ))}
-            {aiLoading && !aiResponse && (
+            {aiLoading && (
               <div className="flex justify-start">
                 <div className="max-w-3xl bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-gray-100 p-3 rounded-xl shadow-md">
                   <div className="flex items-center mb-1">
@@ -1858,17 +1596,16 @@ const ProblemDetail: React.FC = () => {
                     <span className="text-sm font-medium">AI Assistant</span>
                   </div>
                   <div className="flex items-center mt-2">
-                    <div className="thinking-dots">
-                      <div className="dot bg-blue-400"></div>
-                      <div className="dot bg-blue-400"></div>
-                      <div className="dot bg-blue-400"></div>
+                    <div className="animate-pulse flex space-x-2">
+                      <div className="h-2 w-2 bg-blue-400 rounded-full"></div>
+                      <div className="h-2 w-2 bg-blue-400 rounded-full delay-75"></div>
+                      <div className="h-2 w-2 bg-blue-400 rounded-full delay-150"></div>
                     </div>
-                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">Thinking...</span>
                   </div>
                 </div>
               </div>
             )}
-            {aiResponse && !aiLoading && (
+            {aiResponse && !aiLoading && chatHistory[chatHistory.length -1]?.response !== aiResponse && (
               <AnimatedAiResponse response={aiResponse} />
             )}
              <div ref={bottomRef} /> {/* For auto-scrolling to bottom */}
@@ -2062,13 +1799,9 @@ const ProblemDetail: React.FC = () => {
               </h3>
             </div>
             <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-              {complexityAiLoading && !complexityAiResponse && (
+              {complexityAiLoading && (
                 <div className="text-center py-8">
-                  <div className="thinking-dots justify-center mb-3">
-                    <div className="dot bg-orange-500"></div>
-                    <div className="dot bg-orange-500"></div>
-                    <div className="dot bg-orange-500"></div>
-                  </div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent mx-auto mb-4"></div>
                   <p className="text-gray-600 dark:text-gray-400">Analyzing your code for complexity...</p>
                 </div>
               )}
@@ -2147,10 +1880,11 @@ const ProblemDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex flex-col transition-colors duration-200">
-      <div className="flex-1 flex overflow-hidden pt-4">
-        {/* Left Panel: Problem Description, Editorial, Submissions, Solutions */}
-        <div className="w-1/2 flex flex-col bg-white dark:bg-gray-850 border-r border-gray-200 dark:border-gray-750 shadow-lg">
-          <div className="px-6 pt-4">
+      {/* Mobile & Desktop Layout */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden pt-2 md:pt-4">
+        {/* Problem Description Panel - Full width on mobile, half width on desktop */}
+        <div className="w-full md:w-1/2 flex flex-col bg-white dark:bg-gray-850 md:border-r border-gray-200 dark:border-gray-750 shadow-lg">
+          <div className="px-4 md:px-6 pt-4">
             <button
               onClick={() => navigate("/problems")}
               className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center mb-2 transition-colors"
@@ -2159,7 +1893,7 @@ const ProblemDetail: React.FC = () => {
               Back to Problems
             </button>
           </div>
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-750 flex-shrink-0">
+          <div className="px-4 md:px-6 py-4 border-b border-gray-200 dark:border-gray-750 flex-shrink-0">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               {problem.title}
             </h1>
@@ -2182,55 +1916,55 @@ const ProblemDetail: React.FC = () => {
           </div>
 
           <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-750 bg-gray-50 dark:bg-gray-900">
-            <nav className="flex space-x-0"> {/* Changed to space-x-0 for full width tabs */}
+            <nav className="flex overflow-x-auto md:overflow-x-visible scrollbar-hide space-x-0" style={{ WebkitOverflowScrolling: 'touch' }}>
               <button
                 onClick={() => handleTabChange("description")}
-                className={`flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 transition-all duration-200 ${
+                className={`flex-shrink-0 py-3 px-3 md:px-4 text-xs md:text-sm font-medium text-center border-b-2 transition-all duration-200 min-w-max ${
                   activeTab === "description"
                     ? "border-blue-600 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-700 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-900 dark:hover:text-gray-100"
-                } flex items-center justify-center space-x-2`}
+                } flex items-center justify-center space-x-1 md:space-x-2`}
               >
-                <BookOpen className="h-5 w-5" />
+                <BookOpen className="h-4 md:h-5 w-4 md:w-5" />
                 <span>Description</span>
               </button>
               <button
                 onClick={() => handleTabChange("editorial")}
-                className={`flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 transition-all duration-200 ${
+                className={`flex-shrink-0 py-3 px-3 md:px-4 text-xs md:text-sm font-medium text-center border-b-2 transition-all duration-200 min-w-max ${
                   activeTab === "editorial"
                     ? "border-blue-600 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-700 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-900 dark:hover:text-gray-100"
-                } flex items-center justify-center space-x-2`}
+                } flex items-center justify-center space-x-1 md:space-x-2`}
               >
-                <FileText className="h-5 w-5" />
+                <FileText className="h-4 md:h-5 w-4 md:w-5" />
                 <span>Editorial</span>
               </button>
               <button
                 onClick={() => handleTabChange("submissions")}
-                className={`flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 transition-all duration-200 ${
+                className={`flex-shrink-0 py-3 px-3 md:px-4 text-xs md:text-sm font-medium text-center border-b-2 transition-all duration-200 min-w-max ${
                   activeTab === "submissions"
                     ? "border-blue-600 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-700 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-900 dark:hover:text-gray-100"
-                } flex items-center justify-center space-x-2`}
+                } flex items-center justify-center space-x-1 md:space-x-2`}
               >
-                <History className="h-5 w-5" />
+                <History className="h-4 md:h-5 w-4 md:w-5" />
                 <span>Submissions</span>
               </button>
               <button
                 onClick={() => handleTabChange("solutions")}
-                className={`flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 transition-all duration-200 ${
+                className={`flex-shrink-0 py-3 px-3 md:px-4 text-xs md:text-sm font-medium text-center border-b-2 transition-all duration-200 min-w-max ${
                   activeTab === "solutions"
                     ? "border-blue-600 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-700 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-900 dark:hover:text-gray-100"
-                } flex items-center justify-center space-x-2`}
+                } flex items-center justify-center space-x-1 md:space-x-2`}
               >
-                <Code className="h-5 w-5" />
+                <Code className="h-4 md:h-5 w-4 md:w-5" />
                 <span>Solutions</span>
               </button>
             </nav>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
             {activeTab === "description" && (
               <div className="prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200">
                 <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">Problem Description</h2>
@@ -2416,10 +2150,180 @@ const ProblemDetail: React.FC = () => {
               </div>
             )}
           </div>
+          
+          {/* Mobile Code Editor Section - Only visible on mobile */}
+          <div className="block md:hidden border-t border-gray-200 dark:border-gray-750">
+            {/* Mobile Code Editor Header */}
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-750 bg-gray-50 dark:bg-gray-900">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center text-sm">
+                    <Code className="h-4 w-4 mr-2 text-emerald-500" />
+                    Code Editor
+                  </h3>
+                  <select
+                    value={language}
+                    onChange={(e) => handleLanguageChange(e.target.value)}
+                    className="ml-3 px-2 py-1 border border-gray-300 dark:border-gray-700 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                  >
+                    <option value="cpp">C++20</option>
+                    <option value="java">Java</option>
+                    <option value="python">Python</option>
+                    <option value="c">C</option>
+                  </select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {/* Maximize button removed for mobile */}
+                  <button
+                    onClick={handleResetCode}
+                    className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors"
+                    title="Reset Code"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Code Editor */}
+            <div className="h-64 border-b border-gray-200 dark:border-gray-750">
+              <CodeMirrorEditor
+                value={code}
+                onChange={setCode}
+                language={language}
+                disabled={false}
+                settings={editorSettings}
+                className="h-full w-full"
+                height="100%"
+              />
+            </div>
+
+            {/* Mobile Run/Submit Buttons and Console */}
+            <div className="bg-gray-50 dark:bg-gray-900">
+              <div className="px-4 py-3 flex items-center justify-end space-x-2 border-b border-gray-200 dark:border-gray-750">
+                <button
+                  onClick={handleRun}
+                  disabled={running || !token}
+                  className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  title={!token ? "Please login to run code" : ""}
+                >
+                  {running ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent mr-1"></div>
+                      <span className="hidden sm:inline">Running...</span>
+                      <span className="sm:hidden">Run</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3 w-3 mr-1" />
+                      Run
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting || !token}
+                  className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  title={!token ? "Please login to submit code" : ""}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent mr-1"></div>
+                      <span className="hidden sm:inline">Submitting...</span>
+                      <span className="sm:hidden">Submit</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-3 w-3 mr-1" />
+                      Submit
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Mobile Console Output */}
+              <div className="px-4 py-3">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-2 text-sm">
+                  <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                  Console Output
+                  {(running || submitting) && (
+                    <div className="ml-2 flex items-center">
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-500 border-t-transparent"></div>
+                      <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                        {running ? "Running..." : "Submitting..."}
+                      </span>
+                    </div>
+                  )}
+                </h4>
+                
+                <div className="max-h-48 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded p-3">
+                  {(running || submitting) && !runResult && !submissionResult && (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        {running ? "Running your code..." : "Submitting your solution..."}
+                      </p>
+                    </div>
+                  )}
+
+                  {runResult && (
+                    <div className="mb-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mr-2">Run Result:</span>
+                          <span className={`font-semibold text-sm ${getStatusColor(runResult.status)}`}>{runResult.status}</span>
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Passed: {runResult.passedTests}/{runResult.totalTests}
+                        </div>
+                      </div>
+                      {runResult.error ? (
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2 text-xs">
+                          <div className="text-red-800 dark:text-red-300 font-medium mb-1">Error:</div>
+                          <pre className="text-red-700 dark:text-red-200 font-mono break-words whitespace-pre-wrap">{runResult.error}</pre>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-600 dark:text-gray-400">All tests passed!</div>
+                      )}
+                    </div>
+                  )}
+
+                  {submissionResult && (
+                    <div className="mb-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mr-2">Submission Result:</span>
+                          <span className={`font-semibold text-sm ${getStatusColor(submissionResult.status)}`}>{submissionResult.status}</span>
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Passed: {submissionResult.passedTests}/{submissionResult.totalTests}
+                        </div>
+                      </div>
+                      {submissionResult.error ? (
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2 text-xs">
+                          <div className="text-red-800 dark:text-red-300 font-medium mb-1">Error:</div>
+                          <pre className="text-red-700 dark:text-red-200 font-mono break-words whitespace-pre-wrap">{submissionResult.error}</pre>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-green-600 dark:text-green-400 font-medium">🎉 Solution accepted!</div>
+                      )}
+                    </div>
+                  )}
+
+                  {!runResult && !submissionResult && !running && !submitting && (
+                    <div className="text-gray-500 dark:text-gray-400 text-xs text-center py-4">
+                      <Code className="h-5 w-5 mx-auto mb-1 opacity-50" />
+                      <p>Run your code to see the output here...</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Right Panel: Code Editor and Console */}
-        <div className="w-1/2 flex flex-col bg-white dark:bg-gray-850 shadow-lg relative">
+        {/* Desktop Code Editor Panel - Hidden on mobile */}
+        <div className="hidden md:flex w-1/2 flex-col bg-white dark:bg-gray-850 shadow-lg relative">
           {/* Code Editor Header */}
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-750 bg-gray-50 dark:bg-gray-900 flex-shrink-0">
             <div className="flex items-center justify-between">
@@ -2835,35 +2739,35 @@ const ProblemDetail: React.FC = () => {
           </div>
 
           {/* Floating Buttons Container */}
-          <div className="fixed bottom-8 right-8 z-40 flex flex-col space-y-4">
+          <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-40 flex flex-col space-y-2 md:space-y-4">
             {/* DSA Visualizer Learning Button */}
             <button
               onClick={handleDsaVisualizerClick}
-              className="p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-75 animate-bounce-slow"
+              className="p-2 md:p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-75 animate-bounce-slow"
               title="DSA Visualizer Learning"
-              style={{ width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <GraduationCap className="h-8 w-8" />
+              <GraduationCap className="h-5 md:h-8 w-5 md:w-8" />
             </button>
 
             {/* Analyse Time and Space Complexity Button */}
             <button
               onClick={toggleComplexityAiMaximized}
-              className="p-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-500 focus:ring-opacity-75 animate-bounce-slow"
+              className="p-2 md:p-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-500 focus:ring-opacity-75 animate-bounce-slow"
               title="Analyse Time and Space Complexity of Current Code"
-              style={{ width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Zap className="h-8 w-8" />
+              <Zap className="h-5 md:h-8 w-5 md:w-8" />
             </button>
 
             {/* Existing Floating AI Chat Button */}
             <button
               onClick={toggleAiMaximized}
-              className="p-4 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-75 animate-bounce-slow"
+              className="p-2 md:p-4 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-75 animate-bounce-slow"
               title="Open AI Chat"
-              style={{ width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Bot className="h-8 w-8" />
+              <Bot className="h-5 md:h-8 w-5 md:w-8" />
             </button>
           </div>
         </div>
