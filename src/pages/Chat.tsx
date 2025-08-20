@@ -16,24 +16,18 @@ import {
   Code,
   Smile,
   Reply,
-  Edit3,
   Hash,
   Lock,
   MessageCircle,
   UserPlus,
-  Settings,
   Minimize2,
   Maximize2,
   Wifi,
   WifiOff,
   AlertCircle,
-  Clock,
   Info,
   CornerUpLeft,
-  Menu,
   X,
-  Star,
-  Globe,
   Shield,
   Zap,
 } from "lucide-react"
@@ -164,7 +158,7 @@ const Chat: React.FC = () => {
     setLastError(null)
 
     const newSocket = io(SOCKET_URL, {
-      auth: { token, userId: user._id },
+      auth: { token, userId: user.id || user._id },
       transports: ["websocket", "polling"],
       timeout: 20000,
       forceNew: true,
@@ -772,7 +766,7 @@ const Chat: React.FC = () => {
     }
   }
 
-  if (!token) {
+  if (!token || !user) {
     return (
       <div className={`min-h-screen flex items-center justify-center p-4 ${
         isDark 
@@ -1309,7 +1303,7 @@ const Chat: React.FC = () => {
                 }}
               >
                 {messages.map((message) => {
-                  const isMe = message.sender._id === (user?._id || '')
+                  const isMe = message.sender._id === (user?.id || user?._id || '')
                   return (
                     <div
                       key={message._id}
@@ -1493,7 +1487,7 @@ const Chat: React.FC = () => {
           }}
         >
           {messages.map((message) => {
-            const isMe = message.sender._id === user._id
+            const isMe = message.sender._id === (user.id || user._id)
             return (
               <div
                 key={message._id}
@@ -1688,7 +1682,7 @@ const Chat: React.FC = () => {
         {/* Message Input */}
         {activeRoom &&
           (activeRoom.isPrivate ||
-            activeRoom.participants.some((u) => u._id === user._id)) ? (
+            activeRoom.participants.some((u) => u._id === (user.id || user._id))) ? (
           <div className={`p-3 sm:p-4 border-t backdrop-blur-xl ${
             isDark
               ? "border-slate-700 bg-slate-800/80"
