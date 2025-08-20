@@ -1418,7 +1418,7 @@ const Home: React.FC = () => {
           <div className="absolute bottom-1/4 right-1/3 w-24 h-24 bg-gradient-to-br from-pink-400/10 to-orange-400/10 rounded-full blur-2xl floating-ball" style={{ animationDelay: '2s' }}></div>
         </div>
 
-        <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 pb-0 pt-0">
+        <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 pb-0 pt-6 md:pt-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center h-screen">
             {/* Left Content */}
             <div className="z-10 space-y-8 card-animate-in">
