@@ -21,32 +21,23 @@ router.use(passport.session());
 router.post('/register', async (req, res) => {
   console.log('📝 Registration attempt started');
   console.log('📊 Request body:', { ...req.body, password: '[HIDDEN]' });
-  
   try {
     const { username, email, password, role = 'user', googleId } = req.body;
-
     console.log('🔍 Checking for existing user...');
-    // Check if user already exists
-    const existingUser = await User.findOne({ 
-      $or: [{ email }, { username }] 
-    });
-    
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    console.log('🔍 Existing user query result:', existingUser);
     if (existingUser) {
       console.log('❌ User already exists:', existingUser.username);
-      return res.status(400).json({ 
-        message: 'User already exists with this email or username' 
-      });
+      return res.status(400).json({ message: 'User already exists with this email or username' });
     }
-
     console.log('✅ No existing user found, creating new user...');
-    // Create new user
-    const user = new User({
+    const userData = {
       username,
       email,
       password: googleId ? undefined : password,
       role,
       googleId: googleId || undefined,
-      coins: 0, // Start with 0 coins
+      coins: 0,
       profile: {
         firstName: '',
         lastName: '',
@@ -59,21 +50,34 @@ router.post('/register', async (req, res) => {
         branch: '',
         graduationYear: null
       }
-    });
-
+    };
+    console.log('🛠 User data to be saved:', userData);
+    const user = new User(userData);
     console.log('💾 Saving user to database...');
-    await user.save();
-    console.log('✅ User saved successfully:', user.username);
-
+    try {
+      await user.save();
+      console.log('✅ User saved successfully:', user.username);
+    } catch (saveError) {
+      console.error('❌ Error during user.save():', saveError);
+      if (saveError.code === 11000) {
+        const field = Object.keys(saveError.keyPattern)[0];
+        return res.status(400).json({ message: `A user with this ${field} already exists.` });
+      }
+      return res.status(500).json({ message: 'Error saving user', error: saveError.message });
+    }
     console.log('🔐 Generating JWT token...');
-    // Generate token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-    console.log('✅ JWT token generated');
-
+    let token;
+    try {
+      token = jwt.sign(
+        { userId: user._id },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+      console.log('✅ JWT token generated');
+    } catch (jwtError) {
+      console.error('❌ Error generating JWT:', jwtError);
+      return res.status(500).json({ message: 'Error generating token', error: jwtError.message });
+    }
     const responseData = {
       message: 'User created successfully',
       token,
@@ -84,16 +88,10 @@ router.post('/register', async (req, res) => {
         role: user.role
       }
     };
-
     console.log('🎉 Registration successful for:', user.username);
     res.status(201).json(responseData);
   } catch (error) {
-    // Handle duplicate key error (E11000)
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      return res.status(400).json({ message: `A user with this ${field} already exists.` });
-    }
-    console.error('❌ Registration error:', error);
+    console.error('❌ Registration error (outer catch):', error);
     console.error('📊 Error details:', {
       name: error.name,
       message: error.message,
@@ -181,7 +179,8 @@ router.get('/me', authenticateToken, async (req, res) => {
       .select('-password')
       .lean(); // ✅ Use lean for faster, lighter query
 
-    if (!user) {
+    if (!user) 
+    {
       console.log('❌ User not found');
       return res.status(404).json({ message: 'User not found' });
     }
