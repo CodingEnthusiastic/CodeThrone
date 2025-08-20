@@ -2743,31 +2743,31 @@ const ProblemDetail: React.FC = () => {
             {/* DSA Visualizer Learning Button */}
             <button
               onClick={handleDsaVisualizerClick}
-              className="p-2 md:p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-75 animate-bounce-slow"
+              className="p-3 md:p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-75 animate-bounce-slow"
               title="DSA Visualizer Learning"
-              style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '78px', height: '78px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <GraduationCap className="h-5 md:h-8 w-5 md:w-8" />
+              <GraduationCap className="h-8 md:h-10 w-8 md:w-10" />
             </button>
 
             {/* Analyse Time and Space Complexity Button */}
             <button
               onClick={toggleComplexityAiMaximized}
-              className="p-2 md:p-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-500 focus:ring-opacity-75 animate-bounce-slow"
+              className="p-3 md:p-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-500 focus:ring-opacity-75 animate-bounce-slow"
               title="Analyse Time and Space Complexity of Current Code"
-              style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '78px', height: '78px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Zap className="h-5 md:h-8 w-5 md:w-8" />
+              <Zap className="h-8 md:h-10 w-8 md:w-10" />
             </button>
 
             {/* Existing Floating AI Chat Button */}
             <button
               onClick={toggleAiMaximized}
-              className="p-2 md:p-4 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-75 animate-bounce-slow"
+              className="p-3 md:p-4 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-75 animate-bounce-slow"
               title="Open AI Chat"
-              style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '78px', height: '78px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Bot className="h-5 md:h-8 w-5 md:w-8" />
+              <Bot className="h-8 md:h-10 w-8 md:w-10" />
             </button>
           </div>
         </div>
