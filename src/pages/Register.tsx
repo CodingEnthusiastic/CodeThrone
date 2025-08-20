@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Code, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 // Animated stars + bubbles background for dark mode
 const StarField: React.FC = () => {
@@ -260,22 +261,65 @@ const Register: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
+    console.log('📝 Starting registration process...');
+    console.log('📊 Form data:', { username, email, password: '[HIDDEN]' });
+
     if (password !== confirmPassword) {
+      console.log('❌ Password mismatch');
       setError('Passwords do not match');
       return;
     }
 
     setLoading(true);
+    console.log('🔄 Setting loading state to true');
 
-    // Simulate registration
-    setTimeout(() => {
+    try {
+      console.log('🌐 Making API request to register...');
+      console.log('📍 API URL:', API_URL);
+
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          role: 'user'
+        }),
+      });
+
+      console.log('📡 Response received:', response.status, response.statusText);
+
+      const data = await response.json();
+      console.log('📋 Response data:', data);
+
+      if (response.ok) {
+        console.log('✅ Registration successful!');
+        // Store token in localStorage
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          console.log('🔐 Token stored in localStorage');
+        }
+        alert('Account created successfully! You can now login.');
+        // Optionally redirect to login or dashboard
+        // window.location.href = '/login';
+      } else {
+        console.log('❌ Registration failed:', data.message);
+        setError(data.message || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('❌ Network error during registration:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
       setLoading(false);
-      alert('Account created successfully! (Demo)');
-    }, 2000);
+      console.log('🔄 Setting loading state to false');
+    }
   };
 
   return (
@@ -407,7 +451,7 @@ const Register: React.FC = () => {
               <span className="text-gray-600 dark:text-gray-400">Already have an account? </span>
               <button 
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-semibold transition-colors duration-200"
-                onClick={() => alert('Redirect to login (Demo)')}
+                onClick={() => window.location.href = '/login'}
               >
                 Sign in
               </button>
