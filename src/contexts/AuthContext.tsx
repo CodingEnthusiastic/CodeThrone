@@ -4,6 +4,7 @@ import { API_URL } from '../config/api';
 
 interface User {
   id: string;
+  _id?: string; // Add optional _id for MongoDB compatibility
   username: string;
   email: string;
   role: string;
@@ -13,7 +14,8 @@ interface User {
     avatar?: string;
     firstName?: string;
     lastName?: string;
-  };
+  }; 
+
   ratings?: {
     gameRating: number;
   };
