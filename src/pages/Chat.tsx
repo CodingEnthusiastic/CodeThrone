@@ -420,6 +420,29 @@ const Chat: React.FC = () => {
     }
   }, [socket, rooms, connectionStatus])
 
+  // Initialize mobile responsiveness
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768
+      
+      // On mobile screens, ensure proper initial state
+      if (isMobile && activeRoom && !isSidebarShrunk) {
+        setIsSidebarShrunk(true)
+        setIsSidebarOpen(false)
+      } else if (!isMobile && isSidebarShrunk) {
+        setIsSidebarShrunk(false)
+        setIsSidebarOpen(true)
+      }
+    }
+
+    // Check on mount
+    handleResize()
+    
+    // Listen for resize events
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [activeRoom, isSidebarShrunk])
+
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!roomName.trim() || !token) return
@@ -794,17 +817,27 @@ const Chat: React.FC = () => {
       }`}
       style={{ height: "calc(100vh - 64px)" }}
     >
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`fixed top-16 left-4 z-50 p-2.5 rounded-xl shadow-lg transition-all duration-300 lg:hidden ${
-          isDark
-            ? 'bg-slate-800/90 text-white border border-slate-700 hover:bg-slate-700'
-            : 'bg-white/90 text-gray-900 border border-gray-200 hover:bg-gray-50'
-        } backdrop-blur-sm`}
-      >
-        {isSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-      </button>
+      {/* Sticky Back to Chats Button - Mobile Only */}
+      {activeRoom && (
+        <button
+          onClick={() => {
+            setIsSidebarShrunk(false);
+            setIsSidebarOpen(true);
+            setActiveRoom(null); // Optional: clear active room to go back to room list
+          }}
+          className={`md:hidden fixed top-20 left-4 z-50 flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${
+            isDark
+              ? 'bg-slate-800/95 text-white border border-slate-600 hover:bg-purple-600 hover:border-purple-500'
+              : 'bg-white/95 text-gray-800 border border-gray-300 hover:bg-blue-600 hover:text-white hover:border-blue-500'
+          } backdrop-blur-sm`}
+          title="Back to Chats"
+        >
+          <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span className="text-sm font-medium">Back</span>
+        </button>
+      )}
 
       {/* Sidebar Overlay for Mobile */}
       {isSidebarOpen && (
@@ -1112,7 +1145,13 @@ const Chat: React.FC = () => {
               key={room._id}
               onClick={() => {
                 setActiveRoom(room)
-                setIsSidebarOpen(false) // Close sidebar on mobile after selection
+                // On mobile (screen width < md), shrink sidebar to show mobile overlay
+                if (window.innerWidth < 768) {
+                  setIsSidebarShrunk(true)
+                  setIsSidebarOpen(false)
+                } else {
+                  setIsSidebarOpen(false) // Close sidebar on mobile after selection
+                }
               }}
               className={`w-full ${isSidebarShrunk ? 'p-2' : 'p-4'} text-left border-b flex items-center ${isSidebarShrunk ? 'justify-center' : 'space-x-3'} transition-all duration-200 ${
                 isDark
@@ -1189,54 +1228,42 @@ const Chat: React.FC = () => {
       }`}>
         {/* Mobile Chat Overlay - Show when sidebar is shrunk */}
         {isSidebarShrunk && activeRoom && (
-          <div className="fixed inset-0 z-50 bg-white dark:bg-slate-900 flex flex-col md:hidden">
-            {/* Mobile Chat Header with Expand Button */}
-            <div className={`p-4 border-b backdrop-blur-xl shadow-lg flex items-center justify-between ${
+          <div className="fixed inset-0 z-40 bg-white dark:bg-slate-900 flex flex-col md:hidden">
+            {/* Mobile Chat Header */}
+            <div className={`p-4 border-b backdrop-blur-xl shadow-lg flex items-center justify-center ${
               isDark
                 ? "border-slate-700 bg-slate-800/80"
                 : "border-gray-200 bg-white/80"
             }`}>
-              <button
-                onClick={() => setIsSidebarShrunk(false)}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  isDark
-                    ? 'text-slate-400 hover:text-purple-400 hover:bg-slate-700'
-                    : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
-                }`}
-                title="Show sidebar"
-              >
-                <Maximize2 className="h-5 w-5" />
-              </button>
               <div className="flex items-center space-x-3">
                 <div className={`p-2 rounded-lg ${
                   isDark ? 'bg-slate-700' : 'bg-gray-100'
                 }`}>
                   {getRoomIcon(activeRoom)}
                 </div>
-                <div>
+                <div className="text-center">
                   <h2 className={`font-semibold text-lg ${
                     isDark ? "text-slate-100" : "text-gray-900"
                   }`}>
                     {activeRoom.name}
                   </h2>
-                  <p className={`text-sm ${
+                  <p className={`text-xs ${
                     isDark ? "text-slate-400" : "text-gray-600"
                   }`}>
                     {activeRoom.participants.length} members • {activeRoom.isPrivate ? (
                       <>
                         <Lock className="h-3 w-3 inline mr-1" />
-                        <span>Private Chat</span>
+                        <span>Private</span>
                       </>
                     ) : (
                       <>
                         <Users className="h-3 w-3 inline mr-1" />
-                        <span>Public Room</span>
+                        <span>Public</span>
                       </>
                     )}
                   </p>
                 </div>
               </div>
-              <div /> {/* Spacer */}
             </div>
             
             {/* Mobile Chat Content */}
@@ -1335,8 +1362,8 @@ const Chat: React.FC = () => {
                     ? "border-slate-700 bg-slate-800/80"
                     : "border-gray-200 bg-white/80"
                 }`}>
-                  <div className="flex items-end space-x-3">
-                    <div className="flex-1 relative">
+                  <div className="flex items-end space-x-2">
+                    <div className="flex-1 relative min-w-0">
                       <textarea
                         ref={messageInputRef}
                         value={newMessage}
@@ -1353,25 +1380,29 @@ const Chat: React.FC = () => {
                         rows={1}
                         placeholder={`Message ${activeRoom.name}...`}
                         disabled={!activeRoom || connectionStatus !== "connected" || isSendingMessage}
-                        className={`w-full px-3 py-2 sm:px-4 sm:py-3 pr-10 sm:pr-12 rounded-xl border transition-all duration-200 resize-none disabled:opacity-60 disabled:cursor-not-allowed text-sm sm:text-base ${
+                        className={`w-full px-3 py-3 rounded-xl border transition-all duration-200 resize-none disabled:opacity-60 disabled:cursor-not-allowed text-base ${
                           isDark
                             ? "bg-slate-700 text-slate-100 border-slate-600 focus:border-purple-500 placeholder-slate-400"
                             : "bg-white text-gray-900 border-gray-300 focus:border-blue-500 placeholder-gray-500"
                         } focus:ring-2 focus:ring-opacity-50`}
-                        style={{ minHeight: '48px', maxHeight: '120px' }}
+                        style={{ 
+                          minHeight: '48px', 
+                          maxHeight: '120px',
+                          paddingRight: '60px' // Make room for send button
+                        }}
                       />
                     </div>
                     <button
                       onClick={sendMessage}
                       disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected" || isSendingMessage}
-                      className={`p-2 sm:p-3 rounded-xl transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-105 ${
+                      className={`flex-shrink-0 p-3 rounded-xl transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-105 ${
                         isDark
                           ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                           : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                      } shadow-lg hover:shadow-xl`}
+                      } shadow-lg hover:shadow-xl min-w-[48px] min-h-[48px] flex items-center justify-center`}
                       title="Send Message"
                     >
-                      <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <Send className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
@@ -1695,8 +1726,8 @@ const Chat: React.FC = () => {
               </div>
             )}
 
-            <div className="flex items-end space-x-3">
-              <div className="flex-1 relative">
+            <div className="flex items-end space-x-2">
+              <div className="flex-1 relative min-w-0">
                 <textarea
                   ref={messageInputRef}
                   value={newMessage}
@@ -1713,7 +1744,7 @@ const Chat: React.FC = () => {
                   rows={1}
                   placeholder={activeRoom ? `Message ${activeRoom.name}...` : "Select a room to start chatting"}
                   disabled={!activeRoom || connectionStatus !== "connected" || isSendingMessage}
-                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 pr-10 sm:pr-12 rounded-xl border transition-all duration-200 resize-none disabled:opacity-60 disabled:cursor-not-allowed text-sm sm:text-base ${
+                  className={`w-full px-3 py-3 pr-12 rounded-xl border transition-all duration-200 resize-none disabled:opacity-60 disabled:cursor-not-allowed text-base ${
                     isDark
                       ? "bg-slate-700 text-slate-100 border-slate-600 focus:border-purple-500 placeholder-slate-400"
                       : "bg-white text-gray-900 border-gray-300 focus:border-blue-500 placeholder-gray-500"
@@ -1725,14 +1756,14 @@ const Chat: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className={`absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 p-1 sm:p-1.5 rounded-lg transition-all duration-200 ${
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 ${
                     isDark
                       ? "text-slate-400 hover:text-slate-200 hover:bg-slate-600"
                       : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                   title="Add Emoji"
                 >
-                  <Smile className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <Smile className="h-5 w-5" />
                 </button>
 
                 {/* Emoji Picker */}
@@ -1831,14 +1862,14 @@ const Chat: React.FC = () => {
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim() || !activeRoom || connectionStatus !== "connected" || isSendingMessage}
-                className={`p-2 sm:p-3 rounded-xl transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-105 ${
+                className={`flex-shrink-0 p-3 rounded-xl transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-105 ${
                   isDark
                     ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                     : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                } shadow-lg hover:shadow-xl`}
+                } shadow-lg hover:shadow-xl min-w-[48px] min-h-[48px] flex items-center justify-center`}
                 title="Send Message"
               >
-                <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Send className="h-5 w-5" />
               </button>
             </div>
 
