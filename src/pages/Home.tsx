@@ -797,7 +797,7 @@ const Home: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 relative ${
+      className={`h-screen overflow-y-auto transition-colors duration-300 relative ${
         isDark
           ? "bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900"
           : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
@@ -1375,7 +1375,7 @@ const Home: React.FC = () => {
       
       {/* Hero Section with Enhanced Carousel */}
       {/* Hero Section with Enhanced Carousel */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden min-h-screen">
         {isDark && !isMobile() ? (
           <StarsBackground />
         ) : (
@@ -1419,7 +1419,7 @@ const Home: React.FC = () => {
         </div>
 
         <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 pb-0 pt-0">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[700px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center h-screen">
             {/* Left Content */}
             <div className="z-10 space-y-8 card-animate-in">
               <div className="space-y-6">
