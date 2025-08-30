@@ -105,12 +105,15 @@ router.post('/random', authenticateToken, async (req, res) => {
 
       await game.save();
       
+      console.log('🔍 After joining - game questionSet:', game.questionSet.map(id => id.toString()));
+      
       // Populate and return
       game = await RapidFireGame.findById(game._id)
         .populate('players.user', 'username profile.avatar ratings.rapidFireRating')
         .populate('questionSet');
 
       console.log('✅ Joined rapid fire game successfully');
+      console.log('🔍 Populated game questionSet after join:', game.questionSet.length, 'questions');
       return res.json(game);
     }
 
@@ -119,6 +122,14 @@ router.post('/random', authenticateToken, async (req, res) => {
     
     const user = await User.findById(req.user.id);
     const questions = await getRandomQuestions();
+    
+    console.log('🔍 Generated questions sample:', {
+      count: questions.length,
+      firstQuestionId: questions[0]?._id,
+      firstQuestionText: questions[0]?.question?.substring(0, 50),
+      firstQuestionOptions: questions[0]?.options?.length,
+      questionTypes: questions.map(q => typeof q)
+    });
     
     game = new RapidFireGame({
       roomId: generateRoomId(),
@@ -140,6 +151,8 @@ router.post('/random', authenticateToken, async (req, res) => {
     });
 
     await game.save();
+    
+    console.log('🔍 Saved game questionSet:', game.questionSet.map(id => id.toString()));
     
     // Populate and return
     game = await RapidFireGame.findById(game._id)

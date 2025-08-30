@@ -542,17 +542,17 @@ const RapidFire: React.FC = () => {
       setActiveGame(gameState);
     });
 
-    newSocket.on("rapidfire-game-started", (data: { game: RapidFireGame; timeLimit: number }) => {
+    newSocket.on("rapidfire-game-started", (data: any) => {
       console.log("🚀 Rapid fire game started:", data);
-      console.log("🎯 Questions available:", data.game.questionSet?.length || 0);
+      console.log("🎯 Questions available:", data.questionSet?.length || 0);
       
-      // Debug the questionSet structure
-      if (data.game.questionSet && data.game.questionSet.length > 0) {
-        console.log("📊 Game started - questionSet type:", typeof data.game.questionSet[0]);
-        console.log("📊 First question in started game:", data.game.questionSet[0]);
+      // BULLETPROOF: Handle new backend format - direct object with questionSet
+      if (data.questionSet && data.questionSet.length > 0) {
+        console.log("📊 Game started - questionSet type:", typeof data.questionSet[0]);
+        console.log("📊 First question in started game:", data.questionSet[0]);
         
         // Enhanced debug logging for question structure
-        const firstQuestion = data.game.questionSet[0];
+        const firstQuestion = data.questionSet[0];
         console.log("🔍 First question detailed structure:", {
           id: firstQuestion._id,
           question: firstQuestion.question,
@@ -563,12 +563,23 @@ const RapidFire: React.FC = () => {
         });
       }
       
-      if (!data.game.questionSet || data.game.questionSet.length === 0) {
+      if (!data.questionSet || data.questionSet.length === 0) {
         console.error("❌ No questions in started game!");
         return;
       }
       
-      setActiveGame(data.game);
+      // BULLETPROOF: Use the complete game object from backend (it has everything)
+      console.log("✅ Setting complete game data:", {
+        hasQuestionSet: !!data.questionSet,
+        questionCount: data.questionSet?.length,
+        hasPlayers: !!data.players,
+        playersCount: data.players?.length,
+        roomCode: data.roomCode,
+        gameId: data._id,
+        hasGameId: !!data._id
+      });
+      
+      setActiveGame(data as any);
       setGameStarted(true);
       setTimeRemaining(data.timeLimit);
       setCurrentQuestionIndex(0); // Reset to first question
@@ -580,8 +591,9 @@ const RapidFire: React.FC = () => {
       setActiveGame(payload.game);
     });
 
-    newSocket.on("rapidfire-answer-result", (result: AnswerResult) => {
-      console.log("📝 Rapid fire answer result:", result);
+    // BULLETPROOF: Handle answer submission result
+    newSocket.on("answer-submitted", (result: any) => {
+      console.log("📝 Answer submitted result:", result);
       setShowResult(true);
       
       // Show result for 2 seconds, then move to next question
@@ -717,12 +729,36 @@ const RapidFire: React.FC = () => {
     const timeSpent = Math.floor((Date.now() - questionStartTime.current) / 1000);
     const currentQuestion = activeGame?.questionSet[currentQuestionIndex];
     
-    if (socketRef.current && currentQuestion) {
+    console.log("🎯 BULLETPROOF Answer Submit Debug:", {
+      hasActiveGame: !!activeGame,
+      gameId: activeGame?._id,
+      currentQuestionIndex,
+      hasCurrentQuestion: !!currentQuestion,
+      questionId: currentQuestion?._id,
+      optionIndex,
+      timeSpent
+    });
+    
+    if (socketRef.current && currentQuestion && activeGame?._id) {
+      console.log("📝 Submitting answer:", {
+        gameId: activeGame._id,
+        questionIndex: currentQuestionIndex, // FIXED: Send questionIndex instead of questionId
+        selectedOption: optionIndex,
+        timeSpent,
+        questionId: currentQuestion._id // For debugging
+      });
+      
       socketRef.current.emit("submit-rapidfire-answer", {
         gameId: activeGame._id,
-        questionId: currentQuestion._id,
+        questionIndex: currentQuestionIndex, // FIXED: Backend expects questionIndex
         selectedOption: optionIndex,
         timeSpent
+      });
+    } else {
+      console.error("❌ Cannot submit answer:", {
+        hasSocket: !!socketRef.current,
+        hasQuestion: !!currentQuestion,
+        hasGameId: !!activeGame?._id
       });
     }
   }, [showResult, selectedAnswer, activeGame, currentQuestionIndex]);
