@@ -9,6 +9,8 @@ import ProblemDetail from './pages/ProblemDetail';
 import Discussion from './pages/Discussion';
 import DiscussionDetail from './pages/DiscussionDetail';
 import Game from './pages/Game';
+import GameMain from './pages/GameMain';
+import RapidFire from './pages/RapidFire';
 import Contest from './pages/Contest';
 import Interview from './pages/Interview';
 import Profile from './pages/Profile';
@@ -437,8 +439,11 @@ const AppRoutes = () => {
             <Route path="/chats" element={<Chat />} />
             <Route path="/top" element={<Discussion />} />
             <Route path="/top/:id" element={<DiscussionDetail />} />
-            <Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>} />
+            <Route path="/game" element={<ProtectedRoute><GameMain /></ProtectedRoute>} />
+            <Route path="/game/coding" element={<ProtectedRoute><Game /></ProtectedRoute>} />
             <Route path="/game/play/:gameId" element={<ProtectedRoute><Game /></ProtectedRoute>} />
+            <Route path="/rapidfire" element={<ProtectedRoute><RapidFire /></ProtectedRoute>} />
+            <Route path="/rapidfire/play/:gameId" element={<ProtectedRoute><RapidFire /></ProtectedRoute>} />
             <Route path="/contest" element={<Contest />} />
             <Route path="/contest/:id/problems" element={<ContestProblems />} />
             <Route path="/contest/:id/problem/:problemId" element={<ContestProblemDetail />} />

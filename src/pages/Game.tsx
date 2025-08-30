@@ -85,46 +85,46 @@ const GameEndModal: React.FC<{
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4 text-center">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full mx-4 text-center border border-gray-200 dark:border-gray-700 transition-colors duration-200">
         {isWinner ? (
           <div>
-            <Medal className="h-20 w-20 text-yellow-500 mx-auto mb-4 animate-bounce" />
-            <h1 className="text-3xl font-bold text-green-600 mb-2">🎉 Victory! 🎉</h1>
-            <p className="text-gray-600 mb-4">Congratulations! You solved the problem first!</p>
-            <div className="bg-green-50 p-4 rounded-lg mb-4">
-              <p className="text-green-800 font-semibold">
+            <Medal className="h-20 w-20 text-yellow-500 dark:text-yellow-400 mx-auto mb-4 animate-bounce" />
+            <h1 className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">🎉 Victory! 🎉</h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">Congratulations! You solved the problem first!</p>
+            <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg mb-4 border border-green-200 dark:border-green-700">
+              <p className="text-green-800 dark:text-green-300 font-semibold">
                 Rating Change: {(currentPlayer?.ratingAfter || 0) - (currentPlayer?.ratingBefore || 0) > 0 ? "+" : ""}
                 {(currentPlayer?.ratingAfter || 0) - (currentPlayer?.ratingBefore || 0)}
               </p>
-              <p className="text-green-700 text-sm">New Rating: {currentPlayer?.ratingAfter || "N/A"}</p>
+              <p className="text-green-700 dark:text-green-400 text-sm">New Rating: {currentPlayer?.ratingAfter || "N/A"}</p>
             </div>
           </div>
         ) : (
           <div>
-            <Heart className="h-20 w-20 text-pink-500 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-red-600 mb-2">Better Luck Next Time!</h1>
-            <p className="text-gray-600 mb-4">Don't give up! Every challenge makes you stronger.</p>
-            <div className="bg-red-50 p-4 rounded-lg mb-4">
-              <p className="text-red-800 font-semibold">
+            <Heart className="h-20 w-20 text-pink-500 dark:text-pink-400 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">Better Luck Next Time!</h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">Don't give up! Every challenge makes you stronger.</p>
+            <div className="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg mb-4 border border-red-200 dark:border-red-700">
+              <p className="text-red-800 dark:text-red-300 font-semibold">
                 Rating Change: {(currentPlayer?.ratingAfter || 0) - (currentPlayer?.ratingBefore || 0) > 0 ? "+" : ""}
                 {(currentPlayer?.ratingAfter || 0) - (currentPlayer?.ratingBefore || 0)}
               </p>
-              <p className="text-red-700 text-sm">New Rating: {currentPlayer?.ratingAfter || "N/A"}</p>
+              <p className="text-red-700 dark:text-red-400 text-sm">New Rating: {currentPlayer?.ratingAfter || "N/A"}</p>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <h3 className="font-semibold text-sm">Your Score</h3>
-            <p className="text-lg font-bold text-blue-600">
+          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+            <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">Your Score</h3>
+            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
               {currentPlayer?.testCasesPassed || 0}/{currentPlayer?.totalTestCases || 0}
             </p>
           </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <h3 className="font-semibold text-sm">Opponent Score</h3>
-            <p className="text-lg font-bold text-purple-600">
+          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+            <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">Opponent Score</h3>
+            <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
               {opponentPlayer?.testCasesPassed || 0}/{opponentPlayer?.totalTestCases || 0}
             </p>
           </div>
@@ -132,7 +132,7 @@ const GameEndModal: React.FC<{
 
         <button
           onClick={handleClose}
-          className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors"
+          className="bg-blue-600 dark:bg-blue-700 text-white px-6 py-3 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
         >
           Back to Home page
         </button>
@@ -185,23 +185,23 @@ const GameStatusCard: React.FC<{
 
   const getStatusColor = () => {
     if (searchingForMatch || (activeGame && activeGame.players.length === 1)) {
-      return "bg-yellow-50 border-yellow-200 text-yellow-800"
+      return "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200"
     }
     
     if (!socketConnected) {
-      return "bg-red-50 border-red-200 text-red-800"
+      return "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200"
     }
     
     if (gameStarted) {
-      return "bg-green-50 border-green-200 text-green-800"
+      return "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-800 dark:text-green-200"
 
     }
     
-    return "bg-blue-50 border-blue-200 text-blue-800"
+    return "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200"
   }
 
   return (
-    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border-2 shadow-lg ${getStatusColor()} max-w-xs`}>
+    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border-2 shadow-lg transition-colors duration-200 ${getStatusColor()} max-w-xs`}>
       <div className="flex items-center space-x-2">
         {(searchingForMatch || (activeGame && activeGame.players.length === 1)) && (
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
@@ -210,7 +210,7 @@ const GameStatusCard: React.FC<{
       </div>
       
       {activeGame && (
-        <div className="mt-2 space-y-1 text-sm">
+        <div className="mt-2 space-y-1 text-sm opacity-90">
           <p>Players: {activeGame.players.length}/2</p>
           {activeGame.problem && activeGame.players.length === 2 && (
             <p>Problem: {activeGame.problem.title}</p>
@@ -248,7 +248,6 @@ const Game: React.FC = () => {
 
   const socketRef = useRef<any>(null)
   const [socketConnected, setSocketConnected] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const timerRef = useRef<number | null>(null)
 
   // ✅ FIXED: Check URL params for direct game access on component mount
@@ -464,7 +463,7 @@ useEffect(() => {
   });
 
   // 9️⃣ PROGRESS / SUBMISSIONS / FINISH
-  socketRef.current.on("player-progress", (d) => {
+  socketRef.current.on("player-progress", (d: any) => {
     if (d.playerId !== user.id) {
       setOpponentProgress({ testCasesPassed: d.testCasesPassed, totalTestCases: d.totalTestCases });
     }
@@ -482,7 +481,7 @@ useEffect(() => {
     setSubmitting(false);
   });
 
-  socketRef.current.on("game-finished", (data) => {
+  socketRef.current.on("game-finished", (data: any) => {
     console.log("🏁 game-finished:", data);
     setGameFinished(true);
     setGameStarted(false);
@@ -851,7 +850,6 @@ int main() {
   }, 25000) // 25 second timeout
 
   // Clear timeout if submission completes
-  const originalOn = socketRef.current.on
   const onSubmissionResult = (result: any) => {
     clearTimeout(submitTimeout)
     console.log("📝 Submission result received:", result)
@@ -1215,7 +1213,7 @@ const getOpponentPlayer = () => {
       timeRemaining,
     })
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
         {/* Game Status Card */}
         <GameStatusCard
           activeGame={activeGame}
@@ -1226,14 +1224,14 @@ const getOpponentPlayer = () => {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Game Header */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                   {activeGame.gameMode === "random" ? "Random Match" : `Room: ${activeGame.roomId}`}
                 </h1>
                 {activeGame.players.length === 2 && activeGame.problem && (
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 dark:text-gray-300">
                     Problem: {activeGame.problem?.title}
                     {activeGame.problem && (
                       <span
@@ -1247,25 +1245,25 @@ const getOpponentPlayer = () => {
                 <div className="flex items-center space-x-4 mt-2">
                   <span
                     className={`text-sm px-2 py-1 rounded ${
-                      activeGame.status === "ongoing" ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"
+                      activeGame.status === "ongoing" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200" : "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200"
                     }`}
                   >
                     {activeGame.status === "ongoing" ? "Game Active" : "Waiting for players"}
                   </span>
-                  <span className="text-sm text-gray-600">Players: {activeGame.players.length}/2</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Players: {activeGame.players.length}/2</span>
                 </div>
               </div>
               <div className="text-right">
-                <div className="flex items-center text-red-600 mb-2">
+                <div className="flex items-center text-red-600 dark:text-red-400 mb-2">
                   <Clock className="h-5 w-5 mr-2" />
                   <span className="text-xl font-mono">{formatTime(timeRemaining)}</span>
                 </div>
-                <p className="text-sm text-gray-500">Time Limit: {activeGame.timeLimit} minutes</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Time Limit: {activeGame.timeLimit} minutes</p>
                 {!gameStarted && activeGame.players.length < 2 && (
-                  <p className="text-sm text-orange-600 mt-1">Waiting for opponent...</p>
+                  <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">Waiting for opponent...</p>
                 )}
                 {!gameStarted && activeGame.players.length === 2 && (
-                  <p className="text-sm text-green-600 mt-1">Starting game...</p>
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">Starting game...</p>
                 )}
               </div>
             </div>
@@ -1273,7 +1271,7 @@ const getOpponentPlayer = () => {
             <div className="mt-4 flex justify-end">
               <button
                 onClick={resetGame}
-                className="flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                className="flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Leave Game
@@ -1283,21 +1281,21 @@ const getOpponentPlayer = () => {
 
           {/* Players Progress */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{user?.username} (You)</h3>
-                  <p className="text-sm text-gray-600">Rating: {currentPlayer?.user.ratings?.gameRating || 1200}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{user?.username} (You)</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Rating: {currentPlayer?.user.ratings?.gameRating || 1200}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {currentPlayer?.testCasesPassed || 0}/{currentPlayer?.totalTestCases || 0}
                   </div>
-                  <p className="text-sm text-gray-500">Tests passed</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Tests passed</p>
                 </div>
               </div>
 
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{
@@ -1311,23 +1309,23 @@ const getOpponentPlayer = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     {opponentPlayer?.user.username || "Waiting for opponent..."}
                   </h3>
-                  <p className="text-sm text-gray-600">Rating: {opponentPlayer?.user.ratings?.gameRating || "N/A"}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Rating: {opponentPlayer?.user.ratings?.gameRating || "N/A"}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                     {opponentProgress.testCasesPassed}/{opponentProgress.totalTestCases || 0}
                   </div>
-                  <p className="text-sm text-gray-500">Tests passed</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Tests passed</p>
                 </div>
               </div>
 
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-purple-600 h-2 rounded-full transition-all duration-300"
                   style={{
@@ -1448,12 +1446,12 @@ const getOpponentPlayer = () => {
 
                 {/* Debug info for submit button */}
                 {!isSubmitEnabled() && (
-                   <div className="text-xs text-gray-500 flex items-center flex-wrap">
+                   <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center flex-wrap">
                     {!code.trim() && <span className="mr-2">No code</span>}
                     {gameFinished && <span className="mr-2">Game finished</span>}
                     {!gameStarted && <span className="mr-2">Game not started</span>}
                     {submitting && <span className="mr-2">Submitting</span>}
-                    {!(socketRef.current?.connected) && <span className="mr-2 text-red-600 font-semibold">Socket disconnected</span>}
+                    {!(socketRef.current?.connected) && <span className="mr-2 text-red-600 dark:text-red-400 font-semibold">Socket disconnected</span>}
                     {activeGame?.players?.length !== 2 && <span className="mr-2">Need 2 players</span>}
                     {activeGame?.status !== "ongoing" && <span className="mr-2">Game not ongoing</span>}
                   </div>
@@ -1462,16 +1460,16 @@ const getOpponentPlayer = () => {
 
               {/* Submission Result */}
               {submissionResult && (
-                <div className="p-4 border border-gray-200 rounded-lg">
+                <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
                   <div className="flex items-center mb-4">
                     {submissionResult.status === "Accepted" ? (
-                      <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
                     ) : (
-                      <XCircle className="h-5 w-5 text-red-600 mr-2" />
+                      <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 mr-2" />
                     )}
                     <span
                       className={`font-semibold ${
-                        submissionResult.status === "Accepted" ? "text-green-600" : "text-red-600"
+                        submissionResult.status === "Accepted" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                       }`}
                     >
                       {submissionResult.status}
@@ -1479,27 +1477,27 @@ const getOpponentPlayer = () => {
                   </div>
 
                   <div className="text-sm mb-4">
-                    <span className="text-gray-600">Test Cases:</span>
-                    <span className="ml-2 font-medium">
+                    <span className="text-gray-600 dark:text-gray-300">Test Cases:</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">
                       {submissionResult.passedTests}/{submissionResult.totalTests}
                     </span>
                   </div>
                   {submissionResult.testResults.length > 0 && (
                     <div>
-                      <h4 className="font-semibold mb-2">Test Results:</h4>
+                      <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Test Results:</h4>
                       <div className="space-y-2">
                         {submissionResult.testResults.map((result, index) => (
                           <div key={index} className="text-sm">
                             <div className="flex items-center">
                               {result.passed ? (
-                                <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mr-2" />
                               ) : (
-                                <XCircle className="h-4 w-4 text-red-600 mr-2" />
+                                <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 mr-2" />
                               )}
-                              <span>Test Case {index + 1}</span>
+                              <span className="text-gray-900 dark:text-gray-100">Test Case {index + 1}</span>
                             </div>
                             {!result.passed && (
-                              <div className="ml-6 mt-2 text-xs text-gray-600">
+                              <div className="ml-6 mt-2 text-xs text-gray-600 dark:text-gray-400">
                                 <div>Expected: {result.expectedOutput}</div>
                                 <div>Got: {result.actualOutput}</div>
                               </div>
@@ -1820,26 +1818,26 @@ const getOpponentPlayer = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <Gamepad2 className="h-16 w-16 text-blue-600" />
+            <Gamepad2 className="h-16 w-16 text-blue-600 dark:text-blue-400" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Game Mode</h1>
-          <p className="text-xl text-gray-600">Challenge other programmers in real-time coding battles</p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Game Mode</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-300">Challenge other programmers in real-time battles</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Random Match */}
-          <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="h-8 w-8 text-blue-600" />
+              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Zap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Random Match</h2>
-              <p className="text-gray-600">Get matched with another player instantly</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Random Match</h2>
+              <p className="text-gray-600 dark:text-gray-300">Get matched with another player instantly</p>
             </div>
 
             <div className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">How it works:</h3>
-                <ul className="text-sm text-gray-600 space-y-1">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600 transition-colors duration-200">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">How it works:</h3>
+                <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                   <li>• Random difficulty problems (Easy, Medium, Hard)</li>
                   <li>• Dynamic time limits based on difficulty</li>
                   <li>• ELO-based rating system</li>
@@ -1850,34 +1848,34 @@ const getOpponentPlayer = () => {
               <button
                 onClick={findRandomMatch}
                 disabled={loading || searchingForMatch}
-                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 dark:bg-blue-700 text-white py-3 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {searchingForMatch ? "Searching for opponent..." : "Find Match"}
               </button>
 
               {user && (
-                <div className="text-center text-sm text-gray-500">Your rating: {user.ratings?.gameRating || 1200}</div>
+                <div className="text-center text-sm text-gray-500 dark:text-gray-400">Your rating: {user.ratings?.gameRating || 1200}</div>
               )}
             </div>
           </div>
 
           {/* Room Match */}
-          <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-green-600" />
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Room Match</h2>
-              <p className="text-gray-600">Create or join a room to play with friends</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Room Match</h2>
+              <p className="text-gray-600 dark:text-gray-300">Create or join a room to play with friends</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Difficulty</label>
                 <select
                   value={selectedDifficulty}
                   onChange={(e) => setSelectedDifficulty(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
                 >
                   <option value="Easy">Easy (30 mins)</option>
                   <option value="Medium">Medium (45 mins)</option>
@@ -1888,17 +1886,17 @@ const getOpponentPlayer = () => {
               <button
                 onClick={createRoom}
                 disabled={loading}
-                className="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-green-600 dark:bg-green-700 text-white py-3 rounded-md hover:bg-green-700 dark:hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Creating Room..." : "Create Room"}
               </button>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or</span>
+                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or</span>
                 </div>
               </div>
 
@@ -1908,14 +1906,14 @@ const getOpponentPlayer = () => {
                   placeholder="Enter room code"
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-200"
                 />
               </div>
 
               <button
                 onClick={joinRoom}
                 disabled={loading || !roomCode.trim()}
-                className="w-full bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-purple-600 dark:bg-purple-700 text-white py-3 rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Joining Room..." : "Join Room"}
               </button>

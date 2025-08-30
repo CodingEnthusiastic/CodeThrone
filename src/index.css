@@ -2,6 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Line clamp utility */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Responsive text sizing utilities */
+.text-responsive-hero {
+  font-size: clamp(2rem, 8vw, 4rem);
+  line-height: 1.1;
+}
+
+.text-responsive-subtitle {
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  line-height: 1.2;
+}
+
+.text-responsive-body {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  line-height: 1.6;
+}
+
+/* Responsive viewport utilities */
+.min-h-screen-safe {
+  min-height: calc(100vh - 80px);
+}
+
+.h-screen-safe {
+  height: calc(100vh - 80px);
+}
+
+/* Container utilities for all devices */
+.container-responsive {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
 /* Dark theme styles */
 .dark {
   color-scheme: dark;
@@ -510,4 +595,102 @@
 
 .dark .markdown-content pre::-webkit-scrollbar-thumb:hover {
   background: #777;
+}
+
+/* Rapid Fire Animations */
+@keyframes rapid-pulse {
+  0%, 100% { 
+    transform: scale(1) rotate(0deg); 
+    opacity: 0.6; 
+  }
+  50% { 
+    transform: scale(1.2) rotate(180deg); 
+    opacity: 1; 
+  }
+}
+
+@keyframes rapid-float {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg); 
+    opacity: 0.4; 
+  }
+  50% { 
+    transform: translateY(-20px) rotate(180deg); 
+    opacity: 0.8; 
+  }
+}
+
+.rapid-fire-dark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.rapid-fire-light {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Responsive fixes for tablet and foldable devices */
+@media screen and (max-width: 999px) {
+  /* Surface Duo and tablet optimizations */
+  .hero-carousel {
+    min-height: 250px !important;
+    max-height: 400px !important;
+  }
+  
+  /* Ensure proper scaling on tablet devices */
+  .hero-grid {
+    gap: 1rem !important;
+    padding: 1rem !important;
+  }
+  
+  /* Fix text scaling on smaller tablets */
+  .hero-title {
+    font-size: clamp(1.5rem, 4vw, 3rem) !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* Improve button spacing on mobile */
+  .hero-buttons {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* Surface Duo specific fixes */
+@media screen and (max-width: 720px) and (min-height: 480px) {
+  .carousel-container {
+    height: clamp(200px, 35vh, 300px) !important;
+  }
+  
+  .hero-content {
+    padding: 1rem !important;
+  }
+  
+  /* Ensure algorithm cards fit properly */
+  .algorithm-card {
+    width: 280px !important;
+    height: 220px !important;
+  }
+}
+
+/* Extra small devices optimization */
+@media screen and (max-width: 480px) {
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+  
+  .algorithm-card {
+    width: calc(100vw - 2rem) !important;
+    max-width: 320px !important;
+  }
 }

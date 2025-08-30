@@ -237,7 +237,15 @@ router.get('/global-leaderboard', async (req, res) => {
       .sort((a, b) => b.ratings.gameRating - a.ratings.gameRating)
       .slice(0, 5);
     console.log(topGame);
-    res.json({ topContest, topGame });
+    
+    // Sort by rapid fire rating and get top 5
+    const topRapidFire = users
+      .filter(u => typeof u.ratings?.rapidFireRating === 'number')
+      .sort((a, b) => b.ratings.rapidFireRating - a.ratings.rapidFireRating)
+      .slice(0, 5);
+    console.log(topRapidFire);
+    
+    res.json({ topContest, topGame, topRapidFire });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

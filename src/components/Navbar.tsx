@@ -2,20 +2,32 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Code, Menu, X, User, LogOut, Shield, Moon, Sun, Coins } from 'lucide-react';
+import { 
+  Code, 
+  Menu, 
+  X, 
+  User, 
+  LogOut, 
+  Shield, 
+  Moon, 
+  Sun, 
+  Coins,
+  ChevronDown
+} from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
     setIsProfileOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -24,9 +36,9 @@ const Navbar: React.FC = () => {
     { path: '/problems', label: 'Problems' },
     { path: '/top', label: 'Discuss' },
     { path: '/contest', label: 'Contest' },
-    { path: '/game', label: 'Game', special: true },
-    { path: '/interview', label: 'Interview', special: true },
-    { path: '/chats', label: 'ChatNCode' }
+    { path: '/game', label: 'Game' },
+    { path: '/interview', label: 'Interview' },
+    { path: '/chats', label: 'Chat' }
   ];
 
   // Emit game leave event when navigating away from game page
@@ -35,371 +47,355 @@ const Navbar: React.FC = () => {
       const event = new CustomEvent('gameNavigation', { detail: { leavingGame: true } });
       window.dispatchEvent(event);
     }
+    setIsMobileMenuOpen(false);
   };
 
   return (
-    <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4">
-        {/* Responsive flex: stack on mobile, row on desktop */}
-        <div className="flex flex-col md:flex-row items-stretch h-auto md:h-16">
-          {/* Mobile: Logo + User Controls in one row */}
-          <div className="flex md:hidden items-center justify-between py-2">
-            {/* Logo Section for Mobile */}
-            <Link 
-              to="/" 
-              onClick={() => handleNavigation('/')} 
-              className="flex items-center space-x-2 group transition-all duration-200 hover:scale-105"
-            >
-              <div className="p-1 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg group-hover:shadow-orange-500/25 transition-all duration-200">
-                <Code className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                CodeThrone
-              </span>
-            </Link>
+    <nav className={`sticky top-0 z-50 border-b transition-colors duration-200 ${
+      isDark 
+        ? 'bg-gray-800 border-gray-800' 
+        : 'bg-white border-gray-200'
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link 
+            to="/" 
+            onClick={() => handleNavigation('/')} 
+            className="flex items-center space-x-2 group"
+          >
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700">
+              <Code className="h-5 w-5 text-white" />
+            </div>
+            <span className={`text-xl font-bold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              CodeThrone
+            </span>
+          </Link>
 
-            {/* Mobile User Controls */}
-            <div className="flex items-center space-x-2">
-              {/* Theme Toggle - Mobile (always visible) */}
-              <button
-                onClick={toggleTheme}
-                className={`relative flex items-center p-1.5 rounded-lg border transition-all duration-200 hover:scale-105 group
-                  ${isDark
-                    ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 shadow-lg'
-                    : 'bg-gray-100 border-gray-300 hover:bg-gray-200 shadow-sm'
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-8">
+            {navItems.map((item) => {
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => handleNavigation(item.path)}
+                  className={`text-sm font-medium transition-colors duration-200 ${
+                    active
+                      ? isDark ? 'text-blue-400' : 'text-blue-600'
+                      : isDark ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
                   }`}
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                <div className="relative w-8 h-4 flex items-center">
-                  <Sun
-                    className={`absolute h-3 w-3 transition-all duration-300 ${
-                      isDark 
-                        ? 'text-gray-500 opacity-40 transform translate-x-0' 
-                        : 'text-yellow-500 opacity-100 transform translate-x-4'
-                    }`}
-                  />
-                  <Moon
-                    className={`absolute h-3 w-3 transition-all duration-300 ${
-                      isDark 
-                        ? 'text-blue-400 opacity-100 transform translate-x-4' 
-                        : 'text-gray-500 opacity-40 transform translate-x-0'
-                    }`}
-                  />
-                </div>
-              </button>
-
-              {user ? (
-                <>
-                  {/* Coins - Mobile */}
-                  <Link
-                    to="/redeem"
-                    className="flex items-center space-x-1 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 px-2 py-1.5 rounded-lg border border-yellow-200 dark:border-yellow-800 hover:from-yellow-100 hover:to-amber-100 dark:hover:from-yellow-900/30 dark:hover:to-amber-900/30 transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md group"
-                  >
-                    <Coins className="h-3 w-3 text-yellow-600 dark:text-yellow-400 group-hover:rotate-12 transition-transform duration-200" />
-                    <span className="text-xs font-bold text-yellow-700 dark:text-yellow-300 min-w-[16px] text-center">
-                      {user.coins || 0}
-                    </span>
-                  </Link>
-
-                  {/* Profile - Mobile */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsProfileOpen(!isProfileOpen)}
-                      className="flex items-center space-x-1 p-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 group"
-                    >
-                      {user.profile?.avatar && !user.profile.avatar.startsWith('default:') ? (
-                        <img
-                          src={user.profile.avatar}
-                          alt={user.username}
-                          className="w-7 h-7 rounded-lg object-cover border-2 border-gray-200 dark:border-gray-600 group-hover:border-orange-300 dark:group-hover:border-orange-500 transition-all duration-200"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-orange-500/25 transition-all duration-200">
-                          <span className="text-white text-xs font-bold">
-                            {user.profile?.avatar?.startsWith('default:')
-                              ? user.profile.avatar.replace('default:', '')
-                              : user.username.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                    </button>
-                    
-                    {/* Mobile Profile Dropdown */}
-                    {isProfileOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 border border-gray-200 dark:border-gray-700 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 animate-in slide-in-from-top-2 duration-200 z-50">
-                        {user.role === 'admin' && (
-                          <Link
-                            to="/admin"
-                            className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 transition-all duration-200"
-                            onClick={() => setIsProfileOpen(false)}
-                          >
-                            <Shield className="h-3 w-3 mr-2" />
-                            Admin Dashboard
-                          </Link>
-                        )}
-                        <Link
-                          to={`/profile/${user.username}`}
-                          className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
-                          onClick={() => setIsProfileOpen(false)}
-                        >
-                          <User className="h-3 w-3 mr-2" />
-                          View Profile
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
-                        >
-                          <LogOut className="h-3 w-3 mr-2" />
-                          Logout
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                /* Mobile Auth Buttons - when not logged in */
-                <>
-                  <Link
-                    to="/login"
-                    className="text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 shadow-lg hover:shadow-orange-500/25 hover:scale-105"
-                  >
-                    Register
-                  </Link>
-                </>
-              )}
-            </div>
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
 
-          {/* Desktop: Logo Section - Left, flush to left */}
-          <div className="hidden md:flex items-center min-w-0 flex-shrink-0 pl-0 mr-0 py-2 md:py-0">
-            <Link 
-              to="/" 
-              onClick={() => handleNavigation('/')} 
-              className="flex items-center space-x-2 group transition-all duration-200 hover:scale-105 ml-[-48px]"
-            >
-              <div className="p-1 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg group-hover:shadow-orange-500/25 transition-all duration-200">
-                <Code className="h-7 w-7 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                CodeThrone
-              </span>
-            </Link>
-          </div>
-
-          {/* Navigation Items - Center, bigger text, more space, more gap from left */}
-          <div className="flex-1 flex items-center justify-center ml-0 md:ml-24">
-            <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-1 border border-gray-200 dark:border-gray-700/50 backdrop-blur-sm overflow-x-auto md:overflow-visible">
-              {navItems.map((item) => {
-                const active = isActive(item.path);
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => handleNavigation(item.path)}
-                    className={`relative flex flex-col items-center px-3 md:px-6 py-2 md:py-3 rounded-lg text-base md:text-lg font-semibold transition-all duration-200 group min-w-[80px] md:min-w-[100px] ${
-                      active
-                        ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-700 shadow-sm border border-gray-200 dark:border-gray-600'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-white/60 dark:hover:bg-gray-700/60'
-                    }`}
-                  >
-                    <span
-                      className={
-                        item.special
-                          ? 'bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 dark:from-yellow-400 dark:via-yellow-300 dark:to-amber-400 font-semibold'
-                          : ''
-                      }
-                    >
-                      {item.label}
-                    </span>
-                    {item.special && (
-                      <span
-                        className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-yellow-400 dark:to-amber-400 text-white dark:text-gray-900 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide shadow-sm"
-                        style={{ transform: 'scale(0.75)', transformOrigin: 'top right' }}
-                      >
-                        New
-                      </span>
-                    )}
-                    {/* Replace orange dot with a bold bottom border for active tab */}
-                    {active && (
-                      <span className="absolute left-0 right-0 bottom-0 h-1 bg-orange-500 rounded-b-lg" style={{fontWeight: 700}} />
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-          
-          {/* Desktop User Section - Right, flush to right */}
-          <div className="hidden md:flex items-center space-x-2 md:space-x-4 min-w-0 flex-shrink-0 pl-2 py-2 md:py-0">
-            {/* Add extra gap before theme toggle */}
-            <div className="hidden md:block w-8 sm:w-12" />
+          {/* Desktop Right Section */}
+          <div className="hidden lg:flex items-center space-x-4">
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={`relative flex items-center p-2 rounded-xl border transition-all duration-200 hover:scale-105 group
-                ${isDark
-                  ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 shadow-lg'
-                  : 'bg-gray-100 border-gray-300 hover:bg-gray-200 shadow-sm'
-                }`}
+              className={`p-2 rounded-lg transition-colors duration-200 ${
+                isDark
+                  ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
               aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              <div className="relative w-10 h-5 flex items-center">
-                <Sun
-                  className={`absolute h-4 w-4 transition-all duration-300 ${
-                    isDark 
-                      ? 'text-gray-500 opacity-40 transform translate-x-0' 
-                      : 'text-yellow-500 opacity-100 transform translate-x-5'
-                  }`}
-                />
-                <Moon
-                  className={`absolute h-4 w-4 transition-all duration-300 ${
-                    isDark 
-                      ? 'text-blue-400 opacity-100 transform translate-x-5' 
-                      : 'text-gray-500 opacity-40 transform translate-x-0'
-                  }`}
-                />
-              </div>
+              {isDark ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
             </button>
 
-            {/* User Authentication Section */}
             {user ? (
               <div className="flex items-center space-x-3">
                 {/* Coins */}
                 <Link
                   to="/redeem"
-                  className="flex items-center space-x-2 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 px-4 py-2.5 rounded-xl border border-yellow-200 dark:border-yellow-800 hover:from-yellow-100 hover:to-amber-100 dark:hover:from-yellow-900/30 dark:hover:to-amber-900/30 transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md group"
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg border transition-colors duration-200 ${
+                    isDark
+                      ? 'bg-yellow-900/20 border-yellow-800 text-yellow-400 hover:bg-yellow-900/30'
+                      : 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100'
+                  }`}
                 >
-                  <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400 group-hover:rotate-12 transition-transform duration-200" />
-                  <span className="text-sm font-bold text-yellow-700 dark:text-yellow-300 min-w-[20px] text-center">
-                    {user.coins || 0}
-                  </span>
+                  <Coins className="h-4 w-4" />
+                  <span className="text-sm font-medium">{user.coins || 0}</span>
                 </Link>
 
                 {/* Profile Dropdown */}
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center space-x-3 p-2 pr-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 group"
+                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg border transition-colors duration-200 ${
+                      isDark
+                        ? 'border-gray-700 hover:bg-gray-800'
+                        : 'border-gray-200 hover:bg-gray-50'
+                    }`}
                   >
                     {user.profile?.avatar && !user.profile.avatar.startsWith('default:') ? (
                       <img
                         src={user.profile.avatar}
                         alt={user.username}
-                        className="w-9 h-9 rounded-xl object-cover border-2 border-gray-200 dark:border-gray-600 group-hover:border-orange-300 dark:group-hover:border-orange-500 transition-all duration-200"
+                        className="w-6 h-6 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-orange-500/25 transition-all duration-200">
-                        <span className="text-white text-sm font-bold">
-                          {user.profile?.avatar?.startsWith('default:')
-                            ? user.profile.avatar.replace('default:', '')
-                            : user.username.charAt(0).toUpperCase()}
-                        </span>
+                      <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                        <User className="h-3 w-3 text-white" />
                       </div>
                     )}
-                    <div className="hidden md:flex flex-col items-start">
-                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors duration-200">
-                        {user.username}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-500 capitalize">
-                        {user.role || 'Member'}
-                      </span>
-                    </div>
+                    <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {user.username}
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
                   </button>
                   
                   {isProfileOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 border border-gray-200 dark:border-gray-700 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 animate-in slide-in-from-top-2 duration-200 z-50">
+                    <div className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg border py-1 ${
+                      isDark
+                        ? 'bg-gray-800 border-gray-700'
+                        : 'bg-white border-gray-200'
+                    }`}>
                       {user.role === 'admin' && (
                         <Link
                           to="/admin"
-                          className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 transition-all duration-200"
+                          className={`flex items-center px-4 py-2 text-sm transition-colors ${
+                            isDark
+                              ? 'text-gray-300 hover:bg-gray-700'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
                           onClick={() => setIsProfileOpen(false)}
                         >
                           <Shield className="h-4 w-4 mr-3" />
                           Admin Dashboard
                         </Link>
                       )}
+                      
                       <Link
                         to={`/profile/${user.username}`}
-                        className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                        className={`flex items-center px-4 py-2 text-sm transition-colors ${
+                          isDark
+                            ? 'text-gray-300 hover:bg-gray-700'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
                         onClick={() => setIsProfileOpen(false)}
                       >
                         <User className="h-4 w-4 mr-3" />
-                        View Profile
+                        Profile
                       </Link>
-                      <hr className="my-2 border-gray-200 dark:border-gray-700" />
+                      
+                      <hr className={`my-1 ${isDark ? 'border-gray-700' : 'border-gray-200'}`} />
+                      
                       <button
                         onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
                         <LogOut className="h-4 w-4 mr-3" />
-                        Sign out
+                        Logout
                       </button>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="flex items-center space-x-2 md:space-x-3">
+              <div className="flex items-center space-x-3">
                 <Link
                   to="/login"
-                  className="text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className={`px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                    isDark
+                      ? 'text-gray-300 hover:text-white'
+                      : 'text-gray-700 hover:text-gray-900'
+                  }`}
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-orange-500/25 hover:scale-105"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors duration-200"
                 >
-                  Register
+                  Start Learning →
                 </Link>
               </div>
             )}
-
-            {/* Mobile menu toggle */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all duration-200"
-            >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className={`lg:hidden p-2 rounded-lg transition-colors duration-200 ${
+              isDark
+                ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 dark:border-gray-700 py-4 animate-in slide-in-from-top-2 duration-200">
-            <div className="space-y-1">
-              {navItems.map(item => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive(item.path)
-                      ? 'text-orange-600 bg-orange-50 dark:bg-orange-900/20'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-orange-600 hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
+        {/* Mobile Navigation Overlay */}
+        {isMobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            ></div>
+            
+            {/* Mobile Menu */}
+            <div className={`fixed top-0 left-0 w-80 h-full z-50 lg:hidden transform transition-transform duration-300 ${
+              isDark ? 'bg-gray-900 border-r border-gray-800' : 'bg-white border-r border-gray-200'
+            } shadow-2xl`}>
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
+                <Link 
+                  to="/" 
+                  className="flex items-center space-x-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <span className={item.special ? 'bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-yellow-400 dark:to-amber-400 font-semibold' : ''}>
-                    {item.label}
+                  <Code className="h-8 w-8 text-blue-600" />
+                  <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    CodeThrone
                   </span>
-                  {item.special && (
-                    <span className="bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-yellow-400 dark:to-amber-400 text-white dark:text-gray-900 text-xs font-bold px-2 py-1 rounded-full uppercase">
-                      New
-                    </span>
-                  )}
                 </Link>
-              ))}
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
+                    isDark
+                      ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Navigation Items */}
+              <div className="px-6 py-4 space-y-2">
+                {navItems.map((item) => {
+                  const active = isActive(item.path);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => handleNavigation(item.path)}
+                      className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                        active
+                          ? isDark ? 'text-blue-400 bg-blue-900/20' : 'text-blue-600 bg-blue-50'
+                          : isDark ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+              
+              {/* User Section */}
+              {user ? (
+                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
+                  <Link
+                    to="/redeem"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                      isDark
+                        ? 'text-yellow-400 hover:bg-gray-800'
+                        : 'text-yellow-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Coins className="h-4 w-4 mr-3" />
+                    Coins ({user.coins || 0})
+                  </Link>
+
+                  {user.role === 'admin' && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                        isDark
+                          ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Shield className="h-4 w-4 mr-3" />
+                      Admin
+                    </Link>
+                  )}
+                  
+                  <Link
+                    to={`/profile/${user.username}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                      isDark
+                        ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <User className="h-4 w-4 mr-3" />
+                    Profile
+                  </Link>
+                  
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+                  >
+                    <LogOut className="h-4 w-4 mr-3" />
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`block w-full px-4 py-3 text-center text-sm font-medium border rounded-lg transition-colors duration-200 ${
+                      isDark
+                        ? 'border-gray-700 text-gray-300 hover:bg-gray-800'
+                        : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block w-full px-4 py-3 text-center text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    Start Learning →
+                  </Link>
+                </div>
+              )}
+
+              {/* Theme Toggle */}
+              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800">
+                <button
+                  onClick={toggleTheme}
+                  className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    isDark
+                      ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  {isDark ? (
+                    <>
+                      <Sun className="h-4 w-4 mr-3" />
+                      Light Mode
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="h-4 w-4 mr-3" />
+                      Dark Mode
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </nav>

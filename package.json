@@ -43,7 +43,7 @@
     "react-router-dom": "^6.26.1",
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
-    "socket.io-client": "^4.7.5",
+    "socket.io-client": "^4.8.1",
     "three": "^0.178.0"
   },
   "devDependencies": {

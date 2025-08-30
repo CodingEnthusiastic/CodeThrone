@@ -795,6 +795,19 @@ const Home: React.FC = () => {
   );
   }
 
+  // Responsive logic for gap and text
+  const getResponsiveSettings = () => {
+    if (typeof window === 'undefined') return { gapClass: '', dynamicText: dynamicText, buttonGap: '' };
+    const width = window.innerWidth;
+    if (width >= 768 && width <= 1023) {
+      return { gapClass: 'mt-8', dynamicText: dynamicText, buttonGap: 'mt-8' };
+    }
+    if (width >= 1024 && width <= 1460) {
+      return { gapClass: '', dynamicText: 'Coding', buttonGap: '' };
+    }
+    return { gapClass: '', dynamicText: dynamicText, buttonGap: '' };
+  }
+
   return (
     <div
       className={`h-screen overflow-y-auto transition-colors duration-300 relative ${
@@ -1418,18 +1431,18 @@ const Home: React.FC = () => {
           <div className="absolute bottom-1/4 right-1/3 w-24 h-24 bg-gradient-to-br from-pink-400/10 to-orange-400/10 rounded-full blur-2xl floating-ball" style={{ animationDelay: '2s' }}></div>
         </div>
 
-        <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 pb-0 pt-6 md:pt-0">
+  <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 pb-0 pt-0 sm:pt-6 md:pt-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center h-screen">
             {/* Left Content */}
             <div className="z-10 space-y-8 card-animate-in">
-              <div className="space-y-6">
-                <h1 className="text-5xl md:text-8xl font-bold text-white leading-[1.2] relative elegant-float">
+              <div className="space-y-3">
+                <h1 className={`text-5xl md:text-8xl font-bold text-white leading-[1.2] relative elegant-float ${getResponsiveSettings().gapClass}`}>
                   <span className="relative inline-block premium-text-wave">
                     Master
                   </span>
                   <span className="block pb-3 relative overflow-hidden leading-[1.25]">
                     <span className="bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent gradient-text-shift font-extrabold relative">
-                      {dynamicText}
+                      {getResponsiveSettings().dynamicText}
                       <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent text-shimmer"></div>
                     </span>
                   </span>
@@ -1447,7 +1460,7 @@ const Home: React.FC = () => {
               </div>
 
               {!user ? (
-                <div className="flex flex-col sm:flex-row gap-4 card-animate-in" style={{ animationDelay: '0.4s' }}>
+                <div className={`flex flex-col sm:flex-row gap-4 card-animate-in ${getResponsiveSettings().buttonGap}`} style={{ animationDelay: '0.4s' }}>
                   <Link
                     to="/register"
                     className="group relative overflow-hidden bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all duration-300 inline-flex items-center justify-center shadow-2xl hover:shadow-white/25 hover:scale-105 magnetic-hover"
@@ -1472,7 +1485,7 @@ const Home: React.FC = () => {
                   </Link>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row gap-4 card-animate-in" style={{ animationDelay: '0.4s' }}>
+                <div className={`flex flex-col sm:flex-row gap-4 card-animate-in ${getResponsiveSettings().buttonGap}`} style={{ animationDelay: '0.4s' }}>
                   <Link
                     to="/problems"
                     className="group relative overflow-hidden bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all duration-300 inline-flex items-center justify-center shadow-2xl hover:shadow-white/25 hover:scale-105 magnetic-hover"
@@ -1499,83 +1512,84 @@ const Home: React.FC = () => {
             </div>
 
             {/* Right Carousel */}
-            <div className="relative card-animate-in" style={{ animationDelay: '0.6s' }}>
-              <div className="relative h-96 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm border border-white/20">
-                {carouselItems.map((item, index) => (
-                  <div
-                    key={index}
-                    className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                      index === currentSlide ? "opacity-100 scale-100" : "opacity-0 scale-95"
-                    }`}
-                  >
-                    <div className="relative h-full">
-                      <img
-                        src={item.image || "/placeholder.svg"}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent gradient-animate"></div>
-                      <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                        <h3 className="text-3xl font-bold mb-3 text-red-180 text-glow-effect">
-                          {item.title}
-                        </h3>
-                        <p className="text-white/90 mb-4 text-lg leading-relaxed">{item.description}</p>
-                        <div className="flex flex-wrap gap-3">
-                          {item.features.map((feature, idx) => (
-                            <span
-                              key={idx}
-                              className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium border border-white/30 hover:scale-105 transition-transform duration-300"
-                            >
-                              {feature}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Enhanced Carousel Indicators */}
-              <div className="flex justify-center mt-6 space-x-3">
-                {carouselItems.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`transition-all duration-300 rounded-full ${
-                      index === currentSlide ? "w-8 h-3 bg-white shadow-lg" : "w-3 h-3 bg-white/50 hover:bg-white/70"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* Enhanced Quick Stats */}
-              <div className="mt-8">
-                <div className="grid grid-cols-2 gap-4">
-                  {quickStats.map((stat, index) => (
+              {/* Right Carousel: Only show on devices >= 768px */}
+              <div className="relative card-animate-in hidden md:block" style={{ animationDelay: '0.6s' }}>
+                <div className="relative h-96 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm border border-white/20">
+                  {carouselItems.map((item, index) => (
                     <div
                       key={index}
-                      className="group relative overflow-hidden bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+                      className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+                        index === currentSlide ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                      }`}
                     >
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`}
-                      ></div>
-                      <div className="relative">
-                        <div className="flex items-center mb-3 text-white">
-                          <div className="p-2 bg-white/20 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
-                            {stat.icon}
+                      <div className="relative h-full">
+                        <img
+                          src={item.image || "/placeholder.svg"}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent gradient-animate"></div>
+                        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                          <h3 className="text-3xl font-bold mb-3 text-red-180 text-glow-effect">
+                            {item.title}
+                          </h3>
+                          <p className="text-white/90 mb-4 text-lg leading-relaxed">{item.description}</p>
+                          <div className="flex flex-wrap gap-3">
+                            {item.features.map((feature, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium border border-white/30 hover:scale-105 transition-transform duration-300"
+                              >
+                                {feature}
+                              </span>
+                            ))}
                           </div>
-                          <span className="text-sm font-medium text-white/90">{stat.label}</span>
-                        </div>
-                        <div className="text-2xl font-bold text-white group-hover:scale-105 transition-transform duration-300">
-                          {stat.value}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {/* Enhanced Carousel Indicators */}
+                <div className="flex justify-center mt-6 space-x-3">
+                  {carouselItems.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`transition-all duration-300 rounded-full ${
+                        index === currentSlide ? "w-8 h-3 bg-white shadow-lg" : "w-3 h-3 bg-white/50 hover:bg-white/70"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Enhanced Quick Stats */}
+                <div className="mt-8">
+                  <div className="grid grid-cols-2 gap-4">
+                    {quickStats.map((stat, index) => (
+                      <div
+                        key={index}
+                        className="group relative overflow-hidden bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+                      >
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`}
+                        ></div>
+                        <div className="relative">
+                          <div className="flex items-center mb-3 text-white">
+                            <div className="p-2 bg-white/20 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
+                              {stat.icon}
+                            </div>
+                            <span className="text-sm font-medium text-white/90">{stat.label}</span>
+                          </div>
+                          <div className="text-2xl font-bold text-white group-hover:scale-105 transition-transform duration-300">
+                            {stat.value}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1861,7 +1875,7 @@ const Home: React.FC = () => {
                         key={company.name}
                         to={`/company/${company.name}`}
                         className={`group/company p-3 rounded-lg transition-all duration-500 hover:scale-105 transform-gpu ${
-                          isDark ? "bg-gray-700/50 hover:bg-gray-700 border-2 border-white/20 hover:border-white/40" : "bg-white/70 hover:bg-white border-2 border-black/20 hover:border-black/40"
+                          isDark ? "bg-gray-700/50 hover:bg-gray-700 border border-white/20 hover:border-white/40" : "bg-white/70 hover:bg-white border-2 border-black/20 hover:border-black/40"
                         } hover:shadow-xl hover:border-blue-300`}
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
@@ -2199,9 +2213,7 @@ const Home: React.FC = () => {
                         
                         {/* Topic Icon */}
                         <div className="absolute top-4 right-4">
-                          <div className={`w-12 h-12 bg-gradient-to-br ${topic.color} rounded-2xl flex items-center justify-center text-white text-xl group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-lg ${
-                            !isDark ? "group-hover:shadow-xl group-hover:shadow-blue-200/50" : ""
-                          }`}>
+                          <div className={`w-12 h-12 bg-gradient-to-br ${topic.color} rounded-2xl flex items-center justify-center text-white text-xl group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 shadow-lg`}>
                             {topic.icon}
                           </div>
                         </div>
@@ -2214,7 +2226,7 @@ const Home: React.FC = () => {
                         <div>
                           <h3
                             className={`text-xl font-bold mb-3 transition-all duration-300 ${
-                              isDark ? "text-gray-100 group-hover:text-yellow-400" : "text-gray-900 group-hover:text-yellow-500"
+                              isDark ? "text-white" : "text-gray-900"
                             }`}
                           >
                             {topic.title}

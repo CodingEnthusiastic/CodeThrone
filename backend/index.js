@@ -12,12 +12,15 @@ import problemRoutes from "./routes/problems.js"
 import discussionRoutes from "./routes/discussion.js"
 import contestRoutes from "./routes/contest.js"
 import gameRoutes from "./routes/game.js"
+import rapidfireRoutes from "./routes/rapidfire.js"
+import mcqRoutes from "./routes/mcq.js"
 import profileRoutes from "./routes/profile.js"
 import interviewRoutes from "./routes/interview.js"
 import potdRoutes from "./routes/potd.js"
 import redeemRoutes from "./routes/redeem.js"
 import { setupGameSocket } from "./socket/game.js"
 import { setupChatSocket } from "./socket/chat.js" // ✅ CRITICAL: Import chat socket
+import { setupRapidFireSocket } from "./socket/rapidfire.js"
 import geminiRoutes from "./routes/gemini.js"
 import chatsRoutes from "./routes/chats.js"
 import chatRoutes from "./routes/chat.js"
@@ -106,6 +109,12 @@ console.log("✅ Contest routes mounted at /api/contests")
 app.use("/api/game", gameRoutes)
 console.log("✅ Game routes mounted at /api/game")
 
+app.use("/api/rapidfire", rapidfireRoutes)
+console.log("✅ Rapid Fire routes mounted at /api/rapidfire")
+
+app.use("/api/mcq", mcqRoutes)
+console.log("✅ MCQ routes mounted at /api/mcq")
+
 app.use("/api/profile", profileRoutes)
 console.log("✅ Profile routes mounted at /api/profile")
 
@@ -163,6 +172,9 @@ console.log("✅ Socket.IO game handlers configured")
 
 setupChatSocket(io) // ✅ CRITICAL: Initialize chat socket
 console.log("✅ Socket.IO chat handlers configured")
+
+setupRapidFireSocket(io)
+console.log("✅ Socket.IO rapid fire handlers configured")
 
 // ✅ Add connection monitoring
 io.on("connection", (socket) => {

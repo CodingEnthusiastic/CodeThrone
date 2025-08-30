@@ -78,6 +78,7 @@ const userSchema = new mongoose.Schema({
   ratings: {
     gameRating: { type: Number, default: 1200 },
     contestRating: { type: Number, default: 1200 },
+    rapidFireRating: { type: Number, default: 1200 }, // New rapid-fire rating
     globalRank: { type: Number, default: 0 },
     percentile: { type: Number, default: 0 } // 98 = top 2%
   },
@@ -120,6 +121,19 @@ const userSchema = new mongoose.Schema({
     problem: { type: mongoose.Schema.Types.ObjectId, ref: 'Problem' },
     date: { type: Date, default: Date.now }
   }],
+  
+  // Rapid Fire Game History
+  rapidFireHistory: [{
+    opponent: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    result: String, // 'win', 'lose', 'draw'
+    ratingChange: Number,
+    score: Number, // Final score achieved
+    correctAnswers: Number,
+    wrongAnswers: Number,
+    totalQuestions: Number,
+    date: { type: Date, default: Date.now }
+  }],
+  
   contestHistory: [{
     contest: { type: mongoose.Schema.Types.ObjectId, ref: 'Contest' },
     rank: Number,

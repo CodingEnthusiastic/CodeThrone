@@ -189,6 +189,7 @@ interface UserProfile {
   };
   ratings: {
     gameRating: number;
+    rapidFireRating: number;
     contestRating: number;
     globalRank: number;
     percentile: number;
@@ -250,7 +251,7 @@ const Profile: React.FC = () => {
   const [imageUploading, setImageUploading] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<{ topContest: any[]; topGame: any[] }>({ topContest: [], topGame: [] });
+  const [leaderboard, setLeaderboard] = useState<{ topContest: any[]; topGame: any[]; topRapidFire: any[] }>({ topContest: [], topGame: [], topRapidFire: [] });
   const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
@@ -331,6 +332,7 @@ const Profile: React.FC = () => {
         },
         ratings: {
           gameRating: profileData.ratings?.gameRating || 1200,
+          rapidFireRating: profileData.ratings?.rapidFireRating || 1200,
           contestRating: profileData.ratings?.contestRating || 1200,
           globalRank: profileData.ratings?.globalRank || 0,
           percentile: profileData.ratings?.percentile || 0
@@ -1019,6 +1021,13 @@ const Profile: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
+                    <Zap className="h-5 w-5 text-red-600 mr-2" />
+                    <span className="text-gray-700">Rapid Fire Rating</span>
+                  </div>
+                  <span className="font-bold text-red-600">{profile.ratings.rapidFireRating}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
                     <Award className="h-5 w-5 text-purple-600 mr-2" />
                     <span className="text-gray-700">Contest Rating</span>
                   </div>
@@ -1122,6 +1131,50 @@ const Profile: React.FC = () => {
                   ))}
                 </div>
               </div>
+              
+              {/* Top Rapid Fire Ratings */}
+              <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-red-200/50 dark:border-red-600/30">
+                <h4 className="text-base font-semibold text-red-800 dark:text-red-300 mb-3 flex items-center">
+                  <Zap className="h-4 w-4 mr-2" />
+                  Top Rapid Fire Ratings
+                </h4>
+                <div className="space-y-2">
+                  {leaderboard.topRapidFire.length > 0 ? leaderboard.topRapidFire.slice(0, 5).map((user, idx) => (
+                    <button
+                      key={user._id}
+                      onClick={() => navigate(`/profile/${user.username}`)}
+                      className="w-full flex items-center justify-between p-2 bg-white/60 dark:bg-gray-800/40 rounded-lg hover:bg-white/80 dark:hover:bg-gray-700/60 transition-all duration-200 group hover:shadow-sm border border-red-200/30 dark:border-red-600/20"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={`
+                          w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
+                          ${idx === 0 ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-400' : 
+                            idx === 1 ? 'bg-gray-100 text-gray-800 border-2 border-gray-400' : 
+                            idx === 2 ? 'bg-orange-100 text-orange-800 border-2 border-orange-400' : 
+                            'bg-red-100 text-red-800 border border-red-300'}
+                        `}>
+                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                        </div>
+                        <span className="font-medium text-gray-900 dark:text-white group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors">
+                          {user.username}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-red-600 dark:text-red-400 text-lg">
+                          <AnimatedCounter end={user.ratings.rapidFireRating} />
+                        </span>
+                        <Zap className="h-4 w-4 text-red-500" />
+                      </div>
+                    </button>
+                  )) : (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                      <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No rapid fire ratings yet</p>
+                      <p className="text-xs">Play rapid fire to appear here!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1219,23 +1272,32 @@ const Profile: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Streak Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                {/* Rapid Fire Rating Card */}
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl shadow-lg p-6 border border-purple-200 dark:border-purple-800 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
-                      <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                        <Zap className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                      <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg shadow-lg">
+                        <Zap className="h-6 w-6 text-white" />
                       </div>
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Current Streak</h4>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Rapid Fire Rating</h4>
+                    </div>
+                    <div className="px-3 py-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-bold rounded-full uppercase tracking-wide">
+                      MCQ
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-4xl font-bold text-orange-600 dark:text-orange-400 mb-2">
-                      <AnimatedCounter end={profile.stats.currentStreak} />
-                      <span className="text-lg ml-1">days</span>
+                    <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                      <AnimatedCounter end={profile.ratings.rapidFireRating} />
                     </div>
-                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mt-4">
-                      <span>Max: <AnimatedCounter end={profile.stats.maxStreak} /> days</span>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      {profile.ratings.rapidFireRating >= 1600 ? 'Expert' :
+                       profile.ratings.rapidFireRating >= 1400 ? 'Advanced' :
+                       profile.ratings.rapidFireRating >= 1200 ? 'Intermediate' : 'Beginner'}
+                    </div>
+                    <div className="flex items-center justify-center space-x-2 text-xs text-gray-500 dark:text-gray-500">
+                      <span>ELO Rating System</span>
+                      <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                      <span>Real-time MCQ Battle</span>
                     </div>
                   </div>
                 </div>
