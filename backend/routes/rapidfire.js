@@ -20,6 +20,32 @@ const generateRoomId = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
+// BULLETPROOF: Smart random question generator with unique selection
+const generateRandomQuestions = async (count = 10) => {
+  try {
+    console.log('🎲 BULLETPROOF: Generating random questions, count:', count);
+    
+    // Get all available MCQ questions
+    const allQuestions = await MCQQuestion.find({ domain: 'dsa' }).lean();
+    console.log('📚 Available questions in database:', allQuestions.length);
+    
+    if (allQuestions.length < count) {
+      console.warn('⚠️ Not enough questions in database, using all available');
+      return allQuestions.slice(0, count);
+    }
+    
+    // Shuffle and select unique questions
+    const shuffled = allQuestions.sort(() => Math.random() - 0.5);
+    const selectedQuestions = shuffled.slice(0, count);
+    
+    console.log('✅ BULLETPROOF: Selected random questions:', selectedQuestions.length);
+    return selectedQuestions;
+  } catch (error) {
+    console.error('❌ BULLETPROOF: Error generating random questions:', error);
+    return [];
+  }
+};
+
 // Get random questions for rapid fire game
 const getRandomQuestions = async () => {
   try {

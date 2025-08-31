@@ -27,6 +27,7 @@ import chatRoutes from "./routes/chat.js"
 import announcementsRouter from "./routes/announcements.js"
 import certificatesRouter from "./routes/certificates.js"
 import usersRouter from "./routes/users.js";
+import { updateContestStatusesAndRatings } from "./routes/contest-status-updater.js";
 console.log("🚀 Starting backend server...")
 import statsRouter from "./routes/stats.js"
 
@@ -190,7 +191,7 @@ io.on("connection", (socket) => {
 })
 
 const PORT = process.env.PORT || 5000
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log("🎉 Server is running successfully!")
   console.log(`📍 Server URL: https://codestar-qlq6.onrender.com`)
   console.log(`🏥 Health check: https://codestar-qlq6.onrender.com/api/health`)
@@ -198,6 +199,11 @@ server.listen(PORT, () => {
   console.log("🔥 Ready to accept requests!")
   console.log("🔌 Socket.IO transports: websocket, polling")
   console.log("🔌 Socket.IO CORS origins: localhost:5173, codethrone.netlify.app")
+  
+  // Initialize contest status and rating updates
+  console.log("🏆 Initializing contest rating system...")
+  await updateContestStatusesAndRatings();
+  console.log("✅ Contest rating system initialized")
 })
 
 setInterval(async () => {
@@ -209,9 +215,13 @@ setInterval(async () => {
   }
 }, 4 * 60 * 1000) // every 4 minutes
 
-// Call contest history sync every 10 minutes
+// Set up automatic contest status and rating updates every minute
+setInterval(async () => {
+  console.log('⏰ Running automatic contest status and rating updates...');
+  await updateContestStatusesAndRatings();
+}, 60 * 1000); // Every minute
 
-// Contest history and rating backfill logic
+// Legacy backfill system - kept for manual maintenance
 async function backfillContestHistory() {
   try {
     const contests = await Contest.find({});
@@ -273,20 +283,14 @@ async function backfillContestHistory() {
         await user.save();
       }
     }
-    console.log(`Backfill complete. Updated ${updatedCount} contestHistory entries and contest ratings with Elo calculation.`);
+    console.log(`📚 Legacy backfill complete. Updated ${updatedCount} contestHistory entries and contest ratings with Elo calculation.`);
   } catch (err) {
-    console.error('❌ Error in contest history backfill:', err.message);
+    console.error('❌ Error in legacy contest history backfill:', err.message);
   }
 }
 
-// Run every 10 minutes
-setInterval(() => {
-  console.log('⏰ Running contest history backfill...');
-  backfillContestHistory();
-}, 10 * 60 * 1000);
-
-// Run once immediately on startup
-backfillContestHistory();
+// Legacy backfill - can be called manually if needed
+// backfillContestHistory();
 
 // If you have any config for Render, comment it out or remove it
 // Example: const BASE_URL = 'https://your-app.onrender.com';

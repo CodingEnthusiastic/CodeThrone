@@ -135,57 +135,6 @@ const LightThemeBackground: React.FC = () => {
   );
 };
 
-// Robot Component with Magnet Hand
-// Robot Animation using video
-const RobotAnimation: React.FC = () => {
-  const [showBubble, setShowBubble] = useState(false);
-
-  const handleClick = () => {
-    setShowBubble(true);
-    setTimeout(() => setShowBubble(false), 3000);
-  };
-
-  const isDark = typeof document !== 'undefined'
-    ? document.documentElement.classList.contains('dark')
-    : false;
-
-  return (
-    <div
-      className="fixed bottom-8 right-8 z-30 cursor-pointer"
-      onClick={handleClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-    >
-      {/* Speech Bubble */}
-      {showBubble && (
-        <div className="absolute -top-14 -left-10 animate-bounce z-40">
-          <div
-            className="px-4 py-2 rounded-xl shadow-lg border text-sm font-semibold"
-            style={{
-              background: isDark ? '#1f2937' : '#ffffff',
-              color: isDark ? '#f3f4f6' : '#1f2937',
-              borderColor: isDark ? '#374151' : '#e5e7eb',
-              fontSize: '1.75em', // Increased text size
-              lineHeight: 1.2,
-            }}
-          >
-            Hello User! 👋
-          </div>
-        </div>
-      )}
-
-      {/* Robot GIF Animation */}
-      <img
-        src="/robot.gif"
-        alt="Robot"
-        className="w-[240px] h-[280px] object-contain drop-shadow-xl"
-        draggable={false}
-      />
-    </div>
-  );
-};
-
 // Background component that only depends on dark mode
 const LoginBackground: React.FC<{ isDark: boolean }> = ({ isDark }) => (
   <div className="absolute inset-0 w-full h-full z-0 bg-white dark:bg-gray-900">
@@ -245,10 +194,7 @@ const Login: React.FC = () => {
       */}
       {/* <LoginBackground isDark={isDark} /> */}
       <div className="relative h-screen w-screen flex items-center justify-center overflow-hidden bg-transparent">
-        {/* Robot Animation: hidden on mobile, visible on sm+ */}
-        <div className="hidden sm:block">
-          <RobotAnimation />
-        </div>
+        {/* Robot Animation Removed */}
         <div className="relative z-10 w-full max-w-md mx-auto px-6">
           <div className="flex justify-center mb-6">
             <div className="flex items-center space-x-2">

@@ -12,9 +12,12 @@ import {
   LogOut, 
   Brain,
   Target,
-  Timer
+  Timer,
+  TrendingUp,
+  TrendingDown
 } from 'lucide-react';
 import { API_URL, SOCKET_URL } from '../config/api';
+import Confetti from '../components/Confetti';
 
 interface MCQQuestion {
   _id: string;
@@ -315,79 +318,186 @@ const MCQCard = memo(({
 });
 
 const GameEndModal = memo(({ 
-  isWinner, 
-  currentPlayer, 
-  opponentPlayer, 
-  onClose 
+  gameResults,
+  ratingUpdates,
+  showConfetti,
+  userId,
+  onClose
 }: {
-  isWinner: boolean;
-  winner: string | null;
-  currentPlayer: any;
-  opponentPlayer: any;
+  gameResults?: any[];
+  ratingUpdates?: any[];
+  showConfetti?: boolean;
+  userId?: string;
   onClose: () => void;
-}) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full mx-4 text-center">
-      {isWinner ? (
-        <div>
-          <Trophy className="h-20 w-20 text-yellow-500 mx-auto mb-4 animate-bounce" />
-          <h1 className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">🎉 Victory! 🎉</h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">You dominated the rapid fire round!</p>
-          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg mb-4">
-            <p className="text-green-800 dark:text-green-300 font-semibold">
-              Rating Change: +{currentPlayer?.ratingChange || 0}
-            </p>
-            <p className="text-green-700 dark:text-green-400 text-sm">
-              New Rating: {currentPlayer?.ratingAfter || 1200}
-            </p>
+}) => {
+  const currentUserResult = gameResults?.find((r: any) => String(r.userId) === String(userId));
+  const opponentResult = gameResults?.find((r: any) => String(r.userId) !== String(userId));
+  
+  const isDraw = currentUserResult?.result === 'draw';
+  const userWon = currentUserResult?.result === 'win';
+  const userLost = currentUserResult?.result === 'loss';
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      {showConfetti && <Confetti show={showConfetti} />}
+      
+      <div className={`rounded-xl shadow-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto text-center border-4 transform transition-all duration-300 ${
+        userWon ? 'bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/20 border-green-400 dark:border-green-500' :
+        isDraw ? 'bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/20 border-yellow-400 dark:border-yellow-500' :
+        'bg-gradient-to-br from-red-50 to-rose-100 dark:from-red-900/30 dark:to-rose-900/20 border-red-400 dark:border-red-500'
+      }`}>
+        
+        {/* Result Header */}
+        {userWon ? (
+          <div className="mb-6">
+            <Trophy className="h-24 w-24 text-yellow-500 mx-auto mb-4 animate-bounce" />
+            <h1 className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">🎉 VICTORY! 🎉</h1>
+            <p className="text-lg text-gray-700 dark:text-gray-300">You dominated the rapid fire arena!</p>
           </div>
-        </div>
-      ) : (
-        <div>
-          <Brain className="h-20 w-20 text-red-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">Better Luck Next Time!</h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">Keep practicing and you'll improve!</p>
-          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-4">
-            <p className="text-red-800 dark:text-red-300 font-semibold">
-              Rating Change: {currentPlayer?.ratingChange || 0}
-            </p>
-            <p className="text-red-700 dark:text-red-400 text-sm">
-              New Rating: {currentPlayer?.ratingAfter || 1200}
-            </p>
+        ) : isDraw ? (
+          <div className="mb-6">
+            <Target className="h-24 w-24 text-yellow-500 mx-auto mb-4 animate-pulse" />
+            <h1 className="text-4xl font-bold text-yellow-600 dark:text-yellow-400 mb-2">🤝 DRAW! 🤝</h1>
+            <p className="text-lg text-gray-700 dark:text-gray-300">Evenly matched warriors!</p>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="mb-6">
+            <Brain className="h-24 w-24 text-red-500 mx-auto mb-4 animate-pulse" />
+            <h1 className="text-4xl font-bold text-red-600 dark:text-red-400 mb-2">💪 KEEP FIGHTING!</h1>
+            <p className="text-lg text-gray-700 dark:text-gray-300">Every defeat makes you stronger!</p>
+          </div>
+        )}
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300">Your Score</h3>
-          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-            {currentPlayer?.score?.toFixed(1) || '0.0'}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {currentPlayer?.correctAnswers || 0}✓ {currentPlayer?.wrongAnswers || 0}✗
-          </p>
+        {/* Player vs Player Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Current User */}
+          <div className={`p-6 rounded-xl border-2 ${
+            userWon ? 'bg-green-100 dark:bg-green-900/30 border-green-400' : 
+            isDraw ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400' :
+            'bg-gray-100 dark:bg-gray-800 border-gray-300'
+          }`}>
+            <div className="flex items-center justify-center mb-3">
+              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                {(currentUserResult?.username || 'You')[0].toUpperCase()}
+              </div>
+            </div>
+            <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 mb-2">
+              {currentUserResult?.username || 'You'}
+              {userWon && <span className="text-yellow-500 ml-2">👑</span>}
+            </h3>
+            <div className="space-y-2">
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                {currentUserResult?.score?.toFixed(1) || '0.0'}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Rank: #{currentUserResult?.rank || 'N/A'}
+              </p>
+              <div className="flex justify-center gap-4 text-sm">
+                <span className="text-green-600">✓ {currentUserResult?.correctAnswers || 0}</span>
+                <span className="text-red-600">✗ {currentUserResult?.wrongAnswers || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Opponent */}
+          <div className={`p-6 rounded-xl border-2 ${
+            userLost ? 'bg-green-100 dark:bg-green-900/30 border-green-400' : 
+            isDraw ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400' :
+            'bg-gray-100 dark:bg-gray-800 border-gray-300'
+          }`}>
+            <div className="flex items-center justify-center mb-3">
+              <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                {(opponentResult?.username || 'Opponent')[0].toUpperCase()}
+              </div>
+            </div>
+            <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 mb-2">
+              {opponentResult?.username || 'Opponent'}
+              {userLost && !isDraw && <span className="text-yellow-500 ml-2">👑</span>}
+            </h3>
+            <div className="space-y-2">
+              <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                {opponentResult?.score?.toFixed(1) || '0.0'}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Rank: #{opponentResult?.rank || 'N/A'}
+              </p>
+              <div className="flex justify-center gap-4 text-sm">
+                <span className="text-green-600">✓ {opponentResult?.correctAnswers || 0}</span>
+                <span className="text-red-600">✗ {opponentResult?.wrongAnswers || 0}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300">Opponent Score</h3>
-          <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-            {opponentPlayer?.score?.toFixed(1) || '0.0'}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {opponentPlayer?.correctAnswers || 0}✓ {opponentPlayer?.wrongAnswers || 0}✗
-          </p>
-        </div>
+
+        {/* Rating Changes */}
+        {currentUserResult && (
+          <div className={`p-6 rounded-xl mb-6 border-2 ${
+            currentUserResult.ratingChange > 0 ? 'bg-green-100 dark:bg-green-900/30 border-green-400' :
+            currentUserResult.ratingChange < 0 ? 'bg-red-100 dark:bg-red-900/30 border-red-400' :
+            'bg-gray-100 dark:bg-gray-800 border-gray-300'
+          }`}>
+            <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100 mb-4">Rating Changes</h3>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              {currentUserResult.ratingChange > 0 ? (
+                <TrendingUp className="h-8 w-8 text-green-600" />
+              ) : currentUserResult.ratingChange < 0 ? (
+                <TrendingDown className="h-8 w-8 text-red-600" />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-gray-400" />
+              )}
+              <span className={`font-bold text-3xl ${
+                currentUserResult.ratingChange > 0 ? 'text-green-700 dark:text-green-400' :
+                currentUserResult.ratingChange < 0 ? 'text-red-700 dark:text-red-400' :
+                'text-gray-700 dark:text-gray-300'
+              }`}>
+                {currentUserResult.ratingChange > 0 ? '+' : ''}{currentUserResult.ratingChange}
+              </span>
+            </div>
+            <div className="flex items-center justify-center gap-4 text-lg">
+              <span className="font-semibold text-gray-600 dark:text-gray-400">
+                {currentUserResult.oldRating}
+              </span>
+              <span className="text-2xl">→</span>
+              <span className="font-bold text-2xl text-blue-600 dark:text-blue-400">
+                {currentUserResult.newRating}
+              </span>
+            </div>
+            
+            {/* Opponent Rating Changes */}
+            {opponentResult && (
+              <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Opponent Rating</p>
+                <div className="flex items-center justify-center gap-4">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    {opponentResult.oldRating}
+                  </span>
+                  <span>→</span>
+                  <span className="font-semibold text-purple-600 dark:text-purple-400">
+                    {opponentResult.newRating}
+                  </span>
+                  <span className={`font-medium ${
+                    opponentResult.ratingChange > 0 ? 'text-green-600' : 
+                    opponentResult.ratingChange < 0 ? 'text-red-600' : 'text-gray-600'
+                  }`}>
+                    ({opponentResult.ratingChange > 0 ? '+' : ''}{opponentResult.ratingChange})
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Button */}
+        <button
+          onClick={onClose}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-bold text-lg transform hover:scale-105 shadow-lg"
+        >
+          Return to Lobby
+        </button>
       </div>
-
-      <button
-        onClick={onClose}
-        className="bg-red-600 text-white px-6 py-3 rounded-md hover:bg-red-700 transition-colors"
-      >
-        Back to Lobby
-      </button>
     </div>
-  </div>
-));
+  );
+});
 
 const ScoreBoard = memo(({ 
   currentPlayer, 
@@ -466,12 +576,16 @@ const RapidFire: React.FC = () => {
   const [searchingForMatch, setSearchingForMatch] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [gameFinished, setGameFinished] = useState(false);
-  const [winner, setWinner] = useState<string | null>(null);
   const [showGameEndModal, setShowGameEndModal] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
+  
+  // New states for rating system and confetti
+  const [gameResults, setGameResults] = useState<any[]>([]);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [ratingUpdates, setRatingUpdates] = useState<any[]>([]);
 
   const socketRef = useRef<any>(null);
   const [socketConnected, setSocketConnected] = useState(false);
@@ -584,6 +698,9 @@ const RapidFire: React.FC = () => {
       setTimeRemaining(data.timeLimit);
       setCurrentQuestionIndex(0); // Reset to first question
       questionStartTime.current = Date.now();
+      
+      // Clear submission tracking for new game
+      submittedForQuestion.current.clear();
     });
 
     newSocket.on("rapidfire-player-joined", (payload: any) => {
@@ -591,32 +708,107 @@ const RapidFire: React.FC = () => {
       setActiveGame(payload.game);
     });
 
-    // BULLETPROOF: Handle answer submission result
-    newSocket.on("answer-submitted", (result: any) => {
-      console.log("📝 Answer submitted result:", result);
-      setShowResult(true);
+    // BULLETPROOF: Handle comprehensive game state updates
+    newSocket.on("rapidfire-game-state-update", (gameState: any) => {
+      console.log("🔄 BULLETPROOF: Comprehensive game state update:", gameState);
       
-      // Show result for 2 seconds, then move to next question
-      setTimeout(() => {
-        setShowResult(false);
-        setSelectedAnswer(null);
-        setCurrentQuestionIndex(prev => prev + 1);
-        questionStartTime.current = Date.now();
-      }, 2000);
+      if (activeGame && gameState.gameId === activeGame._id) {
+        const updatedGame = { ...activeGame };
+        
+        // Update all player stats from the server
+        gameState.players.forEach((serverPlayer: any) => {
+          const playerIndex = updatedGame.players.findIndex(
+            (p: any) => String(p.user._id) === String(serverPlayer.userId)
+          );
+          
+          if (playerIndex !== -1) {
+            updatedGame.players[playerIndex].score = serverPlayer.score;
+            updatedGame.players[playerIndex].correctAnswers = serverPlayer.correctAnswers;
+            updatedGame.players[playerIndex].wrongAnswers = serverPlayer.wrongAnswers;
+            updatedGame.players[playerIndex].questionsAnswered = serverPlayer.questionsAnswered;
+          }
+        });
+        
+        console.log("✅ BULLETPROOF: Game state synchronized for all players");
+        setActiveGame(updatedGame);
+        
+        // Show answer result if this player submitted the answer
+        if (gameState.answerResult?.playerId === user?.id) {
+          setShowResult(true);
+          setTimeout(() => {
+            setShowResult(false);
+            setSelectedAnswer(null);
+          }, 2000);
+        }
+      }
     });
 
-    newSocket.on("rapidfire-opponent-progress", (progress: any) => {
-      console.log("👥 Opponent progress:", progress);
-      // Progress is handled via game state updates
+    // BULLETPROOF: Handle answer submission result (simplified - main updates come from game-state-update)
+    newSocket.on("answer-submitted", (result: any) => {
+      console.log("📝 Answer submitted result:", result);
+      
+      // Only show result if this is the current user who submitted
+      if (result.playerId === user?.id) {
+        setShowResult(true);
+        setTimeout(() => {
+          setShowResult(false);
+          setSelectedAnswer(null);
+        }, 2000);
+      }
+    });
+
+    // BULLETPROOF: Handle synchronized question advancement
+    newSocket.on("rapidfire-next-question", (data: any) => {
+      console.log("➡️ BULLETPROOF: Advancing to next question:", data);
+      
+      if (data.questionIndex !== undefined) {
+        setCurrentQuestionIndex(data.questionIndex);
+        setSelectedAnswer(null);
+        setShowResult(false);
+        setTimeRemaining(60);
+        questionStartTime.current = Date.now();
+        
+        // Clear submission tracking for the new question
+        submittedForQuestion.current.clear();
+        
+        console.log(`🔄 Advanced to question ${data.questionIndex + 1}`);
+      }
     });
 
     newSocket.on("rapidfire-game-finished", (data: any) => {
       console.log("🏁 Rapid fire game finished:", data);
       setGameFinished(true);
       setGameStarted(false);
-      setWinner(data.winner);
       setShowGameEndModal(true);
       setActiveGame(data.finalState);
+      
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    });
+
+    // BULLETPROOF: Handle game ended with Elo rating updates
+    newSocket.on("rapidfire-game-ended", (data: any) => {
+      console.log("🏁 BULLETPROOF: Rapid fire game ended with ratings:", data);
+      
+      setGameResults(data.results);
+      setRatingUpdates(data.ratingUpdates);
+      setGameFinished(true);
+      setGameStarted(false);
+      setShowGameEndModal(true);
+      
+      // Show confetti for winner or draw
+      const currentUserId = user?.id || user?._id;
+      const currentUserResult = data.results.find((r: any) => 
+        String(r.userId) === String(currentUserId)
+      );
+      
+      if (currentUserResult && (currentUserResult.result === 'win' || currentUserResult.result === 'draw')) {
+        setShowConfetti(true);
+        // Hide confetti after 6 seconds
+        setTimeout(() => setShowConfetti(false), 6000);
+      }
       
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -720,10 +912,23 @@ const RapidFire: React.FC = () => {
     }
   }, [user]);
 
+  // Track submission state per question to prevent duplicates
+  const submittedForQuestion = useRef<Set<number>>(new Set());
+
   // Memoized handlers
   const handleAnswerSelect = useCallback((optionIndex: number) => {
-    if (showResult || selectedAnswer !== null) return;
+    if (showResult || selectedAnswer !== null || submittedForQuestion.current.has(currentQuestionIndex)) {
+      console.log("🚫 Blocking duplicate answer submission:", {
+        showResult,
+        selectedAnswer,
+        currentQuestionIndex,
+        alreadySubmitted: submittedForQuestion.current.has(currentQuestionIndex)
+      });
+      return;
+    }
     
+    // Mark this question as submitted immediately
+    submittedForQuestion.current.add(currentQuestionIndex);
     setSelectedAnswer(optionIndex);
     
     const timeSpent = Math.floor((Date.now() - questionStartTime.current) / 1000);
@@ -736,21 +941,22 @@ const RapidFire: React.FC = () => {
       hasCurrentQuestion: !!currentQuestion,
       questionId: currentQuestion?._id,
       optionIndex,
-      timeSpent
+      timeSpent,
+      submittedQuestions: Array.from(submittedForQuestion.current)
     });
     
     if (socketRef.current && currentQuestion && activeGame?._id) {
       console.log("📝 Submitting answer:", {
         gameId: activeGame._id,
-        questionIndex: currentQuestionIndex, // FIXED: Send questionIndex instead of questionId
+        questionIndex: currentQuestionIndex,
         selectedOption: optionIndex,
         timeSpent,
-        questionId: currentQuestion._id // For debugging
+        questionId: currentQuestion._id
       });
       
       socketRef.current.emit("submit-rapidfire-answer", {
         gameId: activeGame._id,
-        questionIndex: currentQuestionIndex, // FIXED: Backend expects questionIndex
+        questionIndex: currentQuestionIndex,
         selectedOption: optionIndex,
         timeSpent
       });
@@ -869,13 +1075,18 @@ const RapidFire: React.FC = () => {
     setActiveGame(null);
     setGameFinished(false);
     setGameStarted(false);
-    setWinner(null);
     setTimeRemaining(60);
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
+    
+    // Clear submission tracking
+    submittedForQuestion.current.clear();
     setShowResult(false);
     setShowGameEndModal(false);
     setSearchingForMatch(false);
+    setGameResults([]);
+    setShowConfetti(false);
+    setRatingUpdates([]);
 
     window.history.pushState({}, '', '/rapidfire');
     window.location.reload();
@@ -922,14 +1133,13 @@ const RapidFire: React.FC = () => {
   }
 
   // Show game end modal
-  if (showGameEndModal && gameFinished && activeGame) {
-    const isWinner = winner === user?.id;
+  if (showGameEndModal && gameFinished && gameResults) {
     return (
       <GameEndModal
-        isWinner={isWinner}
-        winner={winner}
-        currentPlayer={getCurrentPlayer}
-        opponentPlayer={getOpponentPlayer}
+        gameResults={gameResults}
+        ratingUpdates={ratingUpdates}
+        showConfetti={showConfetti}
+        userId={user?.id || user?._id}
         onClose={resetGame}
       />
     );
@@ -1010,9 +1220,12 @@ const RapidFire: React.FC = () => {
             )
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700">
-              <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">All Questions Completed!</h2>
-              <p className="text-gray-600 dark:text-gray-300">Waiting for final results...</p>
+              <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4 animate-bounce" />
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">All Questions Completed! 🎉</h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">Calculating final results...</p>
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+              </div>
             </div>
           )}
         </div>

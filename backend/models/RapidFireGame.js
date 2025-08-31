@@ -41,7 +41,7 @@ const rapidFireGameSchema = new mongoose.Schema({
   // Game Status
   status: {
     type: String,
-    enum: ['waiting', 'ongoing', 'finished', 'cancelled'],
+    enum: ['waiting', 'ongoing', 'finished', 'cancelled', 'abandoned'],
     default: 'waiting'
   },
 
@@ -61,6 +61,7 @@ const rapidFireGameSchema = new mongoose.Schema({
     // Answers tracking
     answers: [{
       questionId: { type: mongoose.Schema.Types.ObjectId, ref: 'MCQQuestion' },
+      questionIndexNumber: { type: Number }, // Index of question in the game (0, 1, 2, ...)
       selectedOption: Number, // 0-3 index
       isCorrect: Boolean,
       timeSpent: Number, // seconds
