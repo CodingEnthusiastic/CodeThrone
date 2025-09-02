@@ -812,6 +812,10 @@ async function updateELORatings(game) {
 
   await User.findByIdAndUpdate(player1.user, {
     "ratings.gameRating": newRating1,
+    $inc: {
+      "stats.gamesPlayed": 1,
+      "stats.gamesWon": player1Result === "win" ? 1 : 0
+    },
     $push: {
       gameHistory: {
         opponent: player2.user,
@@ -825,6 +829,10 @@ async function updateELORatings(game) {
 
   await User.findByIdAndUpdate(player2.user, {
     "ratings.gameRating": newRating2,
+    $inc: {
+      "stats.gamesPlayed": 1,
+      "stats.gamesWon": player2Result === "win" ? 1 : 0
+    },
     $push: {
       gameHistory: {
         opponent: player1.user,

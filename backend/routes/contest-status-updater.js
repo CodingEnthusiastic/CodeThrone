@@ -117,6 +117,12 @@ const updateContestStatusesAndRatings = async () => {
               date: new Date(),
             });
             
+            // Update contest stats
+            user.stats.contestsPlayed = (user.stats.contestsPlayed || 0) + 1;
+            if (participant.rank === 1) {
+              user.stats.contestsWon = (user.stats.contestsWon || 0) + 1;
+            }
+            
             console.log(`✅ Updated rating for ${user.username}: ${oldRating} → ${newRating} (${ratingChanges[i] > 0 ? '+' : ''}${ratingChanges[i]})`)
           }
           

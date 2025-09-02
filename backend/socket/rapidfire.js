@@ -604,11 +604,11 @@ const endRapidFireGame = async (gameId, io) => {
         });
         
         // Update user statistics for RapidFire games
-        player1User.rapidFireGamesPlayed = (player1User.rapidFireGamesPlayed || 0) + 1;
+        player1User.stats.rapidFireGamesPlayed = (player1User.stats.rapidFireGamesPlayed || 0) + 1;
         if (isDraw) {
           // Draw counts as 0.5 win for statistics
         } else {
-          player1User.rapidFireGamesWon = (player1User.rapidFireGamesWon || 0) + 1;
+          player1User.stats.rapidFireGamesWon = (player1User.stats.rapidFireGamesWon || 0) + 1;
         }
         
         await player1User.save();
@@ -648,7 +648,7 @@ const endRapidFireGame = async (gameId, io) => {
         });
         
         // Update user statistics for RapidFire games
-        player2User.rapidFireGamesPlayed = (player2User.rapidFireGamesPlayed || 0) + 1;
+        player2User.stats.rapidFireGamesPlayed = (player2User.stats.rapidFireGamesPlayed || 0) + 1;
         if (isDraw) {
           // Draw counts as 0.5 win for statistics - could increment separately if needed
         } else {
