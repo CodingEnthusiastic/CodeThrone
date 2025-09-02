@@ -535,15 +535,15 @@ const ScoreBoard = memo(({
         <div className="text-center">
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Time Left</h3>
           <div className={`text-3xl font-bold mb-1 ${
-            timeRemaining <= 10 ? 'text-red-600 dark:text-red-400 animate-pulse' : 
-            timeRemaining <= 30 ? 'text-yellow-600 dark:text-yellow-400' : 
+            timeRemaining <= 3 ? 'text-red-600 dark:text-red-400 animate-pulse' : 
+            timeRemaining <= 5 ? 'text-yellow-600 dark:text-yellow-400' : 
             'text-green-600 dark:text-green-400'
           }`}>
             {formatTime(timeRemaining)}
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             <Timer className="h-4 w-4 inline mr-1" />
-            60 seconds total
+            10 seconds per question
           </p>
         </div>
 
@@ -574,7 +574,7 @@ const RapidFire: React.FC = () => {
   const [roomCode, setRoomCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [searchingForMatch, setSearchingForMatch] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(60);
+  const [timeRemaining, setTimeRemaining] = useState(10);
   const [gameFinished, setGameFinished] = useState(false);
   const [showGameEndModal, setShowGameEndModal] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -765,7 +765,7 @@ const RapidFire: React.FC = () => {
         setCurrentQuestionIndex(data.questionIndex);
         setSelectedAnswer(null);
         setShowResult(false);
-        setTimeRemaining(60);
+        setTimeRemaining(10);
         questionStartTime.current = Date.now();
         
         // Clear submission tracking for the new question
@@ -1075,7 +1075,7 @@ const RapidFire: React.FC = () => {
     setActiveGame(null);
     setGameFinished(false);
     setGameStarted(false);
-    setTimeRemaining(60);
+    setTimeRemaining(10);
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     

@@ -1063,10 +1063,18 @@ const Profile: React.FC = () => {
               </div>
               <div className="px-6 pb-6">
                 <div>
-                  <h4 className="font-semibold mb-3 text-gray-900 dark:text-white flex items-center">
-                    <Award className="h-4 w-4 mr-2 text-purple-600" />
-                    Top Contest Ratings
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
+                      <Award className="h-4 w-4 mr-2 text-purple-600" />
+                      Top Contest Ratings
+                    </h4>
+                    <button
+                      onClick={() => navigate('/contest/leaderboard')}
+                      className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium hover:underline transition-colors"
+                    >
+                      View All
+                    </button>
+                  </div>
                   {leaderboard.topContest.map((user, idx) => (
                     <button
                       key={user._id}
@@ -1097,10 +1105,18 @@ const Profile: React.FC = () => {
                   ))}
                 </div>
                 <div className="mt-6">
-                  <h4 className="font-semibold mb-3 text-gray-900 dark:text-white flex items-center">
-                    <Zap className="h-4 w-4 mr-2 text-green-600" />
-                    Top Game Ratings
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
+                      <Zap className="h-4 w-4 mr-2 text-green-600" />
+                      Top Game Ratings
+                    </h4>
+                    <button
+                      onClick={() => navigate('/game/leaderboard')}
+                      className="text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium hover:underline transition-colors"
+                    >
+                      View All
+                    </button>
+                  </div>
                   {leaderboard.topGame.map((user, idx) => (
                     <button
                       key={user._id}
@@ -1134,10 +1150,18 @@ const Profile: React.FC = () => {
               
               {/* Top Rapid Fire Ratings */}
               <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-red-200/50 dark:border-red-600/30">
-                <h4 className="text-base font-semibold text-red-800 dark:text-red-300 mb-3 flex items-center">
-                  <Zap className="h-4 w-4 mr-2" />
-                  Top Rapid Fire Ratings
-                </h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-base font-semibold text-red-800 dark:text-red-300 flex items-center">
+                    <Zap className="h-4 w-4 mr-2" />
+                    Top Rapid Fire Ratings
+                  </h4>
+                  <button
+                    onClick={() => navigate('/rapidfire/leaderboard')}
+                    className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 font-medium hover:underline transition-colors"
+                  >
+                    View All
+                  </button>
+                </div>
                 <div className="space-y-2">
                   {leaderboard.topRapidFire.length > 0 ? leaderboard.topRapidFire.slice(0, 5).map((user, idx) => (
                     <button

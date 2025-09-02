@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
-import { ThumbsUp, ThumbsDown, MessageSquare, Send, Pin, Lock } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MessageSquare, Send, Pin, Lock, ArrowLeft } from 'lucide-react';
 import { API_URL, SOCKET_URL } from "../config/api";
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -37,6 +37,7 @@ const DiscussionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user, token } = useAuth(); // ✅ Get token from auth context
   const { isDark } = useTheme();
+  const navigate = useNavigate();
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
@@ -168,6 +169,21 @@ const DiscussionDetail: React.FC = () => {
         : "bg-gradient-to-br from-[#f0f4ff] via-[#eaf0fa] to-[#f7faff]"
     }`}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/discussions')}
+            className={`inline-flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              isDark
+                ? "bg-[#23243a] hover:bg-[#32334a] text-[#e0e7ff] border border-[#6366f1]/30 hover:border-[#6366f1]/50"
+                : "bg-white hover:bg-gray-50 text-[#1e293b] border border-[#38bdf8]/20 hover:border-[#38bdf8]/40 shadow-sm hover:shadow-md"
+            }`}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Discussions
+          </button>
+        </div>
+
         {/* Discussion Header */}
         <div className={`rounded-lg shadow-lg p-6 mb-6 ${
           isDark

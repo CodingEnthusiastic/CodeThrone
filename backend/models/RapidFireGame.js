@@ -30,7 +30,7 @@ const rapidFireGameSchema = new mongoose.Schema({
   
   timeLimit: {
     type: Number,
-    default: 60 // 60 seconds
+    default: 10 // 10 seconds per question
   },
 
   // Game Timing

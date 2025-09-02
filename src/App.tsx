@@ -26,6 +26,9 @@ import Announcements from './pages/Announcements';
 import AnnounceDetail from './pages/AnnounceDetail';
 import OAuthHandler from './pages/OAuthHandler';
 import Chat from './pages/Chat';
+import ContestLeaderboard from './pages/ContestLeaderboard';
+import GameLeaderboard from './pages/GameLeaderboard';
+import RapidFireLeaderboard from './pages/RapidFireLeaderboard';
 import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
@@ -447,6 +450,9 @@ const AppRoutes = () => {
             <Route path="/contest" element={<Contest />} />
             <Route path="/contest/:id/problems" element={<ContestProblems />} />
             <Route path="/contest/:id/problem/:problemId" element={<ContestProblemDetail />} />
+            <Route path="/contest/leaderboard" element={<ContestLeaderboard />} />
+            <Route path="/game/leaderboard" element={<GameLeaderboard />} />
+            <Route path="/rapidfire/leaderboard" element={<RapidFireLeaderboard />} />
             {/* <Route path="/contest" element={<Contest />} />
             <Route path="/contest/:contestId/problems" element={<ContestProblems />} />
             <Route path="/contest/:contestId/problem/:problemId" element={<ContestProblemDetail />} /> */}

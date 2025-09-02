@@ -2,6 +2,7 @@ import RapidFireGame from '../models/RapidFireGame.js';
 import MCQQuestion from '../models/MCQQuestion.js';
 import User from '../models/User.js';
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 
 console.log('🔥 BULLETPROOF Rapid Fire socket handlers loading...');
 
@@ -62,8 +63,55 @@ const generateRandomQuestions = async (count = 10) => {
 export const setupRapidFireSocket = (io) => {
   console.log('🔥 BULLETPROOF: Setting up rapid fire socket handlers...');
   
+  // CRITICAL FIX: Add authentication middleware for RapidFire sockets
+  const authenticateSocket = (socket, next) => {
+    try {
+      const { token, userId } = socket.handshake.auth;
+      console.log("🔐 RapidFire Socket auth attempt:", { userId, hasToken: !!token });
+
+      if (!token || !userId) {
+        console.log("❌ Missing auth credentials for RapidFire socket");
+        return next(new Error("Authentication required"));
+      }
+
+      // ✅ CRITICAL FIX: Verify the JWT token and get user data
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log("✅ RapidFire JWT verified for user:", decoded.userId);
+        
+        // Validate that the userId matches the token
+        if (decoded.userId !== userId) {
+          console.error("❌ RapidFire User ID mismatch in token");
+          return next(new Error("Invalid authentication"));
+        }
+
+        // Store user info in socket for easy access
+        socket.userId = userId;
+        socket.userInfo = decoded;
+
+      } catch (jwtError) {
+        console.error("❌ RapidFire JWT verification failed:", jwtError);
+        return next(new Error("Invalid token"));
+      }
+      
+      console.log("✅ RapidFire Socket authenticated for user:", userId, "Socket ID:", socket.id);
+      next();
+    } catch (error) {
+      console.error("❌ RapidFire Socket auth error:", error);
+      next(new Error("Authentication failed"));
+    }
+  };
+
+  // Apply authentication middleware
+  io.use(authenticateSocket);
+  
   io.on('connection', (socket) => {
+    console.log("🔌 User connected to RapidFire socket:", socket.id, "User:", socket.userId);
     handleRapidFireSocket(io, socket);
+    
+    socket.on('disconnect', (reason) => {
+      console.log("🔌 RapidFire User disconnected:", socket.id, "Reason:", reason, "User:", socket.userId);
+    });
   });
 };
 
@@ -131,16 +179,42 @@ export const handleRapidFireSocket = (io, socket) => {
         
         io.to(`rapidfire-${gameId}`).emit('rapidfire-game-started', gameStartedData);
 
-        // Start game timer (timeLimit is already in seconds)
-        const timer = setTimeout(async () => {
-          console.log('⏰ BULLETPROOF: Game timer expired, ending game');
-          await endRapidFireGame(gameId, io);
-        }, gameData.timeLimit * 1000); // Convert seconds to milliseconds
+        // Start per-question timer system (10 seconds per question, total 100 seconds max)
+        const startQuestionTimer = (questionIndex = 0) => {
+          const timer = setTimeout(async () => {
+            console.log(`⏰ BULLETPROOF: Question ${questionIndex} timer expired, advancing to next question`);
+            
+            if (questionIndex + 1 < gameData.totalQuestions) {
+              // Advance to next question automatically
+              io.to(`rapidfire-${gameId}`).emit('rapidfire-next-question', {
+                questionIndex: questionIndex + 1,
+                timeRemaining: 10
+              });
+              
+              // Start timer for next question
+              const nextTimer = startQuestionTimer(questionIndex + 1);
+              activeRapidFireGames.set(gameId, { 
+                timer: nextTimer,
+                startTime: new Date(),
+                questions: questions,
+                currentQuestionIndex: questionIndex + 1
+              });
+            } else {
+              // Game completed, end it
+              console.log('⏰ BULLETPROOF: All questions completed, ending game');
+              await endRapidFireGame(gameId, io);
+            }
+          }, 10 * 1000); // 10 seconds per question
+          
+          return timer;
+        };
 
+        const initialTimer = startQuestionTimer(0);
         activeRapidFireGames.set(gameId, { 
-          timer,
+          timer: initialTimer,
           startTime: new Date(),
-          questions: questions // Store questions in memory
+          questions: questions,
+          currentQuestionIndex: 0
         });
       }
 
@@ -355,6 +429,12 @@ export const handleRapidFireSocket = (io, socket) => {
           // Both players answered current question, advance to next question
           console.log('➡️ BULLETPROOF: Both players answered current question, advancing to next question');
           
+          // Clear current timer
+          const currentGameData = activeRapidFireGames.get(gameId);
+          if (currentGameData?.timer) {
+            clearTimeout(currentGameData.timer);
+          }
+          
           setTimeout(() => {
             const gameData = activeRapidFireGames.get(gameId);
             if (gameData?.questions) {
@@ -362,6 +442,26 @@ export const handleRapidFireSocket = (io, socket) => {
               io.to(`rapidfire-${gameId}`).emit('rapidfire-next-question', {
                 questionIndex: questionIndex + 1,
                 question: gameData.questions[questionIndex + 1]
+              });
+              
+              // Start timer for next question
+              const nextTimer = setTimeout(async () => {
+                console.log(`⏰ BULLETPROOF: Question ${questionIndex + 1} timer expired`);
+                if (questionIndex + 2 < savedGame.totalQuestions) {
+                  io.to(`rapidfire-${gameId}`).emit('rapidfire-next-question', {
+                    questionIndex: questionIndex + 2,
+                    timeRemaining: 10
+                  });
+                } else {
+                  await endRapidFireGame(gameId, io);
+                }
+              }, 10 * 1000);
+              
+              // Update active game data
+              activeRapidFireGames.set(gameId, { 
+                ...gameData,
+                timer: nextTimer,
+                currentQuestionIndex: questionIndex + 1
               });
             }
           }, 2000); // 2 second delay to show results
@@ -503,6 +603,14 @@ const endRapidFireGame = async (gameId, io) => {
           date: new Date()
         });
         
+        // Update user statistics for RapidFire games
+        player1User.rapidFireGamesPlayed = (player1User.rapidFireGamesPlayed || 0) + 1;
+        if (isDraw) {
+          // Draw counts as 0.5 win for statistics
+        } else {
+          player1User.rapidFireGamesWon = (player1User.rapidFireGamesWon || 0) + 1;
+        }
+        
         await player1User.save();
         
         player1.ratingChange = player1Change;
@@ -538,6 +646,14 @@ const endRapidFireGame = async (gameId, io) => {
           totalQuestions: game.totalQuestions,
           date: new Date()
         });
+        
+        // Update user statistics for RapidFire games
+        player2User.rapidFireGamesPlayed = (player2User.rapidFireGamesPlayed || 0) + 1;
+        if (isDraw) {
+          // Draw counts as 0.5 win for statistics - could increment separately if needed
+        } else {
+          // Player2 lost, no increment to gamesWon
+        }
         
         await player2User.save();
         

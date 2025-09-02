@@ -2112,26 +2112,118 @@ const Home: React.FC = () => {
           
         {/* Learn and Upskill Section */}
         <div
-          className={`relative overflow-hidden rounded-3xl p-12 mb-20 ${
+          className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 lg:p-12 mb-20 ${
             isDark ? "bg-gray-800/50 border-2 border-white/30" : "bg-white border-2 border-black/30"
           } backdrop-blur-sm`}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-red-500/5"></div>
           <div className="relative">
-            <div className="text-center mb-12">
-              <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${isDark ? "text-white" : "text-gray-900"}`}>
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 ${isDark ? "text-white" : "text-gray-900"}`}>
                 Learn and
                 <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent">
                   {" "}
                   Upskill
                 </span>
               </h2>
-              <p className={`text-xl max-w-3xl mx-auto ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+              <p className={`text-lg sm:text-xl max-w-3xl mx-auto px-4 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                 Master essential skills with our curated learning paths and comprehensive tutorials
               </p>
             </div>
 
-            <div className="overflow-x-auto scrollbar-hide">
+            {/* Mobile: Show cards vertically, Desktop: Horizontal scroll */}
+            <div className="block sm:hidden">
+              <div className="space-y-4">
+                {[
+                  {
+                    title: "Data Structures & Algorithms",
+                    description: "Master the fundamentals of DSA with comprehensive tutorials and practice problems",
+                    link: "https://www.youtube.com/watch?v=y3OOaXrFy-Q&list=PLQEaRBV9gAFu4ovJ41PywklqI7IyXwr01",
+                    image: "https://tse3.mm.bing.net/th/id/OIP.IodRARzhZ9CBPYBS2_9LEgHaEK?pid=Api&P=0&h=180",
+                    color: "from-blue-500 to-indigo-600",
+                    icon: "🧮"
+                  },
+                  {
+                    title: "System Design",
+                    description: "Learn how to design scalable systems and architect robust applications",
+                    link: "https://www.youtube.com/watch?v=AK0hu0Zxua4&list=PLQEaRBV9gAFvzp6XhcNFpk1WdOcyVo9qT",
+                    image: "https://tse2.mm.bing.net/th/id/OIP.0iCWYNiceXNXodc6dWCZewHaDe?pid=Api&P=0&h=180",
+                    color: "from-green-500 to-emerald-600",
+                    icon: "🏗️"
+                  },
+                  {
+                    title: "Full Stack Development",
+                    description: "Build complete web applications from frontend to backend with modern technologies",
+                    link: "https://www.youtube.com/watch?v=tVzUXW6siu0&list=PLu0W_9lII9agq5TrH9XLIKQvv0iaF2X3w&pp=0gcJCV8EOCosWNin",
+                    image: "https://i.ytimg.com/vi/tVzUXW6siu0/hqdefault.jpg?sqp=-oaymwEXCOADEI4CSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLBenW1M30gqWfrb8bLNydwUJiebEA",
+                    color: "from-purple-500 to-violet-600",
+                    icon: "💻"
+                  },
+                  {
+                    title: "Spring Boot",
+                    description: "Master Java Spring Boot framework for enterprise application development",
+                    link: "https://www.youtube.com/watch?v=Zxwq3aW9ctU&list=PLsyeobzWxl7qbKoSgR5ub6jolI8-ocxCF",
+                    image: "https://i.ytimg.com/vi/Zxwq3aW9ctU/hqdefault.jpg?sqp=-oaymwEXCOADEI4CSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLBPvSBVpeCabK8qzRMBY6XNM4VRSw",
+                    color: "from-orange-500 to-red-600",
+                    icon: "🌱"
+                  },
+                  {
+                    title: "Generative AI",
+                    description: "Explore the cutting-edge world of AI and machine learning technologies",
+                    link: "https://www.youtube.com/watch?v=WOyZid8OkkI&list=PLd7PleJR_EFfRYiLdagOsv4FczMl1Cxt_",
+                    image: "https://i.ytimg.com/vi/WOyZid8OkkI/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAr8shMX8h7efRCCis0s5kBP0Iugw",
+                    color: "from-cyan-500 to-blue-600",
+                    icon: "🤖"
+                  }
+                ].map((topic, index) => (
+                  <a
+                    key={index}
+                    href={topic.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`group relative overflow-hidden rounded-2xl transition-all duration-500 flex w-full h-32 hover:scale-105 hover:shadow-lg ${
+                      isDark
+                        ? "bg-gray-800/80 border border-gray-600/50 hover:bg-gray-700/90 hover:border-gray-500/70"
+                        : "bg-white/95 border border-gray-200/60 hover:bg-white hover:border-gray-300/80 shadow-md hover:shadow-lg"
+                    } backdrop-blur-sm`}
+                  >
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${topic.color} opacity-0 ${
+                        isDark ? "group-hover:opacity-15" : "group-hover:opacity-12"
+                      } transition-all duration-500`}
+                    ></div>
+
+                    <div className="relative flex items-center p-4 w-full">
+                      <div className="flex-shrink-0 mr-4">
+                        <img
+                          src={topic.image}
+                          alt={topic.title}
+                          className="w-16 h-16 object-cover rounded-lg"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <div className="text-2xl mt-1 text-center">{topic.icon}</div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-lg font-bold mb-2 truncate ${isDark ? "text-white" : "text-gray-900"}`}>
+                          {topic.title}
+                        </h3>
+                        <p className={`text-sm leading-tight line-clamp-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                          {topic.description}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0 ml-2">
+                        <ArrowRight className={`h-5 w-5 transform group-hover:translate-x-1 transition-transform duration-300 ${isDark ? "text-gray-400" : "text-gray-500"}`} />
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop: Horizontal scrolling */}
+            <div className="hidden sm:block overflow-x-auto scrollbar-hide">
               <div className="flex gap-6 pb-4" style={{ width: "max-content" }}>
                 {[
                   {
@@ -2261,32 +2353,33 @@ const Home: React.FC = () => {
 
         {/* Enhanced Company Interview Practice */}
         <div
-          className={`relative overflow-hidden rounded-3xl p-12 mb-20 ${
+          className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 lg:p-12 mb-20 ${
             isDark ? "bg-gray-800/50 border-2 border-white/30" : "bg-white border-2 border-black/30"
           } backdrop-blur-sm`}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-blue-500/5 to-cyan-500/5"></div>
           <div className="relative">
-            <div className="text-center mb-12">
-              <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${isDark ? "text-white" : "text-gray-900"}`}>
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 ${isDark ? "text-white" : "text-gray-900"}`}>
                 Practice by
                 <span className="bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   {" "}
                   Company
                 </span>
               </h2>
-              <p className={`text-xl max-w-3xl mx-auto ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+              <p className={`text-lg sm:text-xl max-w-3xl mx-auto px-4 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                 Prepare for interviews at top tech companies with curated problem sets and real interview questions
               </p>
             </div>
 
+            {/* Responsive slider - smaller cards on mobile */}
             <div className="overflow-x-auto scrollbar-hide">
-              <div className="flex gap-8 pb-4" style={{ width: "max-content" }}>
+              <div className="flex gap-4 sm:gap-8 pb-4" style={{ width: "max-content" }}>
                 {companies.map((company, index) => (
                   <Link
                     key={index}
                     to={`/company/${encodeURIComponent(company.name)}`}
-                    className={`group relative overflow-hidden rounded-3xl transition-all duration-500 flex-shrink-0 w-80 h-[480px] hover:scale-105 hover:shadow-2xl ${
+                    className={`group relative overflow-hidden rounded-3xl transition-all duration-500 flex-shrink-0 w-64 sm:w-80 h-96 sm:h-[480px] hover:scale-105 hover:shadow-2xl ${
                       isDark
                         ? `bg-gradient-to-br ${company.darkBgGradient} border-2 border-white/30 hover:bg-gray-800/80 hover:border-white/50`
                         : `bg-gradient-to-br ${company.bgGradient} border-2 border-black/30 hover:bg-gray-50 hover:border-black/50`
@@ -2298,7 +2391,7 @@ const Home: React.FC = () => {
 
                     <div className="relative h-full flex flex-col">
                       {/* Company Logo Section */}
-                      <div className="h-48 overflow-hidden rounded-t-3xl relative">
+                      <div className="h-32 sm:h-48 overflow-hidden rounded-t-3xl relative">
                         <img
                           src={company.logo || "/placeholder.svg"}
                           alt={company.name}

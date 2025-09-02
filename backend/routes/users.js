@@ -83,5 +83,180 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/users/contest-leaderboard - Contest leaderboard
+router.get('/contest-leaderboard', async (req, res) => {
+  try {
+    console.log('[Leaderboard] Contest leaderboard route called');
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    console.log('[Leaderboard] Params:', { page, limit, skip });
+
+    // Get total user count
+    const totalUsers = await User.countDocuments();
+    console.log('[Leaderboard] Total users:', totalUsers);
+
+    // Get leaderboard users
+    const users = await User.find({})
+      .select('username avatar ratings.contestRating stats.contestsPlayed stats.contestsWon')
+      .sort({ 'ratings.contestRating': -1 })
+      .skip(skip)
+      .limit(limit);
+    console.log('[Leaderboard] Leaderboard users:', users.map(u => ({ username: u.username, rating: u.ratings?.contestRating })));
+
+    // Get current user rank if authenticated (optional)
+    let currentUserRank = null;
+    if (req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        console.log('[Leaderboard] Authorization header found, token:', token);
+        const jwt = await import('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('[Leaderboard] Decoded JWT:', decoded);
+        const userId = decoded.userId;
+        console.log('[Leaderboard] UserId from token:', userId);
+        if (userId) {
+          const currentUser = await User.findById(userId);
+          console.log('[Leaderboard] Current user:', currentUser?.username);
+          if (currentUser) {
+            const betterUsers = await User.countDocuments({
+              'ratings.contestRating': { $gt: currentUser.ratings.contestRating }
+            });
+            const rank = betterUsers + 1;
+            const percentile = ((totalUsers - rank) / totalUsers) * 100;
+            currentUserRank = { rank, percentile };
+            console.log('[Leaderboard] Current user rank:', currentUserRank);
+          }
+        }
+      } catch (error) {
+        // Ignore auth errors for public leaderboard
+        console.log('[Leaderboard] Auth error in contest leaderboard:', error.message);
+      }
+    }
+
+    res.json({
+      users,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: page,
+      currentUserRank
+    });
+    console.log('[Leaderboard] Contest leaderboard response sent');
+  } catch (error) {
+    console.error('❌ [USERS] Error fetching contest leaderboard:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET /api/users/game-leaderboard - Game leaderboard  
+router.get('/game-leaderboard', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get total user count
+    const totalUsers = await User.countDocuments();
+
+    // Get leaderboard users
+    const users = await User.find({})
+      .select('username avatar ratings.gameRating stats.gamesPlayed stats.gamesWon')
+      .sort({ 'ratings.gameRating': -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Get current user rank if authenticated (optional)
+    let currentUserRank = null;
+    if (req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const jwt = await import('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
+        
+        if (userId) {
+          const currentUser = await User.findById(userId);
+          if (currentUser) {
+            const betterUsers = await User.countDocuments({
+              'ratings.gameRating': { $gt: currentUser.ratings.gameRating }
+            });
+            const rank = betterUsers + 1;
+            const percentile = ((totalUsers - rank) / totalUsers) * 100;
+            currentUserRank = { rank, percentile };
+          }
+        }
+      } catch (error) {
+        console.log('Auth error in game leaderboard:', error.message);
+      }
+    }
+
+    res.json({
+      users,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: page,
+      currentUserRank
+    });
+  } catch (error) {
+    console.error('❌ [USERS] Error fetching game leaderboard:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET /api/users/rapidfire-leaderboard - RapidFire leaderboard
+router.get('/rapidfire-leaderboard', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get total user count
+    const totalUsers = await User.countDocuments();
+
+    // Get leaderboard users
+    const users = await User.find({})
+      .select('username avatar ratings.rapidFireRating stats.rapidFireGamesPlayed stats.rapidFireGamesWon')
+      .sort({ 'ratings.rapidFireRating': -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Get current user rank if authenticated (optional)
+    let currentUserRank = null;
+    if (req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const jwt = await import('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
+        
+        if (userId) {
+          const currentUser = await User.findById(userId);
+          if (currentUser) {
+            const betterUsers = await User.countDocuments({
+              'ratings.rapidFireRating': { $gt: currentUser.ratings.rapidFireRating }
+            });
+            const rank = betterUsers + 1;
+            const percentile = ((totalUsers - rank) / totalUsers) * 100;
+            currentUserRank = { rank, percentile };
+          }
+        }
+      } catch (error) {
+        console.log('Auth error in rapidfire leaderboard:', error.message);
+      }
+    }
+
+    res.json({
+      users,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: page,
+      currentUserRank
+    });
+  } catch (error) {
+    console.error('❌ [USERS] Error fetching rapidfire leaderboard:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 export default router;
 

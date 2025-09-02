@@ -40,8 +40,11 @@ const OAuthHandler = () => {
             await refreshUser();
           }
           
-          // Navigate using React Router instead of forcing page reload
-          navigate('/', { replace: true });
+          // Force a page refresh for OAuth users to ensure proper authentication state
+          // This fixes the issue where users need to refresh the page to be recognized as authenticated
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 100);
         } catch (error) {
           console.error('❌ OAuth authentication failed:', error);
           localStorage.removeItem('token');

@@ -64,7 +64,19 @@ const userSchema = new mongoose.Schema({
     accuracy: { type: Number, default: 0 }, // % value
     currentStreak: { type: Number, default: 0 },
     maxStreak: { type: Number, default: 0 },
-    lastSubmissionDate: { type: Date }
+    lastSubmissionDate: { type: Date },
+    
+    // Game stats
+    gamesPlayed: { type: Number, default: 0 },
+    gamesWon: { type: Number, default: 0 },
+    
+    // Contest stats  
+    contestsPlayed: { type: Number, default: 0 },
+    contestsWon: { type: Number, default: 0 },
+    
+    // RapidFire stats
+    rapidFireGamesPlayed: { type: Number, default: 0 },
+    rapidFireGamesWon: { type: Number, default: 0 }
   },
 
   // Topic wise performance
