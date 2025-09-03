@@ -38,7 +38,8 @@ const Navbar: React.FC = () => {
     { path: '/contest', label: 'Contest' },
     { path: '/game', label: 'Game' },
     { path: '/interview', label: 'Interview' },
-    { path: '/chats', label: 'Chat' }
+    { path: '/chats', label: 'Chat' },
+    { path: '/courses', label: 'Learn' }
   ];
 
   // Emit game leave event when navigating away from game page

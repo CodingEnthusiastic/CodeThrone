@@ -29,6 +29,9 @@ import Chat from './pages/Chat';
 import ContestLeaderboard from './pages/ContestLeaderboard';
 import GameLeaderboard from './pages/GameLeaderboard';
 import RapidFireLeaderboard from './pages/RapidFireLeaderboard';
+import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
+import ChapterDetail from './pages/ChapterDetail';
 import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
@@ -466,6 +469,12 @@ const AppRoutes = () => {
             <Route path='/announcements' element={<Announcements/>}/>
             <Route path='/announcements/:id' element={<AnnounceDetail/>}/>
             <Route path="/oauth" element={<OAuthHandler />} />
+            
+            {/* Course Certification System Routes */}
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/courses/:courseId" element={<CourseDetail />} />
+            <Route path="/courses/chapter/:chapterId" element={<ChapterDetail />} />
+            <Route path="/admin/courses" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           </Routes>
         </div>
       </div>
