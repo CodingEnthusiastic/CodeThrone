@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const courseCompletionSchema = new mongoose.Schema({
   user: {
@@ -46,4 +46,5 @@ const courseCompletionSchema = new mongoose.Schema({
 
 courseCompletionSchema.index({ user: 1, course: 1 }, { unique: true });
 
-module.exports = mongoose.model('CourseCompletion', courseCompletionSchema);
+const CourseCompletion = mongoose.model('CourseCompletion', courseCompletionSchema);
+export default CourseCompletion;

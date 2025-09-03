@@ -1,12 +1,12 @@
-const express = require('express');
+
+import express from 'express';
 const router = express.Router();
-const Course = require('../models/Course');
-const Module = require('../models/Module');
-const Chapter = require('../models/Chapter');
-const Quiz = require('../models/Quiz');
-const CourseCompletion = require('../models/CourseCompletion');
-const auth = require('../middleware/auth');
-const admin = require('../middleware/auth'); // Assuming admin middleware exists
+import Course from '../models/Course.js';
+import Module from '../models/Module.js';
+import Chapter from '../models/Chapter.js';
+import Quiz from '../models/Quiz.js';
+import CourseCompletion from '../models/CourseCompletion.js';
+import { authenticateToken as auth, requireAdmin as admin } from '../middleware/auth.js';
 
 // Get all published courses
 router.get('/', async (req, res) => {
@@ -509,4 +509,4 @@ router.put('/chapter/:chapterId', admin, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

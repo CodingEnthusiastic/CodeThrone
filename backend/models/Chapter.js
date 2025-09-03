@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const chapterSchema = new mongoose.Schema({
   title: {
@@ -52,4 +52,5 @@ const chapterSchema = new mongoose.Schema({
   }]
 });
 
-module.exports = mongoose.model('Chapter', chapterSchema);
+const Chapter = mongoose.model('Chapter', chapterSchema);
+export default Chapter;
