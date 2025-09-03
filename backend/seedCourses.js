@@ -1,9 +1,9 @@
-require('./loadenv');
-const mongoose = require('mongoose');
-const Course = require('./models/Course');
-const Module = require('./models/Module');
-const Chapter = require('./models/Chapter');
-const Quiz = require('./models/Quiz');
+import './loadenv.js';
+import mongoose from 'mongoose';
+import Course from './models/Course.js';
+import Module from './models/Module.js';
+import Chapter from './models/Chapter.js';
+import Quiz from './models/Quiz.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/building-wonders';
 

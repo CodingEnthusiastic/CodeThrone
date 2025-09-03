@@ -94,6 +94,12 @@ const userSchema = new mongoose.Schema({
     globalRank: { type: Number, default: 0 },
     percentile: { type: Number, default: 0 } // 98 = top 2%
   },
+  
+  // Latest form (last 5 match results)
+  latestForm: [{ 
+    type: String, 
+    enum: ['W', 'L', 'D', '-'] // Win, Loss, Draw, No match
+  }],
 
   // Coin System
   coins: { type: Number, default: 0 },

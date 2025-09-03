@@ -19,10 +19,35 @@ router.get('/contest-leaderboard', async (req, res) => {
 
     // Get leaderboard users
     const users = await User.find({})
-      .select('username avatar ratings.contestRating stats.contestsPlayed stats.contestsWon')
+      .select('username avatar ratings.contestRating stats.contestsPlayed stats.contestsWon stats.contestsLost stats.contestsTied contestHistory latestForm')
       .sort({ 'ratings.contestRating': -1 })
       .skip(skip)
       .limit(limit);
+      
+    // Generate latest form for each user based on contestHistory if not already present
+    const usersWithLatestForm = users.map(user => {
+      const userObj = user.toObject();
+      
+      // If latestForm is not already defined, try to generate it from contestHistory
+      if (!userObj.latestForm && user.contestHistory && user.contestHistory.length > 0) {
+        // Get last 5 contests in chronological order
+        const recentContests = user.contestHistory
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 5);
+          
+        // Generate form based on rank (1 = win, 2-3 = tie, 4+ = loss)
+        userObj.latestForm = recentContests.map(contest => {
+          if (contest.rank === 1) return 'W';
+          if (contest.rank <= 3) return 'D';
+          return 'L';
+        });
+      } else if (!userObj.latestForm) {
+        // Default empty form array if no history
+        userObj.latestForm = [];
+      }
+      
+      return userObj;
+    });
     console.log('[Leaderboard] Leaderboard users:', users.map(u => ({ username: u.username, rating: u.ratings?.contestRating })));
 
     // Get current user rank if authenticated (optional)
@@ -56,7 +81,7 @@ router.get('/contest-leaderboard', async (req, res) => {
     }
 
     res.json({
-      users,
+      users: usersWithLatestForm,
       totalUsers,
       totalPages: Math.ceil(totalUsers / limit),
       currentPage: page,
@@ -81,10 +106,36 @@ router.get('/game-leaderboard', async (req, res) => {
 
     // Get leaderboard users
     const users = await User.find({})
-      .select('username avatar ratings.gameRating stats.gamesPlayed stats.gamesWon')
+      .select('username avatar ratings.gameRating stats.gamesPlayed stats.gamesWon stats.gamesLost stats.gamesTied latestForm gameHistory')
       .sort({ 'ratings.gameRating': -1 })
       .skip(skip)
       .limit(limit);
+    
+    // Generate latest form for each user based on gameHistory if not already present
+    const usersWithLatestForm = users.map(user => {
+      const userObj = user.toObject();
+      
+      // If latestForm is not already defined, try to generate it from gameHistory
+      if (!userObj.latestForm && user.gameHistory && user.gameHistory.length > 0) {
+        // Get last 5 games in chronological order
+        const recentGames = user.gameHistory
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 5);
+          
+        // Generate form based on result
+        userObj.latestForm = recentGames.map(game => {
+          if (game.result === 'win') return 'W';
+          if (game.result === 'lose') return 'L';
+          if (game.result === 'draw') return 'D';
+          return '-';
+        });
+      } else if (!userObj.latestForm) {
+        // Default empty form array if no history
+        userObj.latestForm = [];
+      }
+      
+      return userObj;
+    });
 
     // Get current user rank if authenticated (optional)
     let currentUserRank = null;

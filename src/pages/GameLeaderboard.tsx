@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Medal, Award, Users, ArrowLeft, ChevronLeft, ChevronRight, Code, Search, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Trophy, Medal, Award, Users, ArrowLeft, ChevronLeft, ChevronRight, Gamepad2, Search, ChevronsLeft, ChevronsRight, Code } from 'lucide-react';
 import axios from 'axios';
+import { useTheme } from '../contexts/ThemeContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -15,13 +16,17 @@ interface LeaderboardEntry {
   stats: {
     gamesPlayed: number;
     gamesWon: number;
+    gamesLost?: number;
+    gamesTied?: number;
   };
   rank?: number;
   percentile?: number;
+  latestForm?: Array<'W' | 'L' | 'D' | '-'>;
 }
 
 const GameLeaderboard: React.FC = () => {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,7 +61,13 @@ const GameLeaderboard: React.FC = () => {
         }
       });
 
-      setLeaderboard(response.data.users);
+      // Process users to ensure latestForm is properly formatted
+      const processedUsers = response.data.users.map((user: any) => ({
+        ...user,
+        latestForm: user.latestForm || Array(5).fill('-') // Ensure latestForm exists
+      }));
+
+      setLeaderboard(processedUsers);
       setTotalPages(Math.ceil(response.data.totalUsers / entriesPerPage));
       setUserRank(response.data.currentUserRank);
     } catch (error) {
@@ -77,7 +88,14 @@ const GameLeaderboard: React.FC = () => {
           limit: 1000 // Get all users for search
         }
       });
-      setAllUsers(response.data.users);
+      
+      // Process users to ensure latestForm is properly formatted
+      const processedUsers = response.data.users.map((user: any) => ({
+        ...user,
+        latestForm: user.latestForm || Array(5).fill('-') // Ensure latestForm exists
+      }));
+      
+      setAllUsers(processedUsers);
     } catch (error) {
       console.error('Failed to fetch all users:', error);
     }
@@ -113,6 +131,42 @@ const GameLeaderboard: React.FC = () => {
     if (rank === 2) return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
     if (rank === 3) return "bg-gradient-to-r from-orange-400 to-orange-600 text-white";
     return "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300";
+  };
+  
+  const getFormColors = (result: 'W' | 'L' | 'D' | '-') => {
+    switch(result) {
+      case 'W':
+        return isDark ? 'bg-green-700 text-green-100' : 'bg-green-500 text-white';
+      case 'L':
+        return isDark ? 'bg-red-700 text-red-100' : 'bg-red-500 text-white';
+      case 'D':
+        return isDark ? 'bg-gray-600 text-gray-200' : 'bg-gray-400 text-white';
+      case '-':
+      default:
+        return isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500';
+    }
+  };
+
+  const renderFormDisplay = (latestForm: Array<'W' | 'L' | 'D' | '-'> = []) => {
+    // Ensure we always have 5 results to display
+    const displayForm = [...(latestForm || [])];
+    while (displayForm.length < 5) {
+      displayForm.push('-');
+    }
+    
+    return (
+      <div className="flex space-x-1">
+        {displayForm.slice(0, 5).map((result, idx) => (
+          <div 
+            key={idx} 
+            className={`w-6 h-6 flex items-center justify-center rounded-sm ${getFormColors(result)}`}
+            title={result === 'W' ? 'Win' : result === 'L' ? 'Loss' : result === 'D' ? 'Draw' : 'No match'}
+          >
+            {result}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (loading) {

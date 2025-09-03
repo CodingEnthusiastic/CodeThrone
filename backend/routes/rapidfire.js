@@ -577,7 +577,7 @@ router.get('/leaderboard', async (req, res) => {
     const skip = (page - 1) * limit;
 
     const leaderboard = await User.find({
-      'ratings.rapidFireRating': { $exists: true }
+      'ratings.rapidFireRating': { $exists: true, $gt: 0 }
     })
     .select('username profile.avatar ratings.rapidFireRating rapidFireHistory')
     .sort({ 'ratings.rapidFireRating': -1 })
