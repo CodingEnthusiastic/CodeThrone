@@ -202,6 +202,7 @@ const MCQCard = memo(({
   question, 
   questionNumber, 
   onAnswerSelect, 
+  onSkip,
   selectedAnswer, 
   showResult, 
   isCorrect, 
@@ -210,6 +211,7 @@ const MCQCard = memo(({
   question: MCQQuestion;
   questionNumber: number;
   onAnswerSelect: (optionIndex: number) => void;
+  onSkip?: () => void;
   selectedAnswer: number | null;
   showResult: boolean;
   isCorrect?: boolean;
@@ -307,6 +309,21 @@ const MCQCard = memo(({
           </div>
         )}
       </div>
+
+      {/* Skip Button - Only show if not showing result and skip function available */}
+      {!showResult && onSkip && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={onSkip}
+            className="px-6 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-200 font-medium"
+          >
+            ⏭️ Skip Question (No Penalty)
+          </button>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Skip to avoid negative marks
+          </p>
+        </div>
+      )}
 
       {showResult && question.explanation && (
         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
@@ -544,7 +561,7 @@ const ScoreBoard = memo(({
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             <Timer className="h-4 w-4 inline mr-1" />
-            10 seconds per question
+            2 minutes total game time
           </p>
         </div>
 
@@ -576,7 +593,7 @@ const RapidFire: React.FC = () => {
   const [roomCode, setRoomCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [searchingForMatch, setSearchingForMatch] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(10);
+  const [timeRemaining, setTimeRemaining] = useState(120); // BULLETPROOF: 120 seconds global timer
   const [gameFinished, setGameFinished] = useState(false);
   const [showGameEndModal, setShowGameEndModal] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -697,7 +714,7 @@ const RapidFire: React.FC = () => {
       
       setActiveGame(data as any);
       setGameStarted(true);
-      setTimeRemaining(data.timeLimit);
+      setTimeRemaining(120); // BULLETPROOF: 120 seconds global timer
       setCurrentQuestionIndex(0); // Reset to first question
       questionStartTime.current = Date.now();
       
@@ -767,7 +784,7 @@ const RapidFire: React.FC = () => {
         setCurrentQuestionIndex(data.questionIndex);
         setSelectedAnswer(null);
         setShowResult(false);
-        setTimeRemaining(10);
+        // NOTE: No timer reset - using global 120-second timer
         questionStartTime.current = Date.now();
         
         // Clear submission tracking for the new question
@@ -775,6 +792,60 @@ const RapidFire: React.FC = () => {
         
         console.log(`🔄 Advanced to question ${data.questionIndex + 1}`);
       }
+    });
+
+    // BULLETPROOF: Handle live game updates (new 120-second timer system)
+    newSocket.on("rapidfire-live-update", (updateData: any) => {
+      console.log("🔄 BULLETPROOF: Live game update received:", updateData);
+      
+      if (activeGame && updateData.gameId === activeGame._id) {
+        const updatedGame = { ...activeGame };
+        
+        // Update all player stats from the server
+        updateData.players.forEach((serverPlayer: any) => {
+          const playerIndex = updatedGame.players.findIndex(
+            (p: any) => String(p.user._id) === String(serverPlayer.userId)
+          );
+          
+          if (playerIndex !== -1) {
+            updatedGame.players[playerIndex].score = serverPlayer.score;
+            updatedGame.players[playerIndex].correctAnswers = serverPlayer.correctAnswers;
+            updatedGame.players[playerIndex].wrongAnswers = serverPlayer.wrongAnswers;
+            updatedGame.players[playerIndex].questionsAnswered = serverPlayer.questionsAnswered;
+          }
+        });
+        
+        console.log("✅ BULLETPROOF: Live game state synchronized");
+        setActiveGame(updatedGame);
+        
+        // Update global game timer
+        if (updateData.timeRemaining !== undefined) {
+          setTimeRemaining(updateData.timeRemaining);
+        }
+      }
+    });
+
+    // BULLETPROOF: Handle answer result
+    newSocket.on("answer-result", (result: any) => {
+      console.log("📝 BULLETPROOF: Answer result received:", result);
+      
+      setShowResult(true);
+      setTimeout(() => {
+        setShowResult(false);
+        setSelectedAnswer(null);
+      }, 2000);
+    });
+
+    // BULLETPROOF: Handle question skip confirmation
+    newSocket.on("question-skipped", (result: any) => {
+      console.log("⏭️ BULLETPROOF: Question skipped:", result);
+      
+      // Show skip confirmation
+      setShowResult(true);
+      setTimeout(() => {
+        setShowResult(false);
+        setSelectedAnswer(null);
+      }, 1500);
     });
 
     newSocket.on("rapidfire-game-finished", (data: any) => {
@@ -971,6 +1042,44 @@ const RapidFire: React.FC = () => {
     }
   }, [showResult, selectedAnswer, activeGame, currentQuestionIndex]);
 
+  // BULLETPROOF: Skip question function
+  const skipQuestion = useCallback(() => {
+    if (showResult || !activeGame || !socketRef.current) {
+      console.log("❌ Cannot skip question - conditions not met");
+      return;
+    }
+
+    const currentQuestion = activeGame?.questionSet[currentQuestionIndex];
+    
+    console.log("⏭️ BULLETPROOF Skip Question Debug:", {
+      hasActiveGame: !!activeGame,
+      gameId: activeGame?._id,
+      currentQuestionIndex,
+      hasCurrentQuestion: !!currentQuestion
+    });
+    
+    if (socketRef.current && currentQuestion && activeGame?._id) {
+      console.log("⏭️ Skipping question:", {
+        gameId: activeGame._id,
+        questionIndex: currentQuestionIndex
+      });
+      
+      socketRef.current.emit("skip-rapidfire-question", {
+        gameId: activeGame._id,
+        questionIndex: currentQuestionIndex
+      });
+      
+      // Set a temporary state to show skip feedback
+      setSelectedAnswer(-1); // Special value for skip
+    } else {
+      console.error("❌ Cannot skip question:", {
+        hasSocket: !!socketRef.current,
+        hasQuestion: !!currentQuestion,
+        hasGameId: !!activeGame?._id
+      });
+    }
+  }, [showResult, activeGame, currentQuestionIndex]);
+
   const findRandomMatch = useCallback(async () => {
     if (!user) return;
 
@@ -1077,7 +1186,7 @@ const RapidFire: React.FC = () => {
     setActiveGame(null);
     setGameFinished(false);
     setGameStarted(false);
-    setTimeRemaining(10);
+    setTimeRemaining(120); // BULLETPROOF: Reset to 120 seconds
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     
@@ -1208,6 +1317,7 @@ const RapidFire: React.FC = () => {
                 question={currentQuestion}
                 questionNumber={currentQuestionIndex + 1}
                 onAnswerSelect={handleAnswerSelect}
+                onSkip={skipQuestion}
                 selectedAnswer={selectedAnswer}
                 showResult={showResult}
                 isCorrect={showResult ? currentQuestion?.options?.[selectedAnswer || 0]?.isCorrect : undefined}
