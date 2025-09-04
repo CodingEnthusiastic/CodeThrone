@@ -313,7 +313,7 @@ const AdminDashboard: React.FC = () => {
         axios.get(`${API_URL}/users`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }),
-        axios.get(`${API_URL}/courses`, {
+        axios.get(`${API_URL}/api/courses`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
       ]);

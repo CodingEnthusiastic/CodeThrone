@@ -77,7 +77,7 @@ const CourseDetail: React.FC = () => {
       setLoading(true);
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const courseResponse = await axios.get(`${API_URL}/courses/${courseId}`, { headers });
+      const courseResponse = await axios.get(`${API_URL}/api/courses/${courseId}`, { headers });
       setCourse(courseResponse.data.course);
       setModules(courseResponse.data.modules);
       
@@ -101,7 +101,7 @@ const CourseDetail: React.FC = () => {
           // If the user has completed the course, fetch certificate data
           if (progressResponse.data.certificateId) {
             const certificateResponse = await axios.get(
-              `${API_URL}/courses/certificate/${courseId}`,
+              `${API_URL}/api/courses/certificate/${courseId}`,
               { headers }
             );
             setCertificateData(certificateResponse.data);
@@ -123,7 +123,7 @@ const CourseDetail: React.FC = () => {
   const fetchModuleChapters = async (moduleId: string) => {
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(`${API_URL}/courses/module/${moduleId}`, { headers });
+      const response = await axios.get(`${API_URL}/api/courses/module/${moduleId}`, { headers });
       setModuleChapters(prev => ({
         ...prev,
         [moduleId]: response.data.chapters
@@ -153,7 +153,7 @@ const CourseDetail: React.FC = () => {
     try {
       setEnrolling(true);
       const headers = { Authorization: `Bearer ${token}` };
-      await axios.post(`${API_URL}/courses/enroll/${courseId}`, {}, { headers });
+      await axios.post(`${API_URL}/api/courses/enroll/${courseId}`, {}, { headers });
       
       // Refresh course details to get updated progress
       await fetchCourseDetails();

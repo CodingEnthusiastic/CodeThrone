@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Search, Medal, TrendingUp, Users, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, Search, Medal, TrendingUp, Users, ArrowUpDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
 
@@ -41,24 +41,22 @@ const ContestLeaderboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'contestRating' | 'contestsWon' | 'username'>('contestRating');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchContestLeaderboard();
-  }, [currentPage]);
+  }, []);
 
   const fetchContestLeaderboard = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/api/users/contest-leaderboard`, {
-        params: { page: currentPage, limit: itemsPerPage }
+        params: { all: 'true' } // Request all users instead of pagination
       });
       
       // Add position/rank to each user
       const usersWithPosition = response.data.users.map((user: ContestLeaderboardUser, index: number) => ({
         ...user,
-        position: (currentPage - 1) * itemsPerPage + index + 1
+        position: index + 1
       }));
       
       setUsers(usersWithPosition);
@@ -91,9 +89,32 @@ const ContestLeaderboard: React.FC = () => {
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    let aValue, bValue;
+    
+    switch (sortBy) {
+      case 'contestRating':
+        aValue = a.ratings?.contestRating || 0;
+        bValue = b.ratings?.contestRating || 0;
+        break;
+      case 'contestsWon':
+        aValue = a.stats?.contestsWon || 0;
+        bValue = b.stats?.contestsWon || 0;
+        break;
+      case 'username':
+        aValue = a.username.toLowerCase();
+        bValue = b.username.toLowerCase();
+        break;
+      default:
+        return 0;
+    }
+    
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
 
   const handleSort = (field: typeof sortBy) => {
     if (sortBy === field) {
@@ -243,7 +264,7 @@ const ContestLeaderboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className={`${isDark ? 'bg-gray-800' : 'bg-white'} divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                {paginatedUsers.map((user) => (
+                {sortedUsers.map((user: ContestLeaderboardUser) => (
                   <tr 
                     key={user._id} 
                     className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors duration-200`}
@@ -326,46 +347,12 @@ const ContestLeaderboard: React.FC = () => {
             </table>
           </div>
           
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} px-6 py-4 border-t ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
-              <div className="flex items-center justify-between">
-                <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length} results
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className={`p-2 rounded-lg border ${
-                      currentPage === 1
-                        ? `${isDark ? 'bg-gray-800 text-gray-600 border-gray-700' : 'bg-gray-100 text-gray-400 border-gray-300'} cursor-not-allowed`
-                        : `${isDark ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`
-                    }`}
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  
-                  <span className={`px-4 py-2 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className={`p-2 rounded-lg border ${
-                      currentPage === totalPages
-                        ? `${isDark ? 'bg-gray-800 text-gray-600 border-gray-700' : 'bg-gray-100 text-gray-400 border-gray-300'} cursor-not-allowed`
-                        : `${isDark ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`
-                    }`}
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
+          {/* Show total users count */}
+          <div className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} px-6 py-4 border-t ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+            <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'} text-center`}>
+              Showing all {sortedUsers.length} users
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

@@ -276,14 +276,13 @@ const RapidFireLeaderboard: React.FC = () => {
             <table className="w-full">
               <thead className={`uppercase text-xs ${isDark ? 'bg-gray-900 text-gray-400' : 'bg-gray-50 text-gray-700'}`}>
                 <tr>
-                  <th className="px-4 py-3 text-left">Rank</th>
-                  <th className="px-4 py-3 text-left">User</th>
-                  <th className="px-4 py-3 text-center">Games</th>
-                  <th className="px-4 py-3 text-center">W</th>
-                  <th className="px-4 py-3 text-center">L</th>
-                  <th className="px-4 py-3 text-center">D</th>
-                  <th className="px-4 py-3 text-center">Latest Form</th>
-                  <th className="px-4 py-3 text-right">Rating</th>
+                  <th className="px-4 py-3 text-left w-20">Rank</th>
+                  <th className="px-4 py-3 text-left w-48">User</th>
+                  <th className="px-4 py-3 text-center w-20">Games</th>
+                  <th className="px-4 py-3 text-center w-16">W</th>
+                  <th className="px-4 py-3 text-center w-16">L</th>
+                  <th className="px-4 py-3 text-center w-16">D</th>
+                  <th className="px-4 py-3 text-center w-24">Rating</th>
                 </tr>
               </thead>
               <tbody className={`${isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-200'}`}>
@@ -352,7 +351,7 @@ const RapidFireLeaderboard: React.FC = () => {
                       
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className="text-red-600 dark:text-red-400 font-medium">
-                          {user.stats.rapidFireGamesLost}
+                          {user.stats.rapidFireGamesPlayed - user.stats.rapidFireGamesWon - user.stats.rapidFireGamesTied}
                         </span>
                       </td>
                       
@@ -362,34 +361,8 @@ const RapidFireLeaderboard: React.FC = () => {
                         </span>
                       </td>
                       
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <div className="flex space-x-1 justify-center">
-                          {(user.latestForm || []).slice(0, 5).map((result: string, idx: number) => (
-                            <div 
-                              key={idx} 
-                              className={`w-6 h-6 flex items-center justify-center rounded-sm text-xs font-bold ${
-                                result === 'W' ? (isDark ? 'bg-green-700 text-green-100' : 'bg-green-500 text-white') :
-                                result === 'L' ? (isDark ? 'bg-red-700 text-red-100' : 'bg-red-500 text-white') :
-                                result === 'D' ? (isDark ? 'bg-gray-600 text-gray-200' : 'bg-gray-400 text-white') :
-                                (isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500')
-                              }`}
-                              title={
-                                result === 'W' ? 'Win' :
-                                result === 'L' ? 'Loss' :
-                                result === 'D' ? 'Draw' :
-                                'No match'
-                              }
-                            >
-                              {result}
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                      
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <span className={`font-bold ${
-                          isDark ? 'text-blue-400' : 'text-blue-600'
-                        }`}>
+                      <td className="px-4 py-3 text-center w-24 font-bold">
+                        <span className={isDark ? "text-blue-400" : "text-blue-600"}>
                           {user.ratings.rapidFireRating}
                         </span>
                       </td>
@@ -477,4 +450,3 @@ const RapidFireLeaderboard: React.FC = () => {
 };
 
 export default RapidFireLeaderboard;
-         

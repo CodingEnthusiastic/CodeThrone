@@ -51,7 +51,7 @@ const Courses: React.FC = () => {
     try {
       setLoading(true);
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(`${API_URL}/courses`, { headers });
+      const response = await axios.get(`${API_URL}/api/courses`, { headers });
       setCourses(response.data);
       setFilteredCourses(response.data);
     } catch (error) {

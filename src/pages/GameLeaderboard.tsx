@@ -282,7 +282,7 @@ const GameLeaderboard: React.FC = () => {
                   <th className="px-4 py-3 text-center">W</th>
                   <th className="px-4 py-3 text-center">L</th>
                   <th className="px-4 py-3 text-center">D</th>
-                  <th className="px-4 py-3 text-center">Latest Form</th>
+                  {/* Removed Latest Form column */}
                   <th className="px-4 py-3 text-right">Rating</th>
                 </tr>
               </thead>
@@ -365,29 +365,7 @@ const GameLeaderboard: React.FC = () => {
                         </span>
                       </td>
                       
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <div className="flex space-x-1 justify-center">
-                          {(user.latestForm || []).slice(0, 5).map((result, idx) => (
-                            <div 
-                              key={idx} 
-                              className={`w-6 h-6 flex items-center justify-center rounded-sm text-xs font-bold ${
-                                result === 'W' ? (isDark ? 'bg-green-700 text-green-100' : 'bg-green-500 text-white') :
-                                result === 'L' ? (isDark ? 'bg-red-700 text-red-100' : 'bg-red-500 text-white') :
-                                result === 'D' ? (isDark ? 'bg-gray-600 text-gray-200' : 'bg-gray-400 text-white') :
-                                (isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500')
-                              }`}
-                              title={
-                                result === 'W' ? 'Win' :
-                                result === 'L' ? 'Loss' :
-                                result === 'D' ? 'Draw' :
-                                'No match'
-                              }
-                            >
-                              {result}
-                            </div>
-                          ))}
-                        </div>
-                      </td>
+                      {/* Removed Latest Form UI */}
                       
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <span className={`font-bold ${

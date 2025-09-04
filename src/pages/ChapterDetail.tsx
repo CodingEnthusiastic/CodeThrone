@@ -99,7 +99,7 @@ const ChapterDetail: React.FC = () => {
       
       // Fetch chapter details
       const chapterResponse = await axios.get(
-        `${API_URL}/courses/chapter/${chapterId}`,
+        `${API_URL}/api/courses/chapter/${chapterId}`,
         { headers }
       );
       
@@ -112,7 +112,7 @@ const ChapterDetail: React.FC = () => {
       
       // Fetch module details
       const moduleResponse = await axios.get(
-        `${API_URL}/courses/module/${chapterResponse.data.chapter.module}`,
+        `${API_URL}/api/courses/module/${chapterResponse.data.chapter.module}`,
         { headers }
       );
       
@@ -120,7 +120,7 @@ const ChapterDetail: React.FC = () => {
       
       // Fetch course details
       const courseResponse = await axios.get(
-        `${API_URL}/courses/${courseId}`,
+        `${API_URL}/api/courses/${courseId}`,
         { headers }
       );
       
@@ -144,7 +144,7 @@ const ChapterDetail: React.FC = () => {
       
       // Get prev/next chapters
       const chaptersResponse = await axios.get(
-        `${API_URL}/courses/module/${chapterResponse.data.chapter.module}/chapters`,
+        `${API_URL}/api/courses/module/${chapterResponse.data.chapter.module}/chapters`,
         { headers }
       );
       
@@ -178,7 +178,7 @@ const ChapterDetail: React.FC = () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       await axios.post(
-        `${API_URL}/courses/chapter/${chapterId}/complete`,
+        `${API_URL}/api/courses/chapter/${chapterId}/complete`,
         {},
         { headers }
       );
@@ -219,7 +219,7 @@ const ChapterDetail: React.FC = () => {
       
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.post(
-        `${API_URL}/courses/quiz/${quiz._id}/submit`,
+        `${API_URL}/api/courses/quiz/${quiz._id}/submit`,
         { answers },
         { headers }
       );

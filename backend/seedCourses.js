@@ -7,7 +7,8 @@ import Quiz from './models/Quiz.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/building-wonders';
 
-async function seedCourses() {
+async function seedCourses() 
+{
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
@@ -105,15 +106,15 @@ async function seedCourses() {
       order: 3,
       published: true
     });
-      published: true
-    });
+    //   published: true
+    // });
 
     console.log('Created modules');
 
     // Create chapters for module 1
     const chapter1 = await Chapter.create({
       title: 'Variables & Data Types',
-      module: module1._id,
+      module: course1Module1._id,
       order: 1,
       type: 'article',
       content: `# Variables and Data Types in JavaScript
@@ -225,7 +226,7 @@ function scopeExample() {
 
     const chapter2 = await Chapter.create({
       title: 'Operators & Control Flow',
-      module: module1._id,
+      module: course1Module1._id,
       order: 2,
       type: 'article',
       content: `# Operators and Control Flow in JavaScript
@@ -394,7 +395,7 @@ for (const key in person) {
     // Create chapters for module 2
     const chapter3 = await Chapter.create({
       title: 'DOM Selectors',
-      module: module2._id,
+      module: course1Module2._id,
       order: 1,
       type: 'article',
       content: `# DOM Selectors in JavaScript

@@ -9,20 +9,24 @@ router.get('/contest-leaderboard', async (req, res) => {
   try {
     console.log('[Leaderboard] Contest leaderboard route called');
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-    console.log('[Leaderboard] Params:', { page, limit, skip });
+    const limit = req.query.all === 'true' ? 0 : (parseInt(req.query.limit) || 10);
+    const skip = limit === 0 ? 0 : (page - 1) * limit;
+    console.log('[Leaderboard] Params:', { page, limit, skip, all: req.query.all });
 
     // Get total user count
     const totalUsers = await User.countDocuments();
     console.log('[Leaderboard] Total users:', totalUsers);
 
     // Get leaderboard users
-    const users = await User.find({})
+    let query = User.find({})
       .select('username avatar ratings.contestRating stats.contestsPlayed stats.contestsWon stats.contestsLost stats.contestsTied contestHistory recentGameForm')
-      .sort({ 'ratings.contestRating': -1 })
-      .skip(skip)
-      .limit(limit);
+      .sort({ 'ratings.contestRating': -1 });
+    
+    if (limit > 0) {
+      query = query.skip(skip).limit(limit);
+    }
+    
+    const users = await query;
       
     // Generate latest form for each user and ensure all stats have default values
     const usersWithLatestForm = users.map(user => {
@@ -92,7 +96,7 @@ router.get('/contest-leaderboard', async (req, res) => {
     res.json({
       users: usersWithLatestForm,
       totalUsers,
-      totalPages: Math.ceil(totalUsers / limit),
+      totalPages: limit === 0 ? 1 : Math.ceil(totalUsers / limit),
       currentPage: page,
       currentUserRank
     });

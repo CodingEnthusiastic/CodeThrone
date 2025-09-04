@@ -103,7 +103,7 @@ const CourseManager: React.FC = () => {
     try {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(`${API_URL}/courses/admin`, { headers });
+      const response = await axios.get(`${API_URL}/api/courses/admin`, { headers });
       setCourses(response.data);
       setLoading(false);
     } catch (err) {
@@ -118,7 +118,7 @@ const CourseManager: React.FC = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       await axios.post(
-        `${API_URL}/courses`, 
+        `${API_URL}/api/courses`, 
         newCourse,
         { headers }
       );
@@ -149,7 +149,7 @@ const CourseManager: React.FC = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       await axios.put(
-        `${API_URL}/courses/${courseId}`,
+        `${API_URL}/api/courses/${courseId}`,
         updates,
         { headers }
       );
@@ -172,7 +172,7 @@ const CourseManager: React.FC = () => {
     try {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
-      await axios.delete(`${API_URL}/courses/${courseId}`, { headers });
+      await axios.delete(`${API_URL}/api/courses/${courseId}`, { headers });
       
       setSuccess('Course deleted successfully!');
       setSelectedCourse(null);
@@ -190,7 +190,7 @@ const CourseManager: React.FC = () => {
     try {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(`${API_URL}/courses/${courseId}`, { headers });
+      const response = await axios.get(`${API_URL}/api/courses/${courseId}`, { headers });
       setModules(response.data.modules);
       setLoading(false);
     } catch (err) {
@@ -207,7 +207,7 @@ const CourseManager: React.FC = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       await axios.post(
-        `${API_URL}/courses/module`,
+        `${API_URL}/api/courses/module`,
         {
           ...newModule,
           course: selectedCourse._id
@@ -239,7 +239,7 @@ const CourseManager: React.FC = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       await axios.put(
-        `${API_URL}/courses/module/${moduleId}`,
+        `${API_URL}/api/courses/module/${moduleId}`,
         updates,
         { headers }
       );
@@ -264,7 +264,7 @@ const CourseManager: React.FC = () => {
     try {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
-      await axios.delete(`${API_URL}/courses/module/${moduleId}`, { headers });
+      await axios.delete(`${API_URL}/api/courses/module/${moduleId}`, { headers });
       
       setSuccess('Module deleted successfully!');
       setSelectedModule(null);
@@ -282,7 +282,7 @@ const CourseManager: React.FC = () => {
     try {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(`${API_URL}/courses/module/${moduleId}`, { headers });
+      const response = await axios.get(`${API_URL}/api/courses/module/${moduleId}`, { headers });
       setChapters(response.data.chapters);
       setLoading(false);
     } catch (err) {
@@ -299,7 +299,7 @@ const CourseManager: React.FC = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       await axios.post(
-        `${API_URL}/courses/chapter`,
+        `${API_URL}/api/courses/chapter`,
         {
           ...newChapter,
           module: selectedModule._id
@@ -333,7 +333,7 @@ const CourseManager: React.FC = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       await axios.put(
-        `${API_URL}/courses/chapter/${chapterId}`,
+        `${API_URL}/api/courses/chapter/${chapterId}`,
         updates,
         { headers }
       );
@@ -358,7 +358,7 @@ const CourseManager: React.FC = () => {
     try {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
-      await axios.delete(`${API_URL}/courses/chapter/${chapterId}`, { headers });
+      await axios.delete(`${API_URL}/api/courses/chapter/${chapterId}`, { headers });
       
       setSuccess('Chapter deleted successfully!');
       fetchChapters(selectedModule._id);
