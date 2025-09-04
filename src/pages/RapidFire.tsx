@@ -1315,7 +1315,7 @@ const RapidFire: React.FC = () => {
           <div className="flex flex-col items-center mb-4">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Rapid Fire MCQ</h1>
             <button
-              onClick={() => navigate('/rapidfire-leaderboard')}
+              onClick={() => navigate('/rapidfire/leaderboard')}
               className="mb-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-lg hover:from-red-600 hover:to-orange-700 transition-all duration-200 shadow-md hover:shadow-lg"
             >
               <Trophy className="h-5 w-5" />
