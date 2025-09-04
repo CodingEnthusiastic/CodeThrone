@@ -15,7 +15,8 @@ import {
   Megaphone,
   Code,
   Calendar,
-  Settings
+  Settings,
+  BookOpen
 } from 'lucide-react';
 
 interface Problem {
@@ -76,6 +77,44 @@ interface User {
   createdAt?: string;
   profile?: UserProfile;
 }
+
+interface Course {
+  _id: string;
+  title: string;
+  description: string;
+  instructor: string;
+  duration: string;
+  level: string;
+  published: boolean;
+  tags: string[];
+  rating: number;
+  ratingCount: number;
+  thumbnail?: string;
+  createdAt: string;
+  modulesCount?: number;
+}
+
+interface Module {
+  _id: string;
+  title: string;
+  description: string;
+  course: string;
+  order: number;
+  published: boolean;
+  chaptersCount?: number;
+}
+
+interface Chapter {
+  _id: string;
+  title: string;
+  module: string;
+  order: number;
+  type: string;
+  content?: string;
+  videoUrl?: string;
+  duration: number;
+  published: boolean;
+}
   
 
 const AdminDashboard: React.FC = () => {
@@ -98,6 +137,19 @@ const AdminDashboard: React.FC = () => {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editUserData, setEditUserData] = useState<any>(null);
+  
+  // Courses management state
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [showCreateCourse, setShowCreateCourse] = useState(false);
+  const [showCreateModule, setShowCreateModule] = useState(false);
+  const [showCreateChapter, setShowCreateChapter] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editingModule, setEditingModule] = useState<Module | null>(null);
+  const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
@@ -245,7 +297,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [problemsRes, contestsRes, discussionsRes, announcementsRes, usersRes] = await Promise.all([
+      const [problemsRes, contestsRes, discussionsRes, announcementsRes, usersRes, coursesRes] = await Promise.all([
         axios.get(`${API_URL}/problems`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }),
@@ -260,6 +312,9 @@ const AdminDashboard: React.FC = () => {
         }),
         axios.get(`${API_URL}/users`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        }),
+        axios.get(`${API_URL}/courses`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
 
@@ -268,6 +323,7 @@ const AdminDashboard: React.FC = () => {
       setDiscussions(discussionsRes.data.discussions || []);
       setAnnouncements(announcementsRes.data || []);
       setUsers(usersRes.data || []);
+      setCourses(coursesRes.data || []);
     } catch (error: any) {
       console.error('❌ [AdminDashboard] Error fetching admin data:', error);
     } finally {
@@ -630,6 +686,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: <Settings className="h-4 w-4" /> },
     { id: 'users', label: 'Users', icon: <Users className="h-4 w-4" /> },
     { id: 'problems', label: 'Problems', icon: <Code className="h-4 w-4" /> },
+    { id: 'courses', label: 'Courses', icon: <BookOpen className="h-4 w-4" /> },
     { id: 'contests', label: 'Contests', icon: <Trophy className="h-4 w-4" /> },
     { id: 'discussions', label: 'Discussions', icon: <MessageSquare className="h-4 w-4" /> },
     { id: 'announcements', label: 'Announcements', icon: <Megaphone className="h-4 w-4" /> }
@@ -2056,6 +2113,194 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Courses Management Section */}
+              {activeTab === 'courses' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Courses Management</h2>
+                    <button
+                      onClick={() => setShowCreateCourse(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create Course
+                    </button>
+                  </div>
+
+                  {/* Course Creation Form */}
+                  {showCreateCourse && (
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border">
+                      <h3 className="text-lg font-semibold mb-4">Create New Course</h3>
+                      <form onSubmit={(e) => { e.preventDefault(); /* handleCreateCourse */ }} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Title</label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Instructor</label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Duration</label>
+                            <input
+                              type="text"
+                              placeholder="e.g., 8 hours"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Level</label>
+                            <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                              <option value="Beginner">Beginner</option>
+                              <option value="Intermediate">Intermediate</option>
+                              <option value="Advanced">Advanced</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Description</label>
+                          <textarea
+                            rows={4}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Tags (comma-separated)</label>
+                          <input
+                            type="text"
+                            placeholder="JavaScript, Frontend, React"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="published"
+                            className="mr-2"
+                          />
+                          <label htmlFor="published" className="text-sm font-medium">Published</label>
+                        </div>
+                        <div className="flex space-x-4">
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            Create Course
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowCreateCourse(false)}
+                            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Courses List */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {courses.map((course) => (
+                      <div
+                        key={course._id}
+                        className="group relative p-4 border border-gray-200 rounded-lg bg-white shadow-sm transition-all duration-200
+                          hover:shadow-lg hover:scale-[1.03] hover:border-blue-400 cursor-pointer"
+                        onClick={() => setSelectedCourse(course._id)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-base truncate">{course.title}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            course.published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {course.published ? 'Published' : 'Draft'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                          {course.description.length > 100
+                            ? `${course.description.substring(0, 100)}...`
+                            : course.description}
+                        </p>
+                        <div className="flex justify-between text-xs text-gray-500 mb-2">
+                          <span>By {course.instructor}</span>
+                          <span>{course.level}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>{course.duration}</span>
+                          <span>⭐ {course.rating} ({course.ratingCount})</span>
+                        </div>
+                        <div className="absolute top-2 right-2 flex space-x-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                          <button
+                            className="text-blue-600 hover:text-blue-800 bg-white rounded-full p-1 shadow-sm border border-blue-100 hover:border-blue-400 transition-colors"
+                            title="Edit"
+                            onClick={(e) => { e.stopPropagation(); setEditingCourse(course); }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); /* handleDeleteCourse */ }}
+                            className="text-red-600 hover:text-red-800 bg-white rounded-full p-1 shadow-sm border border-red-100 hover:border-red-400 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Course Detail View (Modules & Chapters) */}
+                  {selectedCourse && (
+                    <div className="mt-8 bg-white dark:bg-gray-800 p-6 rounded-lg border">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">Course Modules & Chapters</h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowCreateModule(true)}
+                            className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-1"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Add Module
+                          </button>
+                          <button
+                            onClick={() => setSelectedCourse(null)}
+                            className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-600">
+                          Manage modules and chapters for the selected course. Click on a module to view and manage its chapters.
+                        </p>
+                        
+                        {/* Placeholder for modules list */}
+                        <div className="border border-dashed border-gray-300 rounded-lg p-8 text-center">
+                          <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                          <p className="text-gray-500">Modules and chapters management will be implemented here</p>
+                          <p className="text-sm text-gray-400 mt-1">
+                            You can create, edit, and organize course content
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

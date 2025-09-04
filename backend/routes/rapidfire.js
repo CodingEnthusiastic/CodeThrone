@@ -466,37 +466,47 @@ router.post('/:gameId/finish', authenticateToken, async (req, res) => {
         player2.ratingChange = player2Change;
 
         // Update user ratings in database
-        await User.findByIdAndUpdate(player1.user._id, {
-          'ratings.rapidFireRating': player1.ratingAfter,
-          $push: {
-            rapidFireHistory: {
-              opponent: player2.user._id,
-              result: player1Result,
-              ratingChange: player1Change,
-              score: player1.score,
-              correctAnswers: player1.correctAnswers,
-              wrongAnswers: player1.wrongAnswers,
-              totalQuestions: game.totalQuestions,
-              date: new Date()
-            }
-          }
-        });
+        const player1User = await User.findById(player1.user._id);
+        if (player1User) {
+          player1User.ratings.rapidFireRating = player1.ratingAfter;
+          player1User.rapidFireHistory.push({
+            opponent: player2.user._id,
+            result: player1Result,
+            ratingChange: player1Change,
+            score: player1.score,
+            correctAnswers: player1.correctAnswers,
+            wrongAnswers: player1.wrongAnswers,
+            totalQuestions: game.totalQuestions,
+            date: new Date()
+          });
+          
+          // Update recent game form
+          const resultCode = player1Result === "win" ? "W" : player1Result === "lose" ? "L" : "D";
+          player1User.updateRecentGameForm(resultCode, "rapidfire", player1Change);
+          
+          await player1User.save();
+        }
 
-        await User.findByIdAndUpdate(player2.user._id, {
-          'ratings.rapidFireRating': player2.ratingAfter,
-          $push: {
-            rapidFireHistory: {
-              opponent: player1.user._id,
-              result: player2Result,
-              ratingChange: player2Change,
-              score: player2.score,
-              correctAnswers: player2.correctAnswers,
-              wrongAnswers: player2.wrongAnswers,
-              totalQuestions: game.totalQuestions,
-              date: new Date()
-            }
-          }
-        });
+        const player2User = await User.findById(player2.user._id);
+        if (player2User) {
+          player2User.ratings.rapidFireRating = player2.ratingAfter;
+          player2User.rapidFireHistory.push({
+            opponent: player1.user._id,
+            result: player2Result,
+            ratingChange: player2Change,
+            score: player2.score,
+            correctAnswers: player2.correctAnswers,
+            wrongAnswers: player2.wrongAnswers,
+            totalQuestions: game.totalQuestions,
+            date: new Date()
+          });
+          
+          // Update recent game form
+          const resultCode = player2Result === "win" ? "W" : player2Result === "lose" ? "L" : "D";
+          player2User.updateRecentGameForm(resultCode, "rapidfire", player2Change);
+          
+          await player2User.save();
+        }
 
         console.log('✅ Ratings updated:', {
           player1: { old: player1Rating, new: player1.ratingAfter, change: player1Change },
@@ -579,7 +589,7 @@ router.get('/leaderboard', async (req, res) => {
     const leaderboard = await User.find({
       'ratings.rapidFireRating': { $exists: true, $gt: 0 }
     })
-    .select('username profile.avatar ratings.rapidFireRating rapidFireHistory')
+    .select('username profile.avatar ratings.rapidFireRating rapidFireHistory recentGameForm')
     .sort({ 'ratings.rapidFireRating': -1 })
     .limit(parseInt(limit))
     .skip(skip);
@@ -590,6 +600,20 @@ router.get('/leaderboard', async (req, res) => {
       const wins = user.rapidFireHistory?.filter(h => h.result === 'win').length || 0;
       const winRate = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : '0.0';
 
+      // Get latest form from recentGameForm for rapidfire games
+      let latestForm = [];
+      if (user.recentGameForm && user.recentGameForm.length > 0) {
+        const rapidFireGames = user.recentGameForm.filter(game => game.gameType === 'rapidfire');
+        latestForm = rapidFireGames.slice(0, 5).map(game => game.result);
+        
+        // Pad with '-' if less than 5 games
+        while (latestForm.length < 5) {
+          latestForm.push('-');
+        }
+      } else {
+        latestForm = Array(5).fill('-');
+      }
+
       return {
         rank: skip + index + 1,
         username: user.username,
@@ -597,7 +621,8 @@ router.get('/leaderboard', async (req, res) => {
         rating: user.ratings.rapidFireRating || 1200,
         totalGames,
         wins,
-        winRate: parseFloat(winRate)
+        winRate: parseFloat(winRate),
+        latestForm
       };
     });
 

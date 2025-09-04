@@ -69,14 +69,20 @@ const userSchema = new mongoose.Schema({
     // Game stats
     gamesPlayed: { type: Number, default: 0 },
     gamesWon: { type: Number, default: 0 },
+    gamesLost: { type: Number, default: 0 },
+    gamesTied: { type: Number, default: 0 },
     
     // Contest stats  
     contestsPlayed: { type: Number, default: 0 },
     contestsWon: { type: Number, default: 0 },
+    contestsLost: { type: Number, default: 0 },
+    contestsTied: { type: Number, default: 0 },
     
     // RapidFire stats
     rapidFireGamesPlayed: { type: Number, default: 0 },
-    rapidFireGamesWon: { type: Number, default: 0 }
+    rapidFireGamesWon: { type: Number, default: 0 },
+    rapidFireGamesLost: { type: Number, default: 0 },
+    rapidFireGamesTied: { type: Number, default: 0 }
   },
 
   // Topic wise performance
@@ -162,6 +168,14 @@ const userSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now }
   }],
 
+  // Recent Game Form (Last 5 results for leaderboard display)
+  recentGameForm: [{
+    result: { type: String, enum: ['W', 'L', 'D'], required: true }, // Win, Loss, Draw
+    gameType: { type: String, enum: ['game', 'rapidfire', 'contest'], required: true },
+    date: { type: Date, default: Date.now },
+    ratingChange: Number
+  }],
+
   // Badge & Achievements
   badges: [{
     name: String,
@@ -209,6 +223,29 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   const isMatch = await bcrypt.compare(candidatePassword, this.password);
   console.log('🔒 Password match result:', isMatch);
   return isMatch;
+};
+
+// Update Recent Game Form - maintains last 5 game results
+userSchema.methods.updateRecentGameForm = function(result, gameType, ratingChange = 0) {
+  const formEntry = {
+    result: result, // 'W', 'L', 'D'
+    gameType: gameType, // 'game', 'rapidfire', 'contest'
+    date: new Date(),
+    ratingChange: ratingChange
+  };
+
+  // Add new result to the beginning
+  this.recentGameForm.unshift(formEntry);
+
+  // Keep only the last 5 results
+  if (this.recentGameForm.length > 5) {
+    this.recentGameForm = this.recentGameForm.slice(0, 5);
+  }
+};
+
+// Get Latest Form as array of characters (for compatibility with frontend)
+userSchema.methods.getLatestForm = function() {
+  return this.recentGameForm.map(entry => entry.result);
 };
 
 console.log('✅ User model schema defined');

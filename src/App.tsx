@@ -473,7 +473,7 @@ const AppRoutes = () => {
             {/* Course Certification System Routes */}
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:courseId" element={<CourseDetail />} />
-            <Route path="/courses/chapter/:chapterId" element={<ChapterDetail />} />
+            <Route path="/courses/:courseId/chapter/:chapterId" element={<ChapterDetail />} />
             <Route path="/admin/courses" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           </Routes>
         </div>

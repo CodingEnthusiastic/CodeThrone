@@ -319,7 +319,7 @@ const ChapterDetail: React.FC = () => {
             <div className="text-center">
               <p className="text-lg text-red-600 dark:text-red-400 mb-4">{error || 'Chapter not found'}</p>
               <button 
-                onClick={() => navigate(`/course/${courseId}`)}
+                onClick={() => navigate(`/courses/${courseId}`)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Back to Course
@@ -339,7 +339,7 @@ const ChapterDetail: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4">
             <div className="flex items-center mb-4 sm:mb-0">
               <button
-                onClick={() => navigate(`/course/${courseId}`)}
+                onClick={() => navigate(`/courses/${courseId}`)}
                 className="mr-4 p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
               >
                 <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -356,7 +356,7 @@ const ChapterDetail: React.FC = () => {
                     <>
                       <span className="mx-2">•</span>
                       <Link 
-                        to={`/course/${courseId}`}
+                        to={`/courses/${courseId}`}
                         className="text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         {course.title}
@@ -380,7 +380,7 @@ const ChapterDetail: React.FC = () => {
           {/* Progress Navigation */}
           <div className="flex items-center justify-between">
             <button
-              onClick={() => prevNextChapters.prev && navigate(`/course/${courseId}/chapter/${prevNextChapters.prev}`)}
+              onClick={() => prevNextChapters.prev && navigate(`/courses/${courseId}/chapter/${prevNextChapters.prev}`)}
               disabled={!prevNextChapters.prev}
               className={`flex items-center p-2 ${
                 prevNextChapters.prev
@@ -407,7 +407,7 @@ const ChapterDetail: React.FC = () => {
             </button>
             
             <button
-              onClick={() => prevNextChapters.next && navigate(`/course/${courseId}/chapter/${prevNextChapters.next}`)}
+              onClick={() => prevNextChapters.next && navigate(`/courses/${courseId}/chapter/${prevNextChapters.next}`)}
               disabled={!prevNextChapters.next}
               className={`flex items-center p-2 ${
                 prevNextChapters.next
@@ -496,7 +496,7 @@ const ChapterDetail: React.FC = () => {
                       </button>
                     )}
                     <button
-                      onClick={() => navigate(`/course/${courseId}`)}
+                      onClick={() => navigate(`/courses/${courseId}`)}
                       className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                     >
                       Back to Course

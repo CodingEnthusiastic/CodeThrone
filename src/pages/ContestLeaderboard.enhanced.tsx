@@ -332,7 +332,7 @@ const ContestLeaderboardEnhanced: React.FC = () => {
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                               {user.stats.contestsPlayed} contests • 
                               <span className="text-green-600 dark:text-green-400"> {user.stats.contestsWon} W</span> • 
-                              <span className="text-red-600 dark:text-red-400"> {user.stats.contestsLost || (user.stats.contestsPlayed - user.stats.contestsWon - (user.stats.contestsTied || 0))} L</span> • 
+                              <span className="text-red-600 dark:text-red-400"> {user.stats.contestsLost || 0} L</span> • 
                               <span className="text-gray-500 dark:text-gray-400"> {user.stats.contestsTied || 0} D</span>
                             </p>
                           </div>

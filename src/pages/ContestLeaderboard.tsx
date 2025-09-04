@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Trophy, Medal, Award, Users, ArrowLeft, ChevronLeft, ChevronRight, Search, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { Trophy, Search, Medal, TrendingUp, Users, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-interface LeaderboardEntry {
+interface ContestLeaderboardUser {
   _id: string;
   username: string;
   avatar?: string;
@@ -14,564 +13,360 @@ interface LeaderboardEntry {
     contestRating: number;
   };
   stats: {
-    contestsPlayed: number;
     contestsWon: number;
-    contestsLost?: number;
-    contestsTied?: number;
+    contestsLost: number;
+    contestsTied: number;
+    contestsPlayed: number;
   };
-  rank?: number;
-  percentile?: number;
-  latestForm?: Array<'W' | 'L' | 'D' | '-'>;
+  latestForm: string[];
+  position?: number;
+}
+
+interface LeaderboardResponse {
+  users: ContestLeaderboardUser[];
+  totalUsers: number;
+  totalPages: number;
+  currentPage: number;
+  currentUserRank?: {
+    rank: number;
+    percentile: number;
+  };
 }
 
 const ContestLeaderboard: React.FC = () => {
-  const navigate = useNavigate();
   const { isDark } = useTheme();
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [users, setUsers] = useState<ContestLeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [userRank, setUserRank] = useState<{rank: number, percentile: number, _id?: string, rating?: number, contestsPlayed?: number} | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [allUsers, setAllUsers] = useState<LeaderboardEntry[]>([]);
-
-  const entriesPerPage = 10;
+  const [sortBy, setSortBy] = useState<'contestRating' | 'contestsWon' | 'username'>('contestRating');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   useEffect(() => {
-    fetchLeaderboard();
+    fetchContestLeaderboard();
   }, [currentPage]);
 
-  useEffect(() => {
-    if (searchTerm) {
-      fetchAllUsers();
-    }
-  }, [searchTerm]);
-
-  const fetchLeaderboard = async () => {
+  const fetchContestLeaderboard = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.get(`${API_URL}/users/contest-leaderboard`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        params: {
-          page: currentPage,
-          limit: entriesPerPage
-        }
+      const response = await axios.get(`${API_URL}/api/users/contest-leaderboard`, {
+        params: { page: currentPage, limit: itemsPerPage }
       });
-
-      // Process users to ensure latestForm is properly formatted
-      const processedUsers = response.data.users.map((user: any) => ({
+      
+      // Add position/rank to each user
+      const usersWithPosition = response.data.users.map((user: ContestLeaderboardUser, index: number) => ({
         ...user,
-        latestForm: user.latestForm || Array(5).fill('-') // Ensure latestForm exists
+        position: (currentPage - 1) * itemsPerPage + index + 1
       }));
-
-      setLeaderboard(processedUsers);
-      setTotalPages(Math.ceil(response.data.totalUsers / entriesPerPage));
-      setUserRank(response.data.currentUserRank);
-    } catch (error) {
-      console.error('Failed to fetch contest leaderboard:', error);
-      setError('Failed to load leaderboard');
+      
+      setUsers(usersWithPosition);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to fetch contest leaderboard');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchAllUsers = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/users/contest-leaderboard`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        params: {
-          page: 1,
-          limit: 1000
-        }
-      });
-      
-      // Process users to ensure latestForm is properly formatted
-      const processedUsers = response.data.users.map((user: any) => ({
-        ...user,
-        latestForm: user.latestForm || Array(5).fill('-') // Ensure latestForm exists
-      }));
-      
-      setAllUsers(processedUsers);
-    } catch (error) {
-      console.error('Failed to fetch all users:', error);
+  const getResultIcon = (result: string) => {
+    switch (result) {
+      case 'W': return <span className="text-green-600 dark:text-green-400 font-bold">W</span>;
+      case 'L': return <span className="text-red-600 dark:text-red-400 font-bold">L</span>;
+      case 'D': return <span className="text-gray-500 dark:text-gray-400 font-bold">D</span>;
+      default: return <span className="text-gray-400 dark:text-gray-500">-</span>;
     }
   };
 
-  // Filter users based on search term
-  const filteredUsers = useMemo(() => {
-    if (!searchTerm) return leaderboard;
-    return allUsers.filter(user => 
-      user.username.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, leaderboard, allUsers]);
-
-  // Calculate pagination for filtered results
-  const paginatedFilteredUsers = useMemo(() => {
-    if (!searchTerm) return filteredUsers;
-    const startIndex = (currentPage - 1) * entriesPerPage;
-    return filteredUsers.slice(startIndex, startIndex + entriesPerPage);
-  }, [filteredUsers, currentPage, searchTerm]);
-
-  const displayUsers = searchTerm ? paginatedFilteredUsers : leaderboard;
-  const displayTotalPages = searchTerm ? Math.ceil(filteredUsers.length / entriesPerPage) : totalPages;
-
-  const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-500" />;
-    if (rank === 2) return <Medal className="h-6 w-6 text-gray-400" />;
-    if (rank === 3) return <Award className="h-6 w-6 text-orange-600" />;
-    return <span className="text-lg font-bold text-gray-600 dark:text-gray-400">#{rank}</span>;
-  };
-
-//  const getRankBadge = (rank: number) => {
-//    if (rank === 1) return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
-//    if (rank === 2) return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
-//    if (rank === 3) return "bg-gradient-to-r from-orange-400 to-orange-600 text-white";
-//    return "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300";
-//  };
-  
-  const getFormColors = (result: 'W' | 'L' | 'D' | '-') => {
-    switch(result) {
-      case 'W':
-        return isDark ? 'bg-green-700 text-green-100' : 'bg-green-500 text-white';
-      case 'L':
-        return isDark ? 'bg-red-700 text-red-100' : 'bg-red-500 text-white';
-      case 'D':
-        return isDark ? 'bg-gray-600 text-gray-200' : 'bg-gray-400 text-white';
-      case '-':
-      default:
-        return isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500';
+  const getRankIcon = (position: number) => {
+    switch (position) {
+      case 1: return <Trophy className="w-6 h-6 text-yellow-500" />;
+      case 2: return <Medal className="w-6 h-6 text-gray-400" />;
+      case 3: return <Medal className="w-6 h-6 text-amber-600" />;
+      default: return <span className={`font-bold text-lg ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>#{position}</span>;
     }
   };
 
-  const renderFormDisplay = (latestForm: Array<'W' | 'L' | 'D' | '-'> = []) => {
-    // Ensure we always have 5 results to display
-    const displayForm = [...(latestForm || [])];
-    while (displayForm.length < 5) {
-      displayForm.push('-');
+  const filteredUsers = users.filter(user =>
+    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleSort = (field: typeof sortBy) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
     }
-    
-    return (
-      <div className="flex space-x-1">
-        {displayForm.slice(0, 5).map((result, idx) => (
-          <div 
-            key={idx} 
-            className={`w-6 h-6 flex items-center justify-center rounded-sm ${getFormColors(result)}`}
-            title={result === 'W' ? 'Win' : result === 'L' ? 'Loss' : result === 'D' ? 'Draw' : 'No match'}
-          >
-            {result}
-          </div>
-        ))}
-      </div>
-    );
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <span className="ml-4 text-lg text-gray-600 dark:text-gray-400">Loading leaderboard...</span>
-          </div>
-        </div>
+      <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <p className="text-lg text-red-600 dark:text-red-400 mb-4">{error}</p>
-              <button 
-                onClick={fetchLeaderboard}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
+      <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
+        <div className={`${isDark ? 'text-red-400' : 'text-red-600'} text-xl`}>{error}</div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'} py-8`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-          <div className="mb-4 md:mb-0">
-            <div className="flex items-center mb-2">
-              <button
-                onClick={() => navigate('/contest')}
-                className={`mr-3 p-2 rounded-md ${isDark ? 'bg-gray-800 text-gray-400 hover:text-white' : 'bg-white text-gray-600 hover:text-gray-900'} shadow-sm`}
-                aria-label="Go back"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-              <h1 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Coding Battle Leaderboard
-              </h1>
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <Trophy className="w-8 h-8 text-blue-600 mr-3" />
+            <h1 className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Contest Leaderboard
+            </h1>
+          </div>
+          <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+            Compete in contests and climb the rankings
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-lg border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className="flex items-center">
+              <Users className="w-8 h-8 text-blue-600 mr-3" />
+              <div>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Total Contestants</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{users.length}</p>
+              </div>
             </div>
-            <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Top performers in 1v1 coding battles
-            </p>
           </div>
           
-          <div className="flex items-center">
-            <div className={`rounded-md px-3 py-2 ${isDark ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-700'} shadow-sm mr-2`}>
-              <div className="flex items-center">
-                <Users className="h-4 w-4 mr-2" />
-                <span className="text-sm">Page {currentPage} of {displayTotalPages}</span>
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-lg border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className="flex items-center">
+              <TrendingUp className="w-8 h-8 text-green-600 mr-3" />
+              <div>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Avg Rating</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {users.length > 0 ? Math.round(users.reduce((sum, user) => sum + user.ratings.contestRating, 0) / users.length) : 0}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-lg border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className="flex items-center">
+              <Trophy className="w-8 h-8 text-yellow-600 mr-3" />
+              <div>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Top Rating</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {users.length > 0 ? Math.max(...users.map(user => user.ratings.contestRating)) : 0}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="max-w-md w-full relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className={`h-5 w-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+        {/* Search and Filter */}
+        <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-lg border ${isDark ? 'border-gray-700' : 'border-gray-200'} mb-8`}>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search contestants..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Search by username..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className={`w-full pl-10 pr-10 py-2 rounded-lg border ${
-                isDark 
-                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-              } shadow-sm`}
-            />
-            {searchTerm && (
+            
+            <div className="flex gap-2">
               <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setCurrentPage(1);
-                }}
-                className={`absolute inset-y-0 right-0 flex items-center pr-3 ${
-                  isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                onClick={() => handleSort('contestRating')}
+                className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
+                  sortBy === 'contestRating'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : `${isDark ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-700 border-gray-300'} hover:bg-blue-50 dark:hover:bg-gray-600`
                 }`}
-                aria-label="Clear search"
               >
-                ×
+                Rating <ArrowUpDown className="w-4 h-4" />
               </button>
-            )}
+              
+              <button
+                onClick={() => handleSort('contestsWon')}
+                className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
+                  sortBy === 'contestsWon'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : `${isDark ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-700 border-gray-300'} hover:bg-blue-50 dark:hover:bg-gray-600`
+                }`}
+              >
+                Wins <ArrowUpDown className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          {searchTerm && (
-            <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Found {filteredUsers.length} users matching "{searchTerm}"
-            </p>
-          )}
         </div>
 
-        {/* Current User Rank */}
-        {userRank && (
-          <div className={`mb-6 rounded-lg overflow-hidden border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-md`}>
-            <div className={`px-4 py-3 ${isDark ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
-              <h2 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Your Ranking</h2>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Rank</div>
-                  <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>#{userRank.rank}</div>
-                </div>
-                <div>
-                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Percentile</div>
-                  <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{userRank.percentile.toFixed(1)}%</div>
-                </div>
-                <div>
-                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Rating</div>
-                  <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{userRank.rating || 1200}</div>
-                </div>
-                <div>
-                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Contests</div>
-                  <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{userRank.contestsPlayed || 0}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Leaderboard */}
-        <div className={`rounded-lg overflow-hidden border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-md`}>
-          <div className={`px-6 py-3 ${isDark ? 'bg-gradient-to-r from-blue-900 to-indigo-900 text-white' : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'}`}>
-            <h2 className="text-lg font-semibold flex items-center">
-              <Trophy className="h-5 w-5 mr-2" />
-              Rankings
-            </h2>
-          </div>
-          
+        {/* Leaderboard Table */}
+        <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg border ${isDark ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className={`uppercase text-xs ${isDark ? 'bg-gray-900 text-gray-400' : 'bg-gray-50 text-gray-700'}`}>
+              <thead className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
                 <tr>
-                  <th className="px-4 py-3 text-left">Rank</th>
-                  <th className="px-4 py-3 text-left">User</th>
-                  <th className="px-4 py-3 text-center">Games</th>
-                  <th className="px-4 py-3 text-center">W</th>
-                  <th className="px-4 py-3 text-center">L</th>
-                  <th className="px-4 py-3 text-center">D</th>
-                  <th className="px-4 py-3 text-center hidden md:table-cell">Latest Form</th>
-                  <th className="px-4 py-3 text-right">Rating</th>
+                  <th className={`px-6 py-4 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Rank
+                  </th>
+                  <th className={`px-6 py-4 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Contestant
+                  </th>
+                  <th className={`px-4 py-4 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Rating
+                  </th>
+                  <th className={`px-4 py-4 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Wins
+                  </th>
+                  <th className={`px-4 py-4 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Losses
+                  </th>
+                  <th className={`px-4 py-4 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Draws
+                  </th>
+                  <th className={`px-4 py-4 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Recent Form
+                  </th>
                 </tr>
               </thead>
-              <tbody className={`${isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-200'}`}>
-                {displayUsers.map((user, index) => {
-                  const globalRank = searchTerm 
-                    ? allUsers.findIndex(u => u._id === user._id) + 1
-                    : (currentPage - 1) * entriesPerPage + index + 1;
-                  
-                  return (
-                    <tr 
-                      key={user._id} 
-                      className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}
-                    >
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span className={`font-semibold ${
-                            globalRank === 1 ? 'text-yellow-500' :
-                            globalRank === 2 ? 'text-gray-400' :
-                            globalRank === 3 ? 'text-amber-700' :
-                            isDark ? 'text-gray-300' : 'text-gray-700'
-                          }`}>{globalRank}</span>
-                          {globalRank <= 3 && 
-                            <span className="ml-2">{getRankIcon(globalRank)}</span>
-                          }
+              <tbody className={`${isDark ? 'bg-gray-800' : 'bg-white'} divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                {paginatedUsers.map((user) => (
+                  <tr 
+                    key={user._id} 
+                    className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors duration-200`}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {getRankIcon(user.position || 0)}
+                      </div>
+                    </td>
+                    
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 rounded-full ${isDark ? 'bg-blue-600' : 'bg-blue-500'} flex items-center justify-center text-white font-bold mr-3`}>
+                          {user.username.charAt(0).toUpperCase()}
                         </div>
-                      </td>
-                      
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 mr-3">
-                            {user.avatar ? (
-                              <img
-                                src={user.avatar}
-                                alt={user.username}
-                                className="h-10 w-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center border-2 border-gray-200 dark:border-gray-700">
-                                <span className="font-bold text-white">
-                                  {user.username.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                            )}
+                        <div>
+                          <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {user.username}
                           </div>
-                          <div>
-                            <div className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                              {user.username}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {userRank && user._id === userRank._id && (
-                                <span className="text-blue-500 font-medium">You</span>
-                              )}
-                            </div>
+                          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {user.stats.contestsPlayed || 0} contests played
                           </div>
                         </div>
-                      </td>
-                      
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {user.stats.contestsPlayed}
-                        </span>
-                      </td>
-                      
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <span className="text-green-600 dark:text-green-400 font-medium">
-                          {user.stats.contestsWon}
-                        </span>
-                      </td>
-                      
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <span className="text-red-600 dark:text-red-400 font-medium">
-                          {user.stats.contestsLost || (user.stats.contestsPlayed - user.stats.contestsWon - (user.stats.contestsTied || 0))}
-                        </span>
-                      </td>
-                      
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
-                          {user.stats.contestsTied || 0}
-                        </span>
-                      </td>
-                      
-                      <td className="px-4 py-3 text-center whitespace-nowrap hidden md:table-cell">
-                        {renderFormDisplay(user.latestForm)}
-                      </td>
-                      
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <span className={`font-bold ${
-                          isDark ? 'text-blue-400' : 'text-blue-600'
-                        }`}>
-                          {user.ratings.contestRating}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      </div>
+                    </td>
+                    
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                        user.ratings.contestRating >= 1500 
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          : user.ratings.contestRating >= 1200
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                      }`}>
+                        {user.ratings.contestRating}
+                      </span>
+                    </td>
+                    
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <span className="text-green-600 dark:text-green-400 font-medium">
+                        {user.stats.contestsWon}
+                      </span>
+                    </td>
+                    
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <span className="text-red-600 dark:text-red-400 font-medium">
+                        {user.stats.contestsLost}
+                      </span>
+                    </td>
+                    
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
+                        {user.stats.contestsTied}
+                      </span>
+                    </td>
+                    
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center space-x-1">
+                        {user.latestForm.map((result: string, index: number) => (
+                          <div
+                            key={index}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                              result === 'W' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : result === 'L'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                : result === 'D'
+                                ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                                : 'bg-gray-50 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
+                            }`}
+                          >
+                            {getResultIcon(result)}
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
-        
-        {/* Pagination */}
-        {displayTotalPages > 1 && (
-          <div className="flex justify-between items-center mt-6">
-            <div className="flex space-x-2">
-              <button 
-                onClick={() => setCurrentPage(1)} 
-                disabled={currentPage === 1} 
-                className={`p-2 rounded-md ${
-                  currentPage === 1 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : isDark 
-                      ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' 
-                      : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'
-                }`}
-                aria-label="First page"
-              >
-                <ChevronsLeft size={16} />
-              </button>
-              <button 
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
-                disabled={currentPage === 1} 
-                className={`p-2 rounded-md ${
-                  currentPage === 1 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : isDark 
-                      ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' 
-                      : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'
-                }`}
-                aria-label="Previous page"
-              >
-                <ChevronLeft size={16} />
-              </button>
-            </div>
-            
-            <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Page {currentPage} of {displayTotalPages}
-            </div>
-            
-            <div className="flex space-x-2">
-              <button 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, displayTotalPages))} 
-                disabled={currentPage === displayTotalPages} 
-                className={`p-2 rounded-md ${
-                  currentPage === displayTotalPages 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : isDark 
-                      ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' 
-                      : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'
-                }`}
-                aria-label="Next page"
-              >
-                <ChevronRight size={16} />
-              </button>
-              <button 
-                onClick={() => setCurrentPage(displayTotalPages)} 
-                disabled={currentPage === displayTotalPages} 
-                className={`p-2 rounded-md ${
-                  currentPage === displayTotalPages 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : isDark 
-                      ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' 
-                      : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'
-                }`}
-                aria-label="Last page"
-              >
-                <ChevronsRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {displayTotalPages > 1 && (
-          <div className="flex items-center justify-center space-x-2 mt-8">
-            {/* Go to first page */}
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
-              title="Go to first page"
-            >
-              <ChevronsLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-            </button>
-
-            {/* Previous page */}
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
-              title="Previous page"
-            >
-              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-            </button>
-            
-            {/* Page numbers */}
-            {(() => {
-              const pages = [];
-              const maxVisiblePages = 5;
-              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-              let endPage = Math.min(displayTotalPages, startPage + maxVisiblePages - 1);
-              
-              if (endPage - startPage < maxVisiblePages - 1) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-              }
-              
-              for (let i = startPage; i <= endPage; i++) {
-                pages.push(
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} px-6 py-4 border-t ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+              <div className="flex items-center justify-between">
+                <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length} results
+                </div>
+                
+                <div className="flex items-center space-x-2">
                   <button
-                    key={i}
-                    onClick={() => setCurrentPage(i)}
-                    className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
-                      currentPage === i
-                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow-md hover:shadow-lg hover:bg-blue-50 dark:hover:bg-gray-700'
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className={`p-2 rounded-lg border ${
+                      currentPage === 1
+                        ? `${isDark ? 'bg-gray-800 text-gray-600 border-gray-700' : 'bg-gray-100 text-gray-400 border-gray-300'} cursor-not-allowed`
+                        : `${isDark ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`
                     }`}
                   >
-                    {i}
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
-                );
-              }
-              
-              return pages;
-            })()}
-
-            {/* Next page */}
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, displayTotalPages))}
-              disabled={currentPage === displayTotalPages}
-              className="p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
-              title="Next page"
-            >
-              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-            </button>
-
-            {/* Go to last page */}
-            <button
-              onClick={() => setCurrentPage(displayTotalPages)}
-              disabled={currentPage === displayTotalPages}
-              className="p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
-              title="Go to last page"
-            >
-              <ChevronsRight className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-            </button>
-          </div>
-        )}
+                  
+                  <span className={`px-4 py-2 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className={`p-2 rounded-lg border ${
+                      currentPage === totalPages
+                        ? `${isDark ? 'bg-gray-800 text-gray-600 border-gray-700' : 'bg-gray-100 text-gray-400 border-gray-300'} cursor-not-allowed`
+                        : `${isDark ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`
+                    }`}
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

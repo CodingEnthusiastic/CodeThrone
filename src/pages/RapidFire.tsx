@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { 
@@ -570,6 +571,7 @@ const ScoreBoard = memo(({
 const RapidFire: React.FC = () => {
   const { user } = useAuth();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
   const [activeGame, setActiveGame] = useState<RapidFireGame | null>(null);
   const [roomCode, setRoomCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1310,7 +1312,16 @@ const RapidFire: React.FC = () => {
           <div className="flex justify-center mb-6">
             <Zap className="h-16 w-16 text-red-600 dark:text-red-400" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Rapid Fire MCQ</h1>
+          <div className="flex flex-col items-center mb-4">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Rapid Fire MCQ</h1>
+            <button
+              onClick={() => navigate('/rapidfire-leaderboard')}
+              className="mb-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-lg hover:from-red-600 hover:to-orange-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <Trophy className="h-5 w-5" />
+              View Leaderboard
+            </button>
+          </div>
           <p className="text-xl text-gray-600 dark:text-gray-300">Answer 10 questions in 60 seconds. Fast thinking wins!</p>
           
           {/* Game Rules */}

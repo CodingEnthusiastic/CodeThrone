@@ -146,7 +146,7 @@ const CourseDetail: React.FC = () => {
   
   const enrollInCourse = async () => {
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: `/course/${courseId}` } });
+      navigate('/login', { state: { from: `/courses/${courseId}` } });
       return;
     }
     
@@ -365,7 +365,7 @@ const CourseDetail: React.FC = () => {
                               {moduleChapters[module._id].map(chapter => (
                                 <li key={chapter._id} className="py-3">
                                   <Link 
-                                    to={`/course/${courseId}/chapter/${chapter._id}`}
+                                    to={`/courses/${courseId}/chapter/${chapter._id}`}
                                     className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                                   >
                                     <div className="flex items-center">
@@ -462,7 +462,7 @@ const CourseDetail: React.FC = () => {
                       </div>
                     ) : (
                       <Link
-                        to={`/course/${courseId}/chapter/${moduleChapters[modules[0]?._id]?.[0]?._id}`}
+                        to={`/courses/${courseId}/chapter/${moduleChapters[modules[0]?._id]?.[0]?._id}`}
                         className="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
                       >
                         {courseProgress.progress > 0 ? 'Continue Learning' : 'Start Learning'}

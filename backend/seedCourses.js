@@ -18,8 +18,8 @@ async function seedCourses() {
     await Chapter.deleteMany({});
     await Quiz.deleteMany({});
 
-    // Create a new course
-    const course = await Course.create({
+    // ====== COURSE 1: Modern JavaScript ======
+    const course1 = await Course.create({
       title: 'Modern JavaScript from the Beginning',
       description: 'Learn modern JavaScript concepts including ES6+ features, asynchronous programming, DOM manipulation, and more. This course will take you from the basics to advanced JavaScript concepts.',
       thumbnail: '/javascript-course.jpg',
@@ -32,22 +32,79 @@ async function seedCourses() {
       ratingCount: 120
     });
 
-    console.log('Created course:', course.title);
+    console.log('Created course:', course1.title);
 
-    // Create modules
-    const module1 = await Module.create({
+    // Course 1 - Module 1
+    const course1Module1 = await Module.create({
       title: 'JavaScript Fundamentals',
       description: 'Learn the core concepts of JavaScript programming language',
-      course: course._id,
+      course: course1._id,
       order: 1,
       published: true
     });
 
-    const module2 = await Module.create({
+    // Course 1 - Module 2
+    const course1Module2 = await Module.create({
       title: 'DOM Manipulation & Events',
       description: 'Learn how to interact with the Document Object Model',
-      course: course._id,
+      course: course1._id,
       order: 2,
+      published: true
+    });
+
+    // Course 1 - Module 3
+    const course1Module3 = await Module.create({
+      title: 'Asynchronous JavaScript',
+      description: 'Master async/await, promises, and callback patterns',
+      course: course1._id,
+      order: 3,
+      published: true
+    });
+
+    console.log('Created modules for JavaScript course');
+
+    // ====== COURSE 2: Data Structures & Algorithms ======
+    const course2 = await Course.create({
+      title: 'Complete Data Structures & Algorithms',
+      description: 'Master data structures and algorithms from basics to advanced. Learn arrays, linked lists, trees, graphs, sorting, searching, and dynamic programming.',
+      thumbnail: '/dsa-course.jpg',
+      instructor: 'Sarah Johnson',
+      duration: '20 hours',
+      level: 'Advanced',
+      published: true,
+      tags: ['DSA', 'Programming', 'Algorithms', 'Interview Prep'],
+      rating: 4.9,
+      ratingCount: 250
+    });
+
+    console.log('Created course:', course2.title);
+
+    // Course 2 - Module 1
+    const course2Module1 = await Module.create({
+      title: 'Basic Data Structures',
+      description: 'Learn arrays, linked lists, stacks, and queues',
+      course: course2._id,
+      order: 1,
+      published: true
+    });
+
+    // Course 2 - Module 2
+    const course2Module2 = await Module.create({
+      title: 'Trees and Graphs',
+      description: 'Master tree structures, binary trees, BST, and graph algorithms',
+      course: course2._id,
+      order: 2,
+      published: true
+    });
+
+    // Course 2 - Module 3
+    const course2Module3 = await Module.create({
+      title: 'Sorting & Searching Algorithms',
+      description: 'Implement and understand various sorting and searching techniques',
+      course: course2._id,
+      order: 3,
+      published: true
+    });
       published: true
     });
 

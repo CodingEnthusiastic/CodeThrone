@@ -1,37 +1,30 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Trophy, Medal, Award, Users, ArrowLeft, ChevronLeft, ChevronRight, Search, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { Trophy, Search, Medal, TrendingUp, Filter, Users, Timer, Calendar, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { api } from '../config/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-interface LeaderboardEntry {
+interface ContestLeaderboardUser {
   _id: string;
   username: string;
-  avatar?: string;
-  ratings: {
-    gameRating: number;
-  };
+  totalProblemsAttempted: number;
   stats: {
-    gamesPlayed: number;
-    gamesWon: number;
-    gamesLost: number;
-    gamesTied: number;
+    contestsWon: number;
+    contestsLost: number;
+    contestsTied: number;
+    contestRating: number;
   };
-  rank?: number;
-  percentile?: number;
-  latestForm?: Array<'W' | 'L' | 'D' | '-'>;
+  recentContestForm: string[];
+  position: number;
 }
 
-const GameLeaderboard: React.FC = () => {
+const ContestLeaderboard: React.FC = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [userRank, setUserRank] = useState<{rank: number, percentile: number, _id?: string, rating?: number, gamesPlayed?: number} | null>(null);
+  const [userRank, setUserRank] = useState<{rank: number, percentile: number, _id?: string, rating?: number, contestsPlayed?: number} | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<LeaderboardEntry[]>([]);
@@ -53,7 +46,7 @@ const GameLeaderboard: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await axios.get(`${API_URL}/users/game-leaderboard`, {
+      const response = await axios.get(`${API_URL}/users/contest-leaderboard`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         params: {
           page: currentPage,
@@ -71,7 +64,7 @@ const GameLeaderboard: React.FC = () => {
       setTotalPages(Math.ceil(response.data.totalUsers / entriesPerPage));
       setUserRank(response.data.currentUserRank);
     } catch (error) {
-      console.error('Failed to fetch game leaderboard:', error);
+      console.error('Failed to fetch contest leaderboard:', error);
       setError('Failed to load leaderboard');
     } finally {
       setLoading(false);
@@ -81,7 +74,7 @@ const GameLeaderboard: React.FC = () => {
   const fetchAllUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/users/game-leaderboard`, {
+      const response = await axios.get(`${API_URL}/users/contest-leaderboard`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         params: {
           page: 1,
@@ -126,10 +119,17 @@ const GameLeaderboard: React.FC = () => {
     return <span className="text-lg font-bold text-gray-600 dark:text-gray-400">#{rank}</span>;
   };
 
+//  const getRankBadge = (rank: number) => {
+//    if (rank === 1) return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
+//    if (rank === 2) return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
+//    if (rank === 3) return "bg-gradient-to-r from-orange-400 to-orange-600 text-white";
+//    return "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300";
+//  };
+
   if (loading) {
     return (
-      <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-100'} p-4 sm:p-6 lg:p-8`}>
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             <span className="ml-4 text-lg text-gray-600 dark:text-gray-400">Loading leaderboard...</span>
@@ -141,8 +141,8 @@ const GameLeaderboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-100'} p-4 sm:p-6 lg:p-8`}>
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <p className="text-lg text-red-600 dark:text-red-400 mb-4">{error}</p>
@@ -167,18 +167,18 @@ const GameLeaderboard: React.FC = () => {
           <div className="mb-4 md:mb-0">
             <div className="flex items-center mb-2">
               <button
-                onClick={() => navigate('/game')}
+                onClick={() => navigate('/contest')}
                 className={`mr-3 p-2 rounded-md ${isDark ? 'bg-gray-800 text-gray-400 hover:text-white' : 'bg-white text-gray-600 hover:text-gray-900'} shadow-sm`}
                 aria-label="Go back"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <h1 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Game Leaderboard
+                Coding Battle Leaderboard
               </h1>
             </div>
             <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Top performers in coding battles
+              Top performers in 1v1 coding battles
             </p>
           </div>
           
@@ -255,8 +255,8 @@ const GameLeaderboard: React.FC = () => {
                   <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{userRank.rating || 1200}</div>
                 </div>
                 <div>
-                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Games</div>
-                  <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{userRank.gamesPlayed || 0}</div>
+                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Contests</div>
+                  <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{userRank.contestsPlayed || 0}</div>
                 </div>
               </div>
             </div>
@@ -282,7 +282,6 @@ const GameLeaderboard: React.FC = () => {
                   <th className="px-4 py-3 text-center">W</th>
                   <th className="px-4 py-3 text-center">L</th>
                   <th className="px-4 py-3 text-center">D</th>
-                  <th className="px-4 py-3 text-center">Latest Form</th>
                   <th className="px-4 py-3 text-right">Rating</th>
                 </tr>
               </thead>
@@ -343,57 +342,33 @@ const GameLeaderboard: React.FC = () => {
                       
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {user.stats.gamesPlayed}
+                          {user.stats.contestsPlayed}
                         </span>
                       </td>
                       
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className="text-green-600 dark:text-green-400 font-medium">
-                          {user.stats.gamesWon}
+                          {user.stats.contestsWon}
                         </span>
                       </td>
                       
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className="text-red-600 dark:text-red-400 font-medium">
-                          {user.stats.gamesLost}
+                          {user.stats.contestsLost || 0}
                         </span>
                       </td>
                       
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
-                          {user.stats.gamesTied}
+                          {user.stats.contestsTied || 0}
                         </span>
-                      </td>
-                      
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <div className="flex space-x-1 justify-center">
-                          {(user.latestForm || []).slice(0, 5).map((result, idx) => (
-                            <div 
-                              key={idx} 
-                              className={`w-6 h-6 flex items-center justify-center rounded-sm text-xs font-bold ${
-                                result === 'W' ? (isDark ? 'bg-green-700 text-green-100' : 'bg-green-500 text-white') :
-                                result === 'L' ? (isDark ? 'bg-red-700 text-red-100' : 'bg-red-500 text-white') :
-                                result === 'D' ? (isDark ? 'bg-gray-600 text-gray-200' : 'bg-gray-400 text-white') :
-                                (isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500')
-                              }`}
-                              title={
-                                result === 'W' ? 'Win' :
-                                result === 'L' ? 'Loss' :
-                                result === 'D' ? 'Draw' :
-                                'No match'
-                              }
-                            >
-                              {result}
-                            </div>
-                          ))}
-                        </div>
                       </td>
                       
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <span className={`font-bold ${
                           isDark ? 'text-blue-400' : 'text-blue-600'
                         }`}>
-                          {user.ratings.gameRating}
+                          {user.ratings.contestRating}
                         </span>
                       </td>
                     </tr>
@@ -474,9 +449,84 @@ const GameLeaderboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Pagination */}
+        {displayTotalPages > 1 && (
+          <div className="flex items-center justify-center space-x-2 mt-8">
+            {/* Go to first page */}
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+              title="Go to first page"
+            >
+              <ChevronsLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+            </button>
+
+            {/* Previous page */}
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+              title="Previous page"
+            >
+              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+            </button>
+            
+            {/* Page numbers */}
+            {(() => {
+              const pages = [];
+              const maxVisiblePages = 5;
+              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+              let endPage = Math.min(displayTotalPages, startPage + maxVisiblePages - 1);
+              
+              if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+              }
+              
+              for (let i = startPage; i <= endPage; i++) {
+                pages.push(
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i)}
+                    className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+                      currentPage === i
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow-md hover:shadow-lg hover:bg-blue-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              
+              return pages;
+            })()}
+
+            {/* Next page */}
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, displayTotalPages))}
+              disabled={currentPage === displayTotalPages}
+              className="p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+              title="Next page"
+            >
+              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+            </button>
+
+            {/* Go to last page */}
+            <button
+              onClick={() => setCurrentPage(displayTotalPages)}
+              disabled={currentPage === displayTotalPages}
+              className="p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+              title="Go to last page"
+            >
+              <ChevronsRight className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default GameLeaderboard;
+export default ContestLeaderboard;

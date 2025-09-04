@@ -4,9 +4,10 @@ import React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
+import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import {io} from "socket.io-client"
-import { Gamepad2, Users, Clock, Zap, Send, CheckCircle, XCircle, Medal, Heart, LogOut } from "lucide-react"
+import { Gamepad2, Users, Clock, Zap, Send, CheckCircle, XCircle, Medal, Heart, LogOut, Trophy } from "lucide-react"
 import CodeMirrorEditor from "../components/CodeMirrorEditor"
 import { API_URL, SOCKET_URL } from "../config/api"
 
@@ -229,6 +230,7 @@ const GameStatusCard: React.FC<{
 const Game: React.FC = () => {
   const { user } = useAuth()
   const { isDark } = useTheme()
+  const navigate = useNavigate()
   const [activeGame, setActiveGame] = useState<GameRoom | null>(null)
   const [roomCode, setRoomCode] = useState("")
   const [selectedDifficulty, setSelectedDifficulty] = useState("Medium")
@@ -1820,7 +1822,16 @@ const getOpponentPlayer = () => {
           <div className="flex justify-center mb-6">
             <Gamepad2 className="h-16 w-16 text-blue-600 dark:text-blue-400" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Game Mode</h1>
+          <div className="flex flex-col items-center mb-4">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Game Mode</h1>
+            <button
+              onClick={() => navigate('/game-leaderboard')}
+              className="mb-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-green-600 text-white rounded-lg hover:from-blue-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <Trophy className="h-5 w-5" />
+              View Leaderboard
+            </button>
+          </div>
           <p className="text-xl text-gray-600 dark:text-gray-300">Challenge other programmers in real-time battles</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

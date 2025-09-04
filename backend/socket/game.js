@@ -810,39 +810,51 @@ async function updateELORatings(game) {
     player2: player2Result 
   })
 
-  await User.findByIdAndUpdate(player1.user, {
-    "ratings.gameRating": newRating1,
-    $inc: {
-      "stats.gamesPlayed": 1,
-      "stats.gamesWon": player1Result === "win" ? 1 : 0
-    },
-    $push: {
-      gameHistory: {
-        opponent: player2.user,
-        result: player1Result,
-        ratingChange: newRating1 - rating1,
-        problem: game.problem,
-        date: new Date(),
-      },
-    },
-  })
+  // Update Player 1
+  const player1User = await User.findById(player1.user);
+  if (player1User) {
+    player1User.ratings.gameRating = newRating1;
+    player1User.stats.gamesPlayed = (player1User.stats.gamesPlayed || 0) + 1;
+    if (player1Result === "win") {
+      player1User.stats.gamesWon = (player1User.stats.gamesWon || 0) + 1;
+    }
+    player1User.gameHistory.push({
+      opponent: player2.user,
+      result: player1Result,
+      ratingChange: newRating1 - rating1,
+      problem: game.problem,
+      date: new Date(),
+    });
+    
+    // Update recent game form (last 5 results)
+    const resultCode = player1Result === "win" ? "W" : player1Result === "lose" ? "L" : "D";
+    player1User.updateRecentGameForm(resultCode, "game", newRating1 - rating1);
+    
+    await player1User.save();
+  }
 
-  await User.findByIdAndUpdate(player2.user, {
-    "ratings.gameRating": newRating2,
-    $inc: {
-      "stats.gamesPlayed": 1,
-      "stats.gamesWon": player2Result === "win" ? 1 : 0
-    },
-    $push: {
-      gameHistory: {
-        opponent: player1.user,
-        result: player2Result,
-        ratingChange: newRating2 - rating2,
-        problem: game.problem,
-        date: new Date(),
-      },
-    },
-  })
+  // Update Player 2
+  const player2User = await User.findById(player2.user);
+  if (player2User) {
+    player2User.ratings.gameRating = newRating2;
+    player2User.stats.gamesPlayed = (player2User.stats.gamesPlayed || 0) + 1;
+    if (player2Result === "win") {
+      player2User.stats.gamesWon = (player2User.stats.gamesWon || 0) + 1;
+    }
+    player2User.gameHistory.push({
+      opponent: player1.user,
+      result: player2Result,
+      ratingChange: newRating2 - rating2,
+      problem: game.problem,
+      date: new Date(),
+    });
+    
+    // Update recent game form (last 5 results)
+    const resultCode = player2Result === "win" ? "W" : player2Result === "lose" ? "L" : "D";
+    player2User.updateRecentGameForm(resultCode, "game", newRating2 - rating2);
+    
+    await player2User.save();
+  }
 
   console.log("💾 User ratings and game history updated in database")
 }

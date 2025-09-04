@@ -214,7 +214,7 @@ const Courses: React.FC = () => {
             {filteredCourses.map(course => (
               <div 
                 key={course._id}
-                onClick={() => navigate(`/course/${course._id}`)}
+                onClick={() => navigate(`/courses/${course._id}`)}
                 className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group"
               >
                 {/* Course Image */}
