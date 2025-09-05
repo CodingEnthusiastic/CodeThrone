@@ -18,7 +18,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Redeem from './pages/Redeem';
 import CompanyProblems from './pages/CompanyProblems';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './pages/Admin/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import ContestProblems from './pages/ContestProblems';
 import ContestProblemDetail from './pages/ContestProblemDetail';  
