@@ -26,7 +26,6 @@ import chatsRoutes from "./routes/chats.js"
 import chatRoutes from "./routes/chat.js"
 import announcementsRouter from "./routes/announcements.js"
 import certificatesRouter from "./routes/certificates.js"
-import coursesRouter from "./routes/courses.js"
 import usersRouter from "./routes/users.js";
 import { updateContestStatusesAndRatings } from "./routes/contest-status-updater.js";
 console.log("🚀 Starting backend server...")
@@ -149,9 +148,6 @@ console.log("✅ Chat routes mounted at /api/chat")
 
 app.use("/api/stats", statsRouter)
 console.log("✅ Stats routes mounted at /api/stats")
-
-app.use("/api/courses", coursesRouter)
-console.log("✅ Courses routes mounted at /api/courses")
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
