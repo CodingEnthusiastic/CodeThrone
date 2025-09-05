@@ -166,7 +166,7 @@ router.get('/', async (req, res) => {
   
   try {
     const { page = 1, limit = 20, difficulty, tags } = req.query;
-    const query = { isPublished: true };
+  const query = { isPublished: true, visibility: 'public' };
 
     if (difficulty) {
       query.difficulty = difficulty;

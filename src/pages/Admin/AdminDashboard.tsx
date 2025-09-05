@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import axios, { AxiosError } from 'axios';
-import { API_URL, SOCKET_URL } from "../../config/api";
+import axios from 'axios';
+import { API_URL } from "../../config/api";
 import { useTheme } from '../../contexts/ThemeContext'
 import { 
   Plus, 
   Edit, 
   Trash2, 
   Users, 
-  FileText, 
   Trophy, 
   MessageSquare,
   Megaphone,
   Code,
-  Calendar,
   Settings
 } from 'lucide-react';
 
@@ -135,7 +133,8 @@ const AdminDashboard: React.FC = () => {
       videoUrl: '',
       thumbnailUrl: '',
       duration: 0
-    }
+    },
+    visibility: 'public'
   });
 
   const [newContest, setNewContest] = useState({
@@ -297,7 +296,8 @@ const AdminDashboard: React.FC = () => {
         memoryLimit: newProblem.memoryLimit,
         isPublished: newProblem.isPublished,
         isFeatured: newProblem.isFeatured,
-        editorial: newProblem.editorial.written ? newProblem.editorial : undefined
+        editorial: newProblem.editorial.written ? newProblem.editorial : undefined,
+        visibility: newProblem.visibility
       };
 
       console.log('📤 Sending problem data:', problemData);
@@ -349,7 +349,8 @@ const AdminDashboard: React.FC = () => {
           videoUrl: '',
           thumbnailUrl: '',
           duration: 0
-        }
+        },
+        visibility: 'public'
       });
       showNotification('success', 'Problem created successfully!');
     } catch (error: any) {

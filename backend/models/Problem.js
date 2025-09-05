@@ -74,8 +74,9 @@ const problemSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
   // Visibility and tags
-  isPublished: { type: Boolean, default: false },
-  isFeatured: { type: Boolean, default: false },
+    visibility: { type: String, enum: ['public', 'private'], default: 'public' },
+    isPublished: { type: Boolean, default: false },
+    isFeatured: { type: Boolean, default: false },
 
   // Judge0 Meta (if needed for analytics/debug)
   lastTestedAt: { type: Date },
