@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {  useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Search, Filter, CheckCircle, Star, Trophy } from 'lucide-react';

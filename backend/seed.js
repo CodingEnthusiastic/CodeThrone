@@ -6,7 +6,7 @@ import Problem from './models/Problem.js';
 import Contest from './models/Contest.js';
 import Announcement from './models/Announcement.js';
 
-dotenv.config({ path: '../.env' });
+dotenv.config();
 
 const seedData = async () => {
   try {
@@ -65,8 +65,6 @@ Only one valid answer exists.`,
         submissions: 1000000,
         accepted: 492000,
         createdBy: adminUser._id,
-        isPublished: true,
-        // visibility: 'public',
         codeTemplates: {
           cpp: `class Solution {
 public:
@@ -123,9 +121,7 @@ It is guaranteed that the list represents a number that does not have leading ze
         acceptanceRate: 38.1,
         submissions: 800000,
         accepted: 304800,
-        createdBy: adminUser._id,
-        isPublished: true,
-        // visibility: 'public'
+        createdBy: adminUser._id
       },
       {
         title: 'Longest Substring Without Repeating Characters',
@@ -155,9 +151,7 @@ s consists of English letters, digits, symbols and spaces.`,
         acceptanceRate: 33.8,
         submissions: 900000,
         accepted: 304200,
-        createdBy: adminUser._id,
-        isPublished: true,
-        // visibility: 'public'
+        createdBy: adminUser._id
       },
       {
         title: 'Median of Two Sorted Arrays',
@@ -188,9 +182,7 @@ nums2.length == n
         acceptanceRate: 35.2,
         submissions: 500000,
         accepted: 176000,
-        createdBy: adminUser._id,
-        isPublished: true,
-        // visibility: 'public'
+        createdBy: adminUser._id
       }
     ];
 

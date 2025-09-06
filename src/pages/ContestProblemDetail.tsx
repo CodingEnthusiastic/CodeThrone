@@ -1113,7 +1113,7 @@ const ContestProblemDetail: React.FC = () => {
       </div>
 
       {/* Tailwind CSS custom animations (add to your global CSS or in a style block if using Next.js/similar) */}
-      <style jsx>{`
+      <style>{`
         @keyframes float {
           0% { transform: translateY(0px); }
           50% { transform: translateY(-10px); }

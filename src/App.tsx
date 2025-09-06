@@ -480,6 +480,7 @@ function App() {
         <AppRoutes />
       </AuthProvider>
     </ThemeProvider>
+    
   );
 }
 
