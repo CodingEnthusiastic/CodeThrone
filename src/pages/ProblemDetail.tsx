@@ -1081,6 +1081,17 @@ const ProblemDetail: React.FC = () => {
 
   // Maximized Code Editor View
   if (isCodeEditorMaximized) {
+    if (!problem) {
+      return (
+        <div className="fixed inset-0 bg-gray-100 dark:bg-gray-950 mt-[64px] flex items-center justify-center">
+          <div className="text-center">
+            <Code className="h-8 w-8 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
+            <h2 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-2">Problem not found or loading...</h2>
+            <p className="text-gray-500 dark:text-gray-400">Please check the problem ID or try again later.</p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="fixed inset-0 bg-gray-100 dark:bg-gray-950 mt-[64px] flex flex-col">
         {/* Header */}

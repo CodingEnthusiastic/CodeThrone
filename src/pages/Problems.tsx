@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import {  useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Search, Filter, CheckCircle, Star, Trophy } from 'lucide-react';
@@ -192,7 +192,7 @@ const Problems: React.FC = () => {
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Light mode blinking shapes */}
         <div className="dark:hidden">
-          <style jsx>{`
+          <style>{`
             @keyframes float-blink {
               0%, 100% { opacity: 0.3; transform: translateY(0px) scale(1); }
               25% { opacity: 0.8; transform: translateY(-10px) scale(1.1); }
@@ -230,7 +230,7 @@ const Problems: React.FC = () => {
         
         {/* Dark mode moving stars */}
         <div className="hidden dark:block">
-          <style jsx>{`
+          <style>{`
             @keyframes shooting-star {
               0% { transform: translateX(0) translateY(0) scale(0); opacity: 1; }
               10% { transform: translateX(10px) translateY(-10px) scale(1); opacity: 1; }
