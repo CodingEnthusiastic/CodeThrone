@@ -130,7 +130,7 @@ const Problems: React.FC = () => {
   }, [user]);
 
   const filteredProblems = problems.filter(problem =>
-    problem.title.toLowerCase().includes(searchTerm.toLowerCase())
+  (problem?.title?.toLowerCase() ?? "").includes(searchTerm.toLowerCase())
   );
 
   const allTags = [...new Set(problems.flatMap(p => p.tags))];
@@ -302,7 +302,7 @@ const Problems: React.FC = () => {
                 <span className="px-4 py-2 bg-yellow-200 dark:bg-yellow-700 text-yellow-800 dark:text-yellow-200 text-base font-bold rounded-full shadow-md mb-4">+10 Coins</span>
                 <div className="w-full bg-white/80 dark:bg-gray-800/60 rounded-2xl p-4 mb-4 border border-yellow-200/40 dark:border-yellow-700/30 shadow-sm">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 text-center md:text-left">
-                    {potd.problem.title}
+                    {potd?.problem?.title || "Untitled"}
                   </h3>
                   <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-2">
                     <span className={`px-4 py-1 rounded-full text-base font-semibold shadow ${
@@ -448,7 +448,7 @@ const Problems: React.FC = () => {
                     </td>
                     <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                       <span className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium flex items-center">
-                        {problem.title}
+                        {problem?.title || "Untitled"}
                         {solvedProblems.has(problem._id) && (
                           <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 text-xs rounded-full">
                             Solved
