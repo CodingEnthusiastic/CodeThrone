@@ -319,7 +319,7 @@ const Problems: React.FC = () => {
                         {tag || ""}
                       </span>
                     ))}
-                    {potd.problem.tags && potd.problem.tags.length > 3 && (
+                    {(potd?.problem?.tags && potd.problem.tags.length > 3) && (
                       <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 text-base rounded-full border border-gray-200 dark:border-gray-600/30">
                         +{potd.problem.tags.length - 3} more
                       </span>
@@ -335,7 +335,7 @@ const Problems: React.FC = () => {
                   </div>
                 ) : (
                   <button
-                    onClick={() => window.location.href = `/problems/${potd.problem._id}`}
+                    onClick={() => window.location.href = `/problems/${potd?.problem?._id || ""}`}
                     className="flex items-center px-8 py-4 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 dark:from-yellow-600 dark:to-amber-600 dark:hover:from-yellow-700 dark:hover:to-amber-700 text-white rounded-2xl font-extrabold text-lg transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:scale-105"
                   >
                     <Trophy className="h-6 w-6 mr-2" />
@@ -482,7 +482,7 @@ const Problems: React.FC = () => {
                             {tag || ""}
                           </span>
                         ))}
-                        {problem.tags.length > 3 && (
+                        {(problem?.tags && problem.tags.length > 3) && (
                           <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
                             +{problem.tags.length - 3}
                           </span>
@@ -491,15 +491,15 @@ const Problems: React.FC = () => {
                     </td>
                     <td className="px-2 md:px-6 py-2 md:py-4">
                       <div className="flex flex-wrap gap-1">
-                        {problem.companies.slice(0, 2).map((company, index) => (
+                        {(problem?.companies || []).slice(0, 2).map((company, index) => (
                           <span
                             key={index}
                             className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 text-xs rounded-full"
                           >
-                            {company}
+                            {company || ""}
                           </span>
                         ))}
-                        {problem.companies.length > 2 && (
+                        {(problem?.companies && problem.companies.length > 2) && (
                           <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
                             +{problem.companies.length - 2}
                           </span>
