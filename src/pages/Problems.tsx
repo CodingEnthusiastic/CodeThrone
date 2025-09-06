@@ -133,7 +133,7 @@ const Problems: React.FC = () => {
   (problem?.title?.toLowerCase() ?? "").includes(searchTerm.toLowerCase())
   );
 
-  const allTags = [...new Set(problems.flatMap(p => p.tags))];
+  const allTags = [...new Set(problems.flatMap(p => p?.tags || []))];
 
   if (loading) {
     return (
@@ -314,14 +314,14 @@ const Problems: React.FC = () => {
                     }`}>
                       {potd?.problem?.difficulty || "Unknown"}
                     </span>
-                    {potd.problem.tags && potd.problem.tags.slice(0, 3).map((tag: string) => (
+                    {(potd?.problem?.tags || []).slice(0, 3).map((tag: string) => (
                       <span key={tag} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-base rounded-full border border-blue-200/50 dark:border-blue-600/30">
                         {tag || ""}
                       </span>
                     ))}
-                    {(potd?.problem?.tags && potd.problem.tags.length > 3) && (
+                    {(potd?.problem?.tags && (potd?.problem?.tags?.length || 0) > 3) && (
                       <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 text-base rounded-full border border-gray-200 dark:border-gray-600/30">
-                        +{potd.problem.tags.length - 3} more
+                        +{(potd?.problem?.tags?.length || 0) - 3} more
                       </span>
                     )}
                   </div>
@@ -482,9 +482,9 @@ const Problems: React.FC = () => {
                             {tag || ""}
                           </span>
                         ))}
-                        {(problem?.tags && problem.tags.length > 3) && (
+                        {(problem?.tags && (problem?.tags?.length || 0) > 3) && (
                           <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
-                            +{problem.tags.length - 3}
+                            +{(problem?.tags?.length || 0) - 3}
                           </span>
                         )}
                       </div>
