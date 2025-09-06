@@ -433,14 +433,14 @@ const Problems: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredProblems.map((problem) => (
+                {filteredProblems.filter(Boolean).map((problem) => (
                   <tr
-                    key={problem._id}
+                    key={problem?._id || ""}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                    onClick={() => window.location.href = `/problems/${problem._id}`}
+                    onClick={() => window.location.href = `/problems/${problem?._id || ""}`}
                   >
                     <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
-                      {solvedProblems.has(problem._id) ? (
+                      {problem?._id && solvedProblems.has(problem._id) ? (
                         <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                       ) : (
                         <div className="h-5 w-5"></div>
@@ -449,7 +449,7 @@ const Problems: React.FC = () => {
                     <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                       <span className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium flex items-center">
                         {problem?.title || "Untitled"}
-                        {solvedProblems.has(problem._id) && (
+                        {problem?._id && solvedProblems.has(problem._id) && (
                           <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 text-xs rounded-full">
                             Solved
                           </span>
