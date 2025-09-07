@@ -384,14 +384,14 @@ const ConsoleOutput = forwardRef<HTMLDivElement, ConsoleOutputProps>(({
           {!runResult && !submissionResult && !running && !submitting && publicTestCases.length > 0 && (
             <div className="space-y-4">
               <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                  <div className="flex items-center space-x-2">
+                {/* <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"> */}
+                  {/* <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                     <h4 className="font-semibold text-gray-900 dark:text-gray-100">Testcase</h4>
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                     <h4 className="font-semibold text-gray-900 dark:text-gray-100">Test Result</h4>
-                  </div>
-                </div>
+                  </div> */}
+                {/* </div> */}
 
                 <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30">
                   <div className="flex overflow-x-auto">
