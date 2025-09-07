@@ -176,20 +176,31 @@ const endRapidFireGame = async (gameId, io) => {
 
     await game.save();
 
-    // Emit game finished event
+    // Format results for the frontend GameEndModal
+    const gameResults = sortedPlayers.map(p => {
+      const isDraw = sortedPlayers[0].score === sortedPlayers[1]?.score;
+      return {
+        userId: p.user._id,
+        username: p.user.username,
+        score: p.score,
+        correctAnswers: p.correctAnswers || 0,
+        wrongAnswers: p.wrongAnswers || 0,
+        questionsAnswered: p.questionsAnswered || 0,
+        rank: p.rank,
+        result: p.rank === 1 ? (isDraw ? 'draw' : 'win') : 'loss',
+        oldRating: p.ratingBefore || 1200,
+        newRating: p.ratingAfter || p.ratingBefore || 1200,
+        ratingChange: p.ratingChange || 0
+      };
+    });
+
+    // Emit both events for compatibility
     io.to(`rapidfire-${gameId}`).emit('rapidfire-game-finished', {
       gameId,
       result: game.result,
       winner: game.winner,
-      finalScores: sortedPlayers.map(p => ({
-        userId: p.user._id,
-        username: p.user.username,
-        score: p.score,
-        correctAnswers: p.correctAnswers,
-        wrongAnswers: p.wrongAnswers,
-        questionsAnswered: p.questionsAnswered,
-        result: p.rank === 1 ? (isDraw ? 'draw' : 'win') : 'loss'
-      })),
+      finalState: game,
+      finalScores: gameResults,
       ratingUpdates,
       gameDetails: {
         totalQuestions: game.totalQuestions,
@@ -198,6 +209,19 @@ const endRapidFireGame = async (gameId, io) => {
         winner: game.winner
       }
     });
+
+    // BULLETPROOF: Also emit the newer format expected by frontend
+    io.to(`rapidfire-${gameId}`).emit('rapidfire-game-ended', {
+      results: gameResults,
+      ratingUpdates: ratingUpdates.map(update => ({
+        ...update,
+        userId: update.userId.toString()
+      })),
+      gameId,
+      finalState: game
+    });
+
+    console.log('🏁 BULLETPROOF: Game end events emitted with results:', gameResults);
 
     // Clean up active game
     const activeGame = activeRapidFireGames.get(gameId);
@@ -311,6 +335,22 @@ const setupRapidFireSocket = (io) => {
         });
 
         console.log('✅ BULLETPROOF: Rapid fire game state sent to user');
+
+        // Notify all other players in the room that this user joined
+        socket.to(`rapidfire-${gameId}`).emit('rapidfire-player-joined', {
+          game: {
+            ...gameData,
+            questionSet: questions
+          },
+          newPlayer: {
+            user: {
+              _id: socket.userId,
+              username: socket.username || 'Unknown Player'
+            }
+          }
+        });
+
+        console.log('✅ BULLETPROOF: Player joined notification sent to other players');
 
         // If 2 players and game should start, start the 120-second timer
         if (gameData.players.length === 2 && gameData.status === 'waiting') {
@@ -506,6 +546,32 @@ const setupRapidFireSocket = (io) => {
           }, 2500); // 2.5 second delay to show result
         }
 
+        // Check if this player has completed all questions
+        if (player.questionsAnswered >= TOTAL_QUESTIONS) {
+          console.log(`🏁 BULLETPROOF: Player ${socket.userId} completed all questions`);
+          
+          // Notify the player they've finished
+          socket.emit('rapidfire-player-completed', {
+            message: 'You have completed all questions! Waiting for opponent...',
+            questionsAnswered: player.questionsAnswered,
+            finalScore: player.score
+          });
+          
+          // Check if opponent is still playing
+          const opponent = game.players.find(p => p.user.toString() !== socket.userId);
+          if (opponent && opponent.questionsAnswered < TOTAL_QUESTIONS) {
+            // Notify opponent that this player finished
+            io.to(`rapidfire-${gameId}`).emit('rapidfire-opponent-status', {
+              message: `${game.players.find(p => p.user.toString() === socket.userId)?.user?.username || 'Opponent'} has completed all questions!`,
+              completedPlayer: {
+                username: game.players.find(p => p.user.toString() === socket.userId)?.user?.username,
+                score: player.score,
+                questionsAnswered: player.questionsAnswered
+              }
+            });
+          }
+        }
+
         // Check if both players have completed all questions
         const allPlayersFinished = game.players.every(p => p.questionsAnswered >= TOTAL_QUESTIONS);
         
@@ -629,6 +695,32 @@ const setupRapidFireSocket = (io) => {
               console.log(`🚀 BULLETPROOF: Sending next question ${nextQuestionIndex} to player ${socket.userId} after skip`);
             }
           }, 1500); // 1.5 second delay for skip
+        }
+
+        // Check if this player has completed all questions after skip
+        if (player.questionsAnswered >= TOTAL_QUESTIONS) {
+          console.log(`🏁 BULLETPROOF: Player ${socket.userId} completed all questions via skip`);
+          
+          // Notify the player they've finished
+          socket.emit('rapidfire-player-completed', {
+            message: 'You have completed all questions! Waiting for opponent...',
+            questionsAnswered: player.questionsAnswered,
+            finalScore: player.score
+          });
+          
+          // Check if opponent is still playing
+          const opponent = game.players.find(p => p.user.toString() !== socket.userId);
+          if (opponent && opponent.questionsAnswered < TOTAL_QUESTIONS) {
+            // Notify opponent that this player finished
+            io.to(`rapidfire-${gameId}`).emit('rapidfire-opponent-status', {
+              message: `${game.players.find(p => p.user.toString() === socket.userId)?.user?.username || 'Opponent'} has completed all questions!`,
+              completedPlayer: {
+                username: game.players.find(p => p.user.toString() === socket.userId)?.user?.username,
+                score: player.score,
+                questionsAnswered: player.questionsAnswered
+              }
+            });
+          }
         }
 
         // Check if both players have completed all questions

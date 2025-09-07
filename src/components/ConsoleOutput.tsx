@@ -127,7 +127,7 @@ const ConsoleOutput = forwardRef<HTMLDivElement, ConsoleOutputProps>(({
       {isExpanded && (
         <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850">
           <nav className="flex">
-            <button
+            {/* <button
               onClick={() => setActiveMainTab('testcases')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200 ${
                 activeMainTab === 'testcases'
@@ -136,7 +136,7 @@ const ConsoleOutput = forwardRef<HTMLDivElement, ConsoleOutputProps>(({
               }`}
             >
               Test Cases
-            </button>
+            </button> */}
             <button
               onClick={() => setActiveMainTab('results')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200 ${

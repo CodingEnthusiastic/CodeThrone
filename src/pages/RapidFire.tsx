@@ -894,6 +894,28 @@ const RapidFire: React.FC = () => {
       alert(data.message);
     });
 
+    // BULLETPROOF: Handle player completion notifications
+    newSocket.on("rapidfire-player-completed", (data: any) => {
+      console.log("✅ Player completed all questions:", data);
+      // Show toast notification that player finished
+      if (window.showInfo) {
+        window.showInfo(data.message);
+      } else {
+        alert(data.message);
+      }
+    });
+
+    // BULLETPROOF: Handle opponent status updates
+    newSocket.on("rapidfire-opponent-status", (data: any) => {
+      console.log("📢 Opponent status update:", data);
+      // Show toast notification about opponent
+      if (window.showInfo) {
+        window.showInfo(data.message);
+      } else {
+        alert(data.message);
+      }
+    });
+
     newSocket.on("error", (err: { message: string }) => {
       console.error("❌ Rapid fire socket error:", err);
       alert(err.message);
