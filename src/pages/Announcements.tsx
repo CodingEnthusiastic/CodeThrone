@@ -8,6 +8,7 @@ import axios from "axios"
 import { Search, Plus, Megaphone, AlertCircle, Info, CheckCircle, Calendar, User } from "lucide-react"
 import { API_URL, SOCKET_URL } from "../config/api";
 import { useTheme } from "../contexts/ThemeContext"
+import { showError } from '../utils/toast'
 
 interface Announcement {
   _id: string
@@ -55,7 +56,7 @@ const Announcements: React.FC = () => {
       })
       setAnnouncements(response.data)
     } catch (error) {
-      console.error("Error fetching announcements:", error)
+      showError('Error fetching announcements')
     } finally {
       setLoading(false)
     }
@@ -85,7 +86,7 @@ const Announcements: React.FC = () => {
       setNewAnnouncement({ title: "", content: "", type: "general", priority: "medium" })
       setShowCreateForm(false)
     } catch (error) {
-      console.error("Error creating announcement:", error)
+      showError('Error creating announcement')
     }
   }
 

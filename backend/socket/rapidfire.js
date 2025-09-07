@@ -489,6 +489,23 @@ const setupRapidFireSocket = (io) => {
           newScore: player.score
         });
 
+        // Auto-advance to next question after a short delay (2.5 seconds)
+        // But only if the player hasn't reached the total questions limit
+        if (player.questionsAnswered < TOTAL_QUESTIONS) {
+          setTimeout(() => {
+            const nextQuestionIndex = questionIndex + 1;
+            if (nextQuestionIndex < TOTAL_QUESTIONS && gameState && gameState.questions[nextQuestionIndex]) {
+              // Emit next question to the specific player who answered
+              socket.emit('rapidfire-next-question', {
+                questionIndex: nextQuestionIndex,
+                question: gameState.questions[nextQuestionIndex],
+                timeRemaining: Math.max(0, GAME_DURATION - Math.floor((Date.now() - gameState.startTime.getTime()) / 1000))
+              });
+              console.log(`🚀 BULLETPROOF: Sending next question ${nextQuestionIndex} to player ${socket.userId}`);
+            }
+          }, 2500); // 2.5 second delay to show result
+        }
+
         // Check if both players have completed all questions
         const allPlayersFinished = game.players.every(p => p.questionsAnswered >= TOTAL_QUESTIONS);
         
@@ -596,6 +613,23 @@ const setupRapidFireSocket = (io) => {
           questionIndex,
           newScore: player.score
         });
+
+        // Auto-advance to next question after a short delay (1.5 seconds)
+        // But only if the player hasn't reached the total questions limit
+        if (player.questionsAnswered < TOTAL_QUESTIONS) {
+          setTimeout(() => {
+            const nextQuestionIndex = questionIndex + 1;
+            if (nextQuestionIndex < TOTAL_QUESTIONS && gameState && gameState.questions[nextQuestionIndex]) {
+              // Emit next question to the specific player who skipped
+              socket.emit('rapidfire-next-question', {
+                questionIndex: nextQuestionIndex,
+                question: gameState.questions[nextQuestionIndex],
+                timeRemaining: Math.max(0, GAME_DURATION - Math.floor((Date.now() - gameState.startTime.getTime()) / 1000))
+              });
+              console.log(`🚀 BULLETPROOF: Sending next question ${nextQuestionIndex} to player ${socket.userId} after skip`);
+            }
+          }, 1500); // 1.5 second delay for skip
+        }
 
         // Check if both players have completed all questions
         const allPlayersFinished = game.players.every(p => p.questionsAnswered >= TOTAL_QUESTIONS);

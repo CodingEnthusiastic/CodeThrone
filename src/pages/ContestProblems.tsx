@@ -8,6 +8,7 @@ import { useAuth } from "../contexts/AuthContext" // Assuming useAuth provides u
 import axios from "axios"
 import { Trophy, Users, BookOpen, Award, Code, CheckCircle, ArrowLeft, Timer, Play } from "lucide-react"
 import { API_URL, SOCKET_URL } from "../config/api";
+import { showError } from '../utils/toast';
 
 interface Contest {
   _id: string
@@ -156,12 +157,12 @@ const ContestProblems: React.FC = () => {
 
   const fetchContestProblems = async () => {
     try {
-      console.log("🔍 Fetching contest problems for:", contestId)
+      // console.log("🔍 Fetching contest problems for:", contestId)
       const response = await axios.get(`${API_URL}/contests/${contestId}/problems`)
-      console.log("✅ Contest problems fetched:", response.data)
+      // console.log("✅ Contest problems fetched:", response.data)
       setContest(response.data)
     } catch (error) {
-      console.error("❌ Error fetching contest problems:", error)
+      showError("Error fetching contest problems")
     } finally {
       setLoading(false)
     }
@@ -172,7 +173,7 @@ const ContestProblems: React.FC = () => {
 
     setLoadingEditorials(true)
     try {
-      console.log("📚 Fetching editorials for contest problems")
+      // console.log("📚 Fetching editorials for contest problems")
       const editorialPromises = contest.problems.map((problem) =>
         axios.get(`${API_URL}/problems/${problem._id}/editorial`),
       )

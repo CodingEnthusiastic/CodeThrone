@@ -1,3 +1,4 @@
+// Admin: Get all problems (no pagination
 import express from 'express';
 import Problem from '../models/Problem.js';
 import User from '../models/User.js';
@@ -158,6 +159,19 @@ router.get("/topic", async (req, res) => {
   }
 })
 
+router.get('/admin/all', authenticateToken, requireAdmin, async (req, res) => {
+  console.log('🛡️ Admin get all problems request');
+  try {
+    const problems = await Problem.find({})
+      .select('-testCases -referenceSolution')
+      .sort({ createdAt: -1 })
+      .populate('createdBy', 'username');
+    res.json({ problems, total: problems.length });
+  } catch (error) {
+    console.error('❌ Admin get all problems error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 
 // Get all problems
 router.get('/', async (req, res) => {

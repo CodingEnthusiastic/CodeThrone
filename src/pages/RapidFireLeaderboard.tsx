@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, Medal, Award, Users, ArrowLeft, ChevronLeft, ChevronRight, Search, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
+import { showError } from '../utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -71,7 +72,7 @@ const RapidFireLeaderboard: React.FC = () => {
       setTotalPages(Math.ceil(response.data.totalUsers / entriesPerPage));
       setUserRank(response.data.currentUserRank);
     } catch (error) {
-      console.error('Failed to fetch rapidfire leaderboard:', error);
+      showError('Failed to fetch rapidfire leaderboard');
       setError('Failed to load leaderboard');
     } finally {
       setLoading(false);
@@ -97,7 +98,7 @@ const RapidFireLeaderboard: React.FC = () => {
       
       setAllUsers(processedUsers);
     } catch (error) {
-      console.error('Failed to fetch all users:', error);
+      showError('Failed to fetch all users');
     }
   };
 

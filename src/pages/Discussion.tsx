@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { showError } from '../utils/toast';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_URL, SOCKET_URL } from "../config/api";
 import {
@@ -73,7 +74,7 @@ const Discussion: React.FC = () => {
       );
       setAllUsers(uniqueUsers);
     } catch (error) {
-      console.error('Error fetching discussions:', error);
+      showError('Error fetching discussions');
     } finally {
       setLoading(false);
     }
@@ -102,7 +103,7 @@ const Discussion: React.FC = () => {
       setNewDiscussion({ title: '', content: '', tags: '' });
       setShowCreateForm(false);
     } catch (error) {
-      console.error('Error creating discussion:', error);
+      showError('Error creating discussion');
     }
   };
 
@@ -123,7 +124,7 @@ const Discussion: React.FC = () => {
       // Refresh discussions after voting
       await fetchDiscussions();
     } catch (error) {
-      console.error('Error voting:', error);
+      showError('Error voting');
     } finally {
       setDiscussionVoteLoading(null);
     }

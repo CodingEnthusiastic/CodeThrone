@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
 import MarqueeLogos from "../pages/MarqueeLogos"
 import StarsBackground from "../components/StarsBackground"
+import { showError } from '../utils/toast';
 // Utility to detect mobile device
 function isMobile() {
   if (typeof window === 'undefined') return false;
@@ -160,7 +161,7 @@ function LoadingCard() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900 px-4">
       <div className="text-center">
         <div className="relative inline-block mb-6">
           <div className="animate-spin rounded-full h-32 w-32 border-4 border-t-transparent border-orange-600 mx-auto"></div>
@@ -197,7 +198,7 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [dynamicText, setDynamicText] = useState("P");
    const [tipIndex, setTipIndex] = useState(0);
-  console.log("🏠 Home component rendered")
+  // console.log("🏠 Home component rendered")
 
   const carouselItems = [
     {
@@ -241,7 +242,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     // Fetch data when component mounts, regardless of auth state
     // The data fetching functions should handle auth internally
-    console.log("🔄 Home useEffect triggered")
+    // console.log("🔄 Home useEffect triggered")
     fetchData()
     fetchTopicStats()
     fetchCompanyStats()
@@ -781,7 +782,7 @@ const Home: React.FC = () => {
   
   if (isInitialLoading) {
   return(
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900 px-4">
       <div className="text-center">
         <div className="relative inline-block mb-6">
           <div className="animate-spin rounded-full h-32 w-32 border-4 border-t-transparent border-orange-600 mx-auto"></div>
@@ -813,7 +814,7 @@ const Home: React.FC = () => {
       className={`h-screen overflow-y-auto transition-colors duration-300 relative ${
         isDark
           ? "bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900"
-          : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
+          : "bg-white"
       }`}
     >
       {/* Beautiful Falling White Balls Animation for Dark Mode */}
@@ -1393,35 +1394,56 @@ const Home: React.FC = () => {
           <StarsBackground />
         ) : (
           <>
-            {/* Fixed Gradient Background for Light Mode */}
-            <div className={isDark ? "absolute inset-0 bg-black" : "absolute inset-0 bg-gradient-to-br from-blue-700 via-purple-600 to-pink-600"}></div>
+            {/* Fixed Background for Light Mode - White with floating elements */}
+            <div className={isDark ? "absolute inset-0 bg-black" : "absolute inset-0 bg-white"}></div>
           </>
         )}
       <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10"></div>
-        {/* Light mode floating elements */}
-        {!isDark && (
-          <div className="absolute inset-0 overflow-hidden">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div
-                key={`light-float-${i}`}
-                className={`absolute w-2 h-2 rounded-full ${
-                  i % 4 === 0 ? 'bg-blue-300/30' :
-                  i % 4 === 1 ? 'bg-indigo-300/30' :
-                  i % 4 === 2 ? 'bg-purple-300/30' : 'bg-pink-300/30'
-                } light-floating`}
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 4}s`,
-                  animationDuration: `${4 + Math.random() * 2}s`,
-                }}
-              />
-            ))}
-          </div>
-        )}
+        {/* Enhanced floating elements for both modes */}
+        <div className="absolute inset-0 overflow-hidden">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div
+              key={`float-${i}`}
+              className={`absolute w-2 h-2 rounded-full ${
+                isDark 
+                  ? (i % 4 === 0 ? 'bg-blue-400/20' :
+                     i % 4 === 1 ? 'bg-indigo-400/20' :
+                     i % 4 === 2 ? 'bg-purple-400/20' : 'bg-pink-400/20')
+                  : (i % 4 === 0 ? 'bg-blue-500/15' :
+                     i % 4 === 1 ? 'bg-indigo-500/15' :
+                     i % 4 === 2 ? 'bg-purple-500/15' : 'bg-pink-500/15')
+              } light-floating`}
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 4}s`,
+                animationDuration: `${4 + Math.random() * 2}s`,
+              }}
+            />
+          ))}
+          {/* Larger floating orbs for premium effect */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={`orb-${i}`}
+              className={`absolute rounded-full ${
+                isDark
+                  ? 'bg-gradient-to-br from-blue-500/10 to-purple-500/10'
+                  : 'bg-gradient-to-br from-blue-500/8 to-purple-500/8'
+              } blur-xl light-floating`}
+              style={{
+                width: `${60 + Math.random() * 40}px`,
+                height: `${60 + Math.random() * 40}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 6}s`,
+                animationDuration: `${6 + Math.random() * 4}s`,
+              }}
+            />
+          ))}
+        </div>
 
-        {/* Subtle overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30 subtle-wave"></div>
+        {/* Subtle overlay for better text readability - only for dark mode */}
+        {isDark && <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30 subtle-wave"></div>}
 
         {/* Enhanced Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
@@ -1436,14 +1458,14 @@ const Home: React.FC = () => {
             {/* Left Content */}
             <div className="z-10 space-y-8 card-animate-in">
               <div className="space-y-3">
-                <h1 className={`text-5xl md:text-8xl font-bold text-white leading-[1.2] relative elegant-float ${getResponsiveSettings().gapClass}`}>
+                <h1 className={`text-5xl md:text-8xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} leading-[1.2] relative elegant-float ${getResponsiveSettings().gapClass}`}>
                   <span className="relative inline-block premium-text-wave">
                     Master
                   </span>
                   <span className="block pb-3 relative overflow-hidden leading-[1.25]">
-                    <span className="bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent gradient-text-shift font-extrabold relative">
+                    <span className="bg-gradient-to-r from-yellow-500 via-orange-500 to-pink-500 bg-clip-text text-transparent gradient-text-shift font-extrabold relative">
                       {getResponsiveSettings().dynamicText}
-                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent text-shimmer"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 via-orange-500 to-pink-500 bg-clip-text text-transparent text-shimmer"></div>
                     </span>
                   </span>
                   <span className="block text-4xl md:text-5xl mt-2 relative">
@@ -1451,11 +1473,11 @@ const Home: React.FC = () => {
                   </span>
                 </h1>
 
-                <p className="text-xl md:text-2xl text-white/90 leading-relaxed max-w-2xl card-animate-in" style={{ animationDelay: '0.2s' }}>
+                <p className={`text-xl md:text-2xl ${isDark ? 'text-white/90' : 'text-gray-700'} leading-relaxed max-w-2xl card-animate-in`} style={{ animationDelay: '0.2s' }}>
                   Join thousands of developers mastering coding skills through our comprehensive platform featuring
-                  <span className="font-semibold text-yellow-300 animate-pulse"> interactive problems</span>,
-                  <span className="font-semibold text-green-300 animate-pulse" style={{ animationDelay: '0.5s' }}> live contests</span>, and
-                  <span className="font-semibold text-blue-300 animate-pulse" style={{ animationDelay: '1s' }}> real-time battles</span>.
+                  <span className={`font-semibold ${isDark ? 'text-yellow-300' : 'text-yellow-600'} animate-pulse`}> interactive problems</span>,
+                  <span className={`font-semibold ${isDark ? 'text-green-300' : 'text-green-600'} animate-pulse`} style={{ animationDelay: '0.5s' }}> live contests</span>, and
+                  <span className={`font-semibold ${isDark ? 'text-blue-300' : 'text-blue-600'} animate-pulse`} style={{ animationDelay: '1s' }}> real-time battles</span>.
                 </p>
               </div>
 
@@ -1463,49 +1485,49 @@ const Home: React.FC = () => {
                 <div className={`flex flex-col sm:flex-row gap-4 card-animate-in ${getResponsiveSettings().buttonGap}`} style={{ animationDelay: '0.4s' }}>
                   <Link
                     to="/register"
-                    className="group relative overflow-hidden bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all duration-300 inline-flex items-center justify-center shadow-2xl hover:shadow-white/25 hover:scale-105 magnetic-hover"
+                    className={`group relative overflow-hidden ${isDark ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'} px-8 py-4 rounded-2xl font-bold transition-all duration-300 inline-flex items-center justify-center shadow-2xl ${isDark ? 'hover:shadow-white/25' : 'hover:shadow-blue-500/25'} hover:scale-105 magnetic-hover`}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300 gradient-animate"></div>
+                    <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-10' : 'bg-gradient-to-r from-white/20 to-white/10 opacity-0 group-hover:opacity-100'} transition-opacity duration-300 gradient-animate`}></div>
                     <Rocket className="mr-2 h-5 w-5 group-hover:animate-bounce" />
                     Start Your Journey
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                     
                     {/* Button glow effect */}
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400/50 to-purple-400/50 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500"></div>
+                    <div className={`absolute inset-0 rounded-2xl ${isDark ? 'bg-gradient-to-r from-blue-400/50 to-purple-400/50' : 'bg-gradient-to-r from-blue-300/30 to-purple-300/30'} opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500`}></div>
                   </Link>
                   <Link
                     to="/problems"
-                    className="group border-2 border-white/50 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white hover:text-gray-900 transition-all duration-300 inline-flex items-center justify-center backdrop-blur-sm hover:scale-105 magnetic-hover"
+                    className={`group ${isDark ? 'border-2 border-white/50 text-white hover:bg-white hover:text-gray-900' : 'border-2 border-gray-900/50 text-gray-900 hover:bg-gray-900 hover:text-white'} px-8 py-4 rounded-2xl font-bold transition-all duration-300 inline-flex items-center justify-center backdrop-blur-sm hover:scale-105 magnetic-hover`}
                   >
                     <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
                     Explore Problems
                     
                     {/* Border glow effect */}
-                    <div className="absolute inset-0 rounded-2xl border-2 border-white/70 opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300"></div>
+                    <div className={`absolute inset-0 rounded-2xl ${isDark ? 'border-2 border-white/70' : 'border-2 border-gray-900/70'} opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300`}></div>
                   </Link>
                 </div>
               ) : (
                 <div className={`flex flex-col sm:flex-row gap-4 card-animate-in ${getResponsiveSettings().buttonGap}`} style={{ animationDelay: '0.4s' }}>
                   <Link
                     to="/problems"
-                    className="group relative overflow-hidden bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all duration-300 inline-flex items-center justify-center shadow-2xl hover:shadow-white/25 hover:scale-105 magnetic-hover"
+                    className={`group relative overflow-hidden ${isDark ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'} px-8 py-4 rounded-2xl font-bold transition-all duration-300 inline-flex items-center justify-center shadow-2xl ${isDark ? 'hover:shadow-white/25' : 'hover:shadow-blue-500/25'} hover:scale-105 magnetic-hover`}
                   >
                     <Brain className="mr-2 h-5 w-5 group-hover:animate-pulse" />
                     Continue Learning
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                     
                     {/* Button glow effect */}
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400/50 to-purple-400/50 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500"></div>
+                    <div className={`absolute inset-0 rounded-2xl ${isDark ? 'bg-gradient-to-r from-blue-400/50 to-purple-400/50' : 'bg-gradient-to-r from-blue-300/30 to-purple-300/30'} opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500`}></div>
                   </Link>
                   <Link
                     to="/contest"
-                    className="group border-2 border-white/50 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white hover:text-gray-900 transition-all duration-300 inline-flex items-center justify-center backdrop-blur-sm hover:scale-105 magnetic-hover"
+                    className={`group ${isDark ? 'border-2 border-white/50 text-white hover:bg-white hover:text-gray-900' : 'border-2 border-gray-900/50 text-gray-900 hover:bg-gray-900 hover:text-white'} px-8 py-4 rounded-2xl font-bold transition-all duration-300 inline-flex items-center justify-center backdrop-blur-sm hover:scale-105 magnetic-hover`}
                   >
                     <Trophy className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
                     Join Contest
                     
                     {/* Border glow effect */}
-                    <div className="absolute inset-0 rounded-2xl border-2 border-white/70 opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300"></div>
+                    <div className={`absolute inset-0 rounded-2xl ${isDark ? 'border-2 border-white/70' : 'border-2 border-gray-900/70'} opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300`}></div>
                   </Link>
                 </div>
               )}
@@ -1569,19 +1591,25 @@ const Home: React.FC = () => {
                     {quickStats.map((stat, index) => (
                       <div
                         key={index}
-                        className="group relative overflow-hidden bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+                        className={`group relative overflow-hidden ${
+                          isDark 
+                            ? "bg-white/10 hover:bg-white/20" 
+                            : "bg-white/80 hover:bg-white shadow-lg hover:shadow-xl border border-gray-200/50 hover:border-gray-300"
+                        } backdrop-blur-md rounded-2xl p-6 transition-all duration-300 hover:scale-105`}
                       >
                         <div
                           className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`}
                         ></div>
                         <div className="relative">
-                          <div className="flex items-center mb-3 text-white">
-                            <div className="p-2 bg-white/20 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
+                          <div className={`flex items-center mb-3 ${isDark ? "text-white" : "text-gray-800"}`}>
+                            <div className={`p-2 ${
+                              isDark ? "bg-white/20" : "bg-white/80"
+                            } rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300`}>
                               {stat.icon}
                             </div>
-                            <span className="text-sm font-medium text-white/90">{stat.label}</span>
+                            <span className={`text-sm font-medium ${isDark ? "text-white/90" : "text-gray-700"}`}>{stat.label}</span>
                           </div>
-                          <div className="text-2xl font-bold text-white group-hover:scale-105 transition-transform duration-300">
+                          <div className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"} group-hover:scale-105 transition-transform duration-300`}>
                             {stat.value}
                           </div>
                         </div>
@@ -1999,7 +2027,7 @@ const Home: React.FC = () => {
                 <div className="text-center py-8">
                   <div
                     className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                      isDark ? "bg-gray-700" : "bg-gray-100"
+                      isDark ? "bg-gray-700" : "bg-white border border-gray-200"
                     }`}
                   >
                     <BookOpen className={`h-8 w-8 ${isDark ? "text-gray-400" : "text-gray-400"}`} />
@@ -2095,7 +2123,7 @@ const Home: React.FC = () => {
                   <div className="text-center py-12">
                     <div
                       className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                        isDark ? "bg-gray-700" : "bg-gray-100"
+                        isDark ? "bg-gray-700" : "bg-white border border-gray-200"
                       }`}
                     >
                       <Trophy className={`h-10 w-10 ${isDark ? "text-gray-400" : "text-gray-400"}`} />

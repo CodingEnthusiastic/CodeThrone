@@ -6,6 +6,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { User, Github, Linkedin, Trophy, Code, TrendingUp, Award, Star, Target, Zap, Activity, CheckCircle } from 'lucide-react';
 import { API_URL, SOCKET_URL } from "../config/api";
+import SubmissionCalendar from '../components/SubmissionCalendar';
+import { showError, showSuccess } from '../utils/toast';
 // Animated Counter Component
 const AnimatedCounter: React.FC<{ end: number; duration?: number; prefix?: string; suffix?: string }> = ({ 
   end, 
@@ -266,7 +268,7 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     if (username) {
-      console.log('🔍 Profile component: Fetching profile for username:', username);
+      // console.log('🔍 Profile component: Fetching profile for username:', username);
       fetchProfile();
     }
   }, [username]);
@@ -279,20 +281,20 @@ const Profile: React.FC = () => {
       const response = await axios.get(`${API_URL}/stats/global-leaderboard`);
       setLeaderboard(response.data);
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      showError('Error fetching leaderboard');
     }
   };
   fetchLeaderboard();
 }, []);
 
   const fetchProfile = async () => {
-    console.log('📡 Fetching profile for username:', username);
+    // console.log('📡 Fetching profile for username:', username);
     setLoading(true);
     setError(null);
     
     try {
       const response = await axios.get(`${API_URL}/profile/${username}`);
-      console.log('✅ Profile data received:', response.data);
+      // console.log('✅ Profile data received:', response.data);
       
       const profileData = response.data;
       
@@ -360,10 +362,10 @@ const Profile: React.FC = () => {
         graduationYear: normalizedProfile.profile.graduationYear.toString()
       });
       
-      console.log('✅ Profile normalized and set successfully');
+      // console.log('✅ Profile normalized and set successfully');
     } catch (error: any) {
-      console.error('❌ Error fetching profile:', error);
-      console.error('❌ Error response:', error.response?.data);
+      showError('Error fetching profile');
+      // console.error('❌ Error response:', error.response?.data);
       setError(error.response?.data?.message || 'Failed to load profile');
       setProfile(null);
     } finally {
@@ -376,7 +378,7 @@ const Profile: React.FC = () => {
     setIsUpdating(true);
     try {
       const token = localStorage.getItem('token');
-      console.log('🔄 Updating profile...', editForm);
+      // console.log('🔄 Updating profile...', editForm);
 
       const response = await axios.put(`${API_URL}/profile/update`, {
         profile: {
@@ -389,14 +391,15 @@ const Profile: React.FC = () => {
         }
       });
       
-      console.log('✅ Profile updated successfully:', response.data);
+      // console.log('✅ Profile updated successfully:', response.data);
+      showSuccess('Profile updated successfully');
       setIsEditing(false);
       fetchProfile();
       // Refresh user data in AuthContext
       await refreshUser();
     } catch (error: any) {
-      console.error('❌ Error updating profile:', error);
-      console.error('❌ Error response:', error.response?.data);
+      showError('Error updating profile');
+      // console.error('❌ Error response:', error.response?.data);
       alert(error.response?.data?.message || 'Failed to update profile. Please try again.');
     } finally {
       setIsUpdating(false);
@@ -407,10 +410,10 @@ const Profile: React.FC = () => {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Easy': return 'text-green-600 bg-green-100';
-      case 'Medium': return 'text-yellow-600 bg-yellow-100';
-      case 'Hard': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'Easy': return 'text-green-700 bg-green-200 dark:text-green-300 dark:bg-green-800/50';
+      case 'Medium': return 'text-yellow-700 bg-yellow-200 dark:text-yellow-300 dark:bg-yellow-800/50';
+      case 'Hard': return 'text-red-700 bg-red-200 dark:text-red-300 dark:bg-red-800/50';
+      default: return 'text-gray-700 bg-gray-200 dark:text-gray-300 dark:bg-gray-800/50';
     }
   };
 
@@ -425,9 +428,9 @@ const Profile: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'accepted': return 'text-green-600 bg-green-100';
-      case 'wrong': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'accepted': return 'text-green-700 bg-green-200 dark:text-green-300 dark:bg-green-800/50';
+      case 'wrong': return 'text-red-700 bg-red-200 dark:text-red-300 dark:bg-red-800/50';
+      default: return 'text-gray-700 bg-gray-200 dark:text-gray-300 dark:bg-gray-800/50';
     }
   };
 
@@ -1126,10 +1129,10 @@ const Profile: React.FC = () => {
                       <div className="flex items-center gap-3 flex-1">
                         <div className={`
                           w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
-                          ${idx === 0 ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-400' : 
-                            idx === 1 ? 'bg-gray-100 text-gray-800 border-2 border-gray-400' : 
-                            idx === 2 ? 'bg-orange-100 text-orange-800 border-2 border-orange-400' : 
-                            'bg-green-100 text-green-800 border border-green-300'}
+                          ${idx === 0 ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-400 dark:bg-yellow-800/50 dark:text-yellow-300 dark:border-yellow-500' : 
+                            idx === 1 ? 'bg-gray-100 text-gray-800 border-2 border-gray-400 dark:bg-gray-800/50 dark:text-gray-300 dark:border-gray-500' : 
+                            idx === 2 ? 'bg-orange-100 text-orange-800 border-2 border-orange-400 dark:bg-orange-800/50 dark:text-orange-300 dark:border-orange-500' : 
+                            'bg-green-200 text-green-800 border border-green-400 dark:bg-green-800/50 dark:text-green-300 dark:border-green-500'}
                         `}>
                           {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
                         </div>
@@ -1218,7 +1221,7 @@ const Profile: React.FC = () => {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
-                      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                      <div className="p-2 bg-green-200 dark:bg-green-800/40 rounded-lg">
                         <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
                       </div>
                       <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Problems Solved</h4>
@@ -1452,6 +1455,16 @@ const Profile: React.FC = () => {
                 </div>
               </div>
             )}
+            
+            {/* Submission Calendar */}
+            <div className="mb-6">
+              <SubmissionCalendar 
+                submissions={profile.submissions?.map(sub => ({
+                  date: sub.date,
+                  status: sub.status
+                })) || []}
+              />
+            </div>
             
             {/* Topic Progress */}
             {profile.topicProgress && profile.topicProgress.length > 0 && (

@@ -86,11 +86,10 @@ router.get('/:username', async (req, res) => {
     const correctSubmissions = submissions.filter(sub => sub.status === 'accepted').length;
     const accuracy = totalSubmissions > 0 ? (correctSubmissions / totalSubmissions) * 100 : 0;
     
-    // Calculate streak
+    // Calculate streak (fix timezone issues)
     console.log('📈 Calculating streak data...');
     let currentStreak = 0;
     let maxStreak = 0;
-    let tempStreak = 0;
     
     // Sort submissions by date
     const sortedSubmissions = submissions
@@ -98,39 +97,64 @@ router.get('/:username', async (req, res) => {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     // Calculate current streak (consecutive days with accepted submissions)
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    let streakDate = new Date(today);
-    for (const submission of sortedSubmissions) {
-      const submissionDate = new Date(submission.date);
-      const daysDiff = Math.floor((streakDate.getTime() - submissionDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (sortedSubmissions.length > 0) {
+      // Get today's date in local timezone
+      const today = new Date();
+      const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
-      if (daysDiff <= 1) {
-        currentStreak++;
-        streakDate = submissionDate;
-      } else {
-        break;
+      // Group submissions by local date
+      const submissionDates = new Set();
+      sortedSubmissions.forEach(sub => {
+        const subDate = new Date(sub.date);
+        const localDate = new Date(subDate.getFullYear(), subDate.getMonth(), subDate.getDate());
+        submissionDates.add(localDate.getTime());
+      });
+      
+      // Convert to sorted array of dates
+      const sortedDates = Array.from(submissionDates)
+        .map(timestamp => new Date(timestamp))
+        .sort((a, b) => b.getTime() - a.getTime());
+      
+      // Calculate consecutive streak from most recent date
+      if (sortedDates.length > 0) {
+        const mostRecentDate = sortedDates[0];
+        const daysSinceLastSubmission = Math.floor((todayLocal.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Only count streak if last submission was today or yesterday
+        if (daysSinceLastSubmission <= 1) {
+          currentStreak = 1;
+          let lastDate = mostRecentDate;
+          
+          for (let i = 1; i < sortedDates.length; i++) {
+            const currentDate = sortedDates[i];
+            const daysDiff = Math.floor((lastDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysDiff === 1) {
+              currentStreak++;
+              lastDate = currentDate;
+            } else {
+              break;
+            }
+          }
+        }
       }
-    }
-    
-    // Calculate max streak
-    let currentTempStreak = 0;
-    let lastDate = null;
-    
-    for (const submission of sortedSubmissions.reverse()) {
-      const submissionDate = new Date(submission.date);
-      const dayOnly = new Date(submissionDate.getFullYear(), submissionDate.getMonth(), submissionDate.getDate());
       
-      if (!lastDate || dayOnly.getTime() === lastDate.getTime() + (24 * 60 * 60 * 1000)) {
-        currentTempStreak++;
-        maxStreak = Math.max(maxStreak, currentTempStreak);
-      } else if (dayOnly.getTime() !== lastDate?.getTime()) {
-        currentTempStreak = 1;
+      // Calculate max streak from all dates
+      let tempStreak = 1;
+      maxStreak = 1;
+      
+      for (let i = 1; i < sortedDates.length; i++) {
+        const prevDate = sortedDates[i - 1];
+        const currDate = sortedDates[i];
+        const daysDiff = Math.floor((prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff === 1) {
+          tempStreak++;
+          maxStreak = Math.max(maxStreak, tempStreak);
+        } else {
+          tempStreak = 1;
+        }
       }
-      
-      lastDate = dayOnly;
     }
     
     console.log('📊 Calculated stats:', { totalSubmissions, correctSubmissions, accuracy, currentStreak, maxStreak });

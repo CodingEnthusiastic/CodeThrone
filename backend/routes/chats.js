@@ -255,6 +255,31 @@ router.get("/users/search", authenticateToken, async (req, res) => {
   }
 })
 
+// Delete chat room (admin only)
+router.delete("/rooms/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`🗑️ Deleting chat room: ${id} by user ${req.user._id}`);
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const room = await ChatRoom.findById(id);
+    if (!room) {
+      return res.status(404).json({ error: "Chat room not found" });
+    }
+
+    await ChatRoom.findByIdAndDelete(id);
+    console.log(`✅ Chat room deleted: ${id}`);
+    res.json({ message: "Chat room deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error deleting chat room:", error);
+    res.status(500).json({ error: "Failed to delete chat room" });
+  }
+});
+
 console.log("✅ Chats routes setup complete")
 
 export default router

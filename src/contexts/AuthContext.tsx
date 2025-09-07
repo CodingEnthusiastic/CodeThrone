@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config/api';
+import { showError } from '../utils/toast';
 
 interface User {
   id: string;
@@ -64,11 +65,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Auto-login if token exists
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
-    console.log('🔄 Checking saved token:', savedToken ? `Present (${savedToken.length} chars)` : 'Not found');
+    // console.log('🔄 Checking saved token:', savedToken ? `Present (${savedToken.length} chars)` : 'Not found');
     
     if (savedToken && savedToken.trim()) {
       setToken(savedToken);
-      console.log('🔑 Setting token in state:', savedToken.substring(0, 20) + '...');
+      // console.log('🔑 Setting token in state:', savedToken.substring(0, 20) + '...');
       
       axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${savedToken}` }
@@ -81,10 +82,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           _id: user._id || user.id
         };
         setUser(normalizedUser);
-        console.log('🔄 Auto-login successful with normalized user:', normalizedUser);
+        // console.log('🔄 Auto-login successful with normalized user:', normalizedUser);
       })
       .catch((error) => {
-        console.error('❌ Auto-login failed:', error.response?.data || error.message);
+        // console.error('❌ Auto-login failed:', error.response?.data || error.message);
+        showError('Authentication failed: ' + (error.response?.data?.message || error.message));
         setUser(null);
         setToken(null);
         localStorage.removeItem('token');
@@ -117,13 +119,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userData);
       }
     } catch (error) {
-      console.error('❌ Error refreshing user data:', error);
+      // console.error('❌ Error refreshing user data:', error);
+      showError('Failed to refresh user data');
     }
   };
 
   const login = async (username: string, password: string, role: string = 'user') => {
     try {
-      console.log('🔐 Login attempt:', { username, role });
+      // console.log('🔐 Login attempt:', { username, role });
       const response = await axios.post(`${API_URL}/auth/login`, {
         username,
         password,
@@ -131,9 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       const { token: receivedToken, user } = response.data;
-      console.log('✅ Login successful, user data:', user);
-      console.log('🔑 Token received, length:', receivedToken?.length);
-      console.log('🔑 Token preview:', receivedToken?.substring(0, 20) + '...');
+      // console.log('✅ Login successful, user data:', user);
+      // console.log('🔑 Token received, length:', receivedToken?.length);
+      // console.log('🔑 Token preview:', receivedToken?.substring(0, 20) + '...');
       
       if (receivedToken && receivedToken.trim()) {
         localStorage.setItem('token', receivedToken);
@@ -151,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             _id: completeUser._id || completeUser.id
           };
           setUser(normalizedUser);
-          console.log('💾 Complete user profile set in context:', normalizedUser);
+          // console.log('💾 Complete user profile set in context:', normalizedUser);
         } catch (profileError) {
           // Fallback to basic user data if profile fetch fails
           const normalizedUser = {
@@ -160,13 +163,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             _id: user._id || user.id
           };
           setUser(normalizedUser);
-          console.log('💾 Basic user data set in context:', normalizedUser);
+          // console.log('💾 Basic user data set in context:', normalizedUser);
         }
       } else {
         throw new Error('Invalid token received from server');
       }
     } catch (error: any) {
-      console.error('Login error:', error);
+      // console.error('Login error:', error);
+      showError('Login failed: ' + (error.response?.data?.message || error.message));
       if (error.code === 'ERR_NETWORK') {
         throw new Error('Unable to connect to server. Please check if the backend is running.');
       }
@@ -198,7 +202,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Invalid token received from server');
       }
     } catch (error: any) {
-      console.error('Registration error:', error);
+      // console.error('Registration error:', error);
+      showError('Registration failed: ' + (error.response?.data?.message || error.message));
       if (error.code === 'ERR_NETWORK') {
         throw new Error('Unable to connect to server. Please check if the backend is running.');
       }

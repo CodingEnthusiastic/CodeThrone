@@ -10,6 +10,7 @@ import { python } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { searchKeymap } from '@codemirror/search';
+import { ArrowDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { EditorSelection } from '@codemirror/state';
 import { indentUnit } from '@codemirror/language';
@@ -31,6 +32,8 @@ interface CodeMirrorEditorProps {
   contestMode?: boolean;
   height?: string;
   settings?: Partial<EditorSettings>; // Add settings prop
+  headerButtons?: React.ReactNode; // Add header buttons prop
+  onGoToBottom?: () => void; // Add callback for go to bottom
 }
 
 // Add default settings
@@ -681,6 +684,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   contestMode = false,
   height = '400px',
   settings = {}, // Add settings prop
+  headerButtons, // Add header buttons prop
+  onGoToBottom, // Add go to bottom callback
 }) => {
   const { isDark } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -1096,9 +1101,23 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           )}
         </div>
         <div className="flex items-center space-x-2 text-xs text-gray-500">
-          <span>Ctrl+Space for completions</span>
-          <span>•</span>
-          <span>Ctrl+F for search</span>
+          {onGoToBottom && (
+            <button
+              onClick={onGoToBottom}
+              className="flex items-center px-2 py-1 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded text-xs transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+            >
+              <ArrowDown className="h-3 w-3 mr-1" />
+              Go to Bottom
+            </button>
+          )}
+          {headerButtons && (
+            <>
+              <span>•</span>
+              <div className="flex items-center gap-2 ml-2">
+                {headerButtons}
+              </div>
+            </>
+          )}
         </div>
       </div>
       

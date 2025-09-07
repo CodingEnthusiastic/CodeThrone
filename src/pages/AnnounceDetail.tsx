@@ -37,12 +37,12 @@ const AnnounceDetail: React.FC = () => {
   })
 
   // Add debugging
-  console.log("🔍 AnnounceDetail Debug Info:")
-  console.log("👤 User object:", user)
-  console.log("📧 User email:", user?.email)
-  console.log("👤 User username:", user?.username)
-  console.log("🔑 User role:", user?.role)
-  console.log("🆔 User ID:", user?._id)
+  // console.log("🔍 AnnounceDetail Debug Info:")
+  // console.log("👤 User object:", user)
+  // console.log("📧 User email:", user?.email)
+  // console.log("👤 User username:", user?.username)
+  // console.log("🔑 User role:", user?.role)
+  // console.log("🆔 User ID:", user?._id)
 
   useEffect(() => {
     if (id) {

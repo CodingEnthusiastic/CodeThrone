@@ -55,7 +55,7 @@ const AppRoutes = () => {
   }, []);
   if (loading) {
     return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900 px-4">
       <div className="text-center">
         <div className="relative inline-block mb-6">
           <div className="animate-spin rounded-full h-32 w-32 border-4 border-t-transparent border-orange-600 mx-auto"></div>
@@ -478,6 +478,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <AppRoutes />
+        <Toaster position="bottom-right" />
       </AuthProvider>
     </ThemeProvider>
     

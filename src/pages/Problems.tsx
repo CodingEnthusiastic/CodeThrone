@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Search, Filter, CheckCircle, Star, Trophy } from 'lucide-react';
 import { API_URL } from '../config/api';
+import { showError, showSuccess } from '../utils/toast';
 
 interface Problem {
   _id: string;
@@ -69,7 +70,8 @@ const Problems: React.FC = () => {
       setProblems(response.data.problems);
       setTotalPages(response.data.totalPages);
     } catch (error) {
-      console.error('Error fetching problems:', error);
+      // console.error('Error fetching problems:', error);
+      showError('Failed to load problems');
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,8 @@ const Problems: React.FC = () => {
       const solved = new Set<string>(response.data.solvedProblems.map((p: any) => p._id as string));
       setSolvedProblems(solved);
     } catch (error) {
-      console.error('Error fetching solved problems:', error);
+      // console.error('Error fetching solved problems:', error);
+      showError('Failed to load solved problems status');
     }
   };
 

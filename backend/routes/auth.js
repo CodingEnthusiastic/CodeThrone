@@ -176,14 +176,88 @@ router.get('/me', authenticateToken, async (req, res) => {
 
   try {
     const user = await User.findById(req.user._id)
-      .select('-password')
-      .lean(); // ✅ Use lean for faster, lighter query
+      .select('-password'); // Remove .lean() to allow saving
 
     if (!user) 
     {
       console.log('❌ User not found');
       return res.status(404).json({ message: 'User not found' });
     }
+
+    // Calculate streak from submissions (fix timezone issues - IST)
+    console.log('📈 Calculating current streak...');
+    const submissions = user.submissions || [];
+    const acceptedSubmissions = submissions
+      .filter(sub => sub.status === 'accepted')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    let currentStreak = 0;
+    if (acceptedSubmissions.length > 0) {
+      // Get today's date in IST (UTC + 5:30)
+      const now = new Date();
+      const istOffset = 5.5 * 60; // 5 hours 30 minutes in minutes
+      const todayIST = new Date(now.getTime() + (istOffset * 60 * 1000));
+      const todayLocal = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
+      
+      // Group submissions by local IST date
+      const submissionDates = new Set();
+      acceptedSubmissions.forEach(sub => {
+        const subDate = new Date(sub.date);
+        const istDate = new Date(subDate.getTime() + (istOffset * 60 * 1000));
+        const localDate = new Date(istDate.getFullYear(), istDate.getMonth(), istDate.getDate());
+        submissionDates.add(localDate.getTime());
+      });
+      
+      // Convert to sorted array of dates
+      const sortedDates = Array.from(submissionDates)
+        .map(timestamp => new Date(timestamp))
+        .sort((a, b) => b.getTime() - a.getTime());
+      
+      // Calculate consecutive streak from most recent date
+      if (sortedDates.length > 0) {
+        const mostRecentDate = sortedDates[0];
+        const daysSinceLastSubmission = Math.floor((todayLocal.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Only count streak if last submission was today or yesterday
+        if (daysSinceLastSubmission <= 1) {
+          currentStreak = 1;
+          let lastDate = mostRecentDate;
+          
+          for (let i = 1; i < sortedDates.length; i++) {
+            const currentDate = sortedDates[i];
+            const daysDiff = Math.floor((lastDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysDiff === 1) {
+              currentStreak++;
+              lastDate = currentDate;
+            } else {
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Update user's currentStreak if different
+    if (!user.stats) {
+      user.stats = {
+        problemsSolved: { total: 0, easy: 0, medium: 0, hard: 0 },
+        problemsAttempted: 0,
+        totalSubmissions: submissions.length,
+        correctSubmissions: acceptedSubmissions.length,
+        accuracy: submissions.length > 0 ? (acceptedSubmissions.length / submissions.length) * 100 : 0,
+        currentStreak: currentStreak,
+        maxStreak: Math.max(user.stats?.maxStreak || 0, currentStreak)
+      };
+    } else {
+      user.stats.currentStreak = currentStreak;
+      if (currentStreak > (user.stats.maxStreak || 0)) {
+        user.stats.maxStreak = currentStreak;
+      }
+    }
+
+    // Save the updated user data
+    await user.save();
 
     // ✅ Compute default avatar on-the-fly, don't write to DB
     if (!user.profile) {
@@ -203,7 +277,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       user.profile.avatar = `default:${user.username.charAt(0).toUpperCase()}`;
     }
 
-    console.log('✅ User data retrieved:', user.username);
+    console.log('✅ User data retrieved with streak:', user.username, 'streak:', currentStreak);
     res.json(user);
   } catch (error) {
     console.error('❌ Get user error:', error);

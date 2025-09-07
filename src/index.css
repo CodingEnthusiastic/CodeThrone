@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth scrolling for console */
+.scrollbar-smooth {
+  scroll-behavior: smooth;
+}
+
+.scrollbar-smooth::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-smooth::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.scrollbar-smooth::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.scrollbar-smooth::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Dark mode scrollbar */
+.dark .scrollbar-smooth::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark .scrollbar-smooth::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+.dark .scrollbar-smooth::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {
@@ -11,6 +48,17 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -36,6 +84,15 @@
   line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Animation utilities */
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.4s ease-out;
 }
 
 /* Responsive text sizing utilities */
@@ -92,8 +149,14 @@
   color-scheme: dark;
 }
 
+/* Light theme body */
+body {
+  background-color: #ffffff !important;
+  color: #111827;
+}
+
 .dark body {
-  background-color: #111827;
+  background-color: #111827 !important;
   color: #f9fafb;
 }
 

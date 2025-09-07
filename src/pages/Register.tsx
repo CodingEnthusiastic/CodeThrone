@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Code, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { API_URL } from '../config/api';
+import { showError, showSuccess } from '../utils/toast';
 
 // Animated stars + bubbles background for dark mode
 const StarField: React.FC = () => {
@@ -265,11 +266,11 @@ const Register: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    console.log('📝 Starting registration process...');
-    console.log('📊 Form data:', { username, email, password: '[HIDDEN]' });
+    // console.log('📝 Starting registration process...');
+    // console.log('📊 Form data:', { username, email, password: '[HIDDEN]' });
 
     if (password !== confirmPassword) {
-      console.log('❌ Password mismatch');
+      // console.log('❌ Password mismatch');
       setError('Passwords do not match');
       return;
     }

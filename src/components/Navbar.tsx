@@ -12,6 +12,7 @@ import {
   Moon, 
   Sun, 
   Coins,
+  Flame,
   ChevronDown
 } from 'lucide-react';
 
@@ -97,6 +98,14 @@ const Navbar: React.FC = () => {
 
           {/* Desktop Right Section */}
           <div className="hidden lg:flex items-center space-x-4">
+            {/* Streak Fire Icon */}
+            {user && (
+              <div className={`flex items-center px-3 py-1.5 rounded-lg border transition-colors duration-200 ${isDark ? 'bg-orange-900/20 border-orange-800 text-orange-400' : 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'}`}
+                   title="Current Streak">
+                <Flame className="h-4 w-4 mr-1 animate-pulse" />
+                <span className="text-sm font-medium">{user.stats?.currentStreak || 0}</span>
+              </div>
+            )}
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -298,19 +307,29 @@ const Navbar: React.FC = () => {
               
               {/* User Section */}
               {user ? (
-                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
-                  <Link
-                    to="/redeem"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                      isDark
-                        ? 'text-yellow-400 hover:bg-gray-800'
-                        : 'text-yellow-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Coins className="h-4 w-4 mr-3" />
-                    Coins ({user.coins || 0})
-                  </Link>
+                <div>
+                  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
+                    {/* Coins and Streak in same line */}
+                    <div className="flex items-center justify-between">
+                      <Link
+                        to="/redeem"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                          isDark
+                            ? 'text-yellow-400 hover:bg-gray-800'
+                            : 'text-yellow-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Coins className="h-4 w-4 mr-3" />
+                        Coins ({user.coins || 0})
+                      </Link>
+                      {/* Streak Fire Icon inline */}
+                      <div className={`flex items-center px-3 py-1.5 rounded-lg border transition-colors duration-200 ${isDark ? 'bg-orange-900/20 border-orange-800 text-orange-400' : 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'}`}
+                           title="Current Streak">
+                        <Flame className="h-4 w-4 mr-1 animate-pulse" />
+                        <span className="text-sm font-medium">{user.stats?.currentStreak || 0}</span>
+                      </div>
+                    </div>
 
                   {user.role === 'admin' && (
                     <Link
@@ -347,6 +366,7 @@ const Navbar: React.FC = () => {
                     <LogOut className="h-4 w-4 mr-3" />
                     Logout
                   </button>
+                </div>
                 </div>
               ) : (
                 <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 space-y-3">

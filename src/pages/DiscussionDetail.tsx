@@ -5,6 +5,7 @@ import axios from 'axios';
 import { ThumbsUp, ThumbsDown, MessageSquare, Send, Pin, Lock, ArrowLeft } from 'lucide-react';
 import { API_URL, SOCKET_URL } from "../config/api";
 import { useTheme } from '../contexts/ThemeContext';
+import { showError } from '../utils/toast';
 
 interface Comment {
   _id: string;
@@ -55,7 +56,7 @@ const DiscussionDetail: React.FC = () => {
       const response = await axios.get(`${API_URL}/discussion/${id}`);
       setDiscussion(response.data);
     } catch (error) {
-      console.error('Error fetching discussion:', error);
+      showError('Error fetching discussion');
     } finally {
       setLoading(false);
     }
@@ -76,7 +77,7 @@ const DiscussionDetail: React.FC = () => {
       // Refresh the discussion data
       await fetchDiscussion();
     } catch (error) {
-      console.error('Error voting:', error);
+      showError('Error voting');
     } finally {
       setDiscussionVoteLoading(false);
     }
@@ -97,7 +98,7 @@ const DiscussionDetail: React.FC = () => {
       // Refresh the discussion data
       await fetchDiscussion();
     } catch (error) {
-      console.error('Error voting on comment:', error);
+      showError('Error voting on comment');
     } finally {
       setCommentVoteLoading(null);
     }
@@ -127,7 +128,7 @@ const DiscussionDetail: React.FC = () => {
       });
       setNewComment('');
     } catch (error) {
-      console.error('Error adding comment:', error);
+      showError('Error adding comment');
     }
   };
 

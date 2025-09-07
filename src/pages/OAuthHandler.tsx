@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { API_URL, SOCKET_URL } from "../config/api";
+import { showError, showSuccess } from '../utils/toast';
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const OAuthHandler = () => {
     if (token) {
       // Store token first
       localStorage.setItem('token', token);
-      console.log('🔑 OAuth token stored:', token.substring(0, 20) + '...');
+      // console.log('🔑 OAuth token stored:', token.substring(0, 20) + '...');
 
       // Use async IIFE to avoid race conditions
       (async () => {
@@ -30,7 +31,8 @@ const OAuthHandler = () => {
           const user = await res.json();
           const normalizedUser = { ...user, id: user._id || user.id, _id: user._id || user.id };
           setUser && setUser(normalizedUser);
-          console.log('✅ OAuth user set:', normalizedUser.username);
+          // console.log('✅ OAuth user set:', normalizedUser.username);
+          showSuccess('OAuth login successful');
           
           // Clear URL params
           window.history.replaceState({}, document.title, window.location.pathname);
@@ -46,13 +48,13 @@ const OAuthHandler = () => {
             window.location.href = '/';
           }, 100);
         } catch (error) {
-          console.error('❌ OAuth authentication failed:', error);
+          showError('OAuth authentication failed');
           localStorage.removeItem('token');
           navigate('/login', { replace: true });
         }
       })();
     } else {
-      console.log('❌ No OAuth token found');
+      // console.log('❌ No OAuth token found');
       navigate('/login', { replace: true });
     }
   }, [navigate, setUser, refreshUser]);

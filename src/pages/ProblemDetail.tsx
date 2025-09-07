@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { useParams } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import axios from "axios"
+import { showError, showSuccess, showInfo } from '../utils/toast';
 import {
   Play,
   Send,
@@ -30,8 +31,10 @@ import {
   Zap, // For complexity analysis
   GraduationCap, // For visualizer
   Settings,
+  ArrowDown,
 } from "lucide-react"
 import CodeMirrorEditor from "../components/CodeMirrorEditor"
+import ConsoleOutput from "../components/ConsoleOutput"
 import { API_URL } from "../config/api"
 import confetti from "canvas-confetti";
 import toast from "react-hot-toast";
@@ -190,6 +193,11 @@ const ProblemDetail: React.FC = () => {
   const [potdCoinsEarned, setPotdCoinsEarned] = useState<number | null>(null);
   // New state variable for visualizer
   const [isVisualizerMaximized, setIsVisualizerMaximized] = useState(false);
+  // Console output ref for auto-scrolling
+  const consoleOutputRef = useRef<HTMLDivElement>(null);
+  // Active test case tab states
+  const [activeTestCaseTab, setActiveTestCaseTab] = useState(0);
+  const [activeSubmissionTestCaseTab, setActiveSubmissionTestCaseTab] = useState(0);
 
 
   // Auto-scroll chat to bottom in both minimized and maximized mode when new answer appears
@@ -201,10 +209,38 @@ const ProblemDetail: React.FC = () => {
     }
   }, [chatHistory, aiResponse, isAiMaximized])
 
+  // Auto-scroll to console output when results are available
+  useEffect(() => {
+    if ((runResult || submissionResult) && consoleOutputRef.current) {
+      setTimeout(() => {
+        consoleOutputRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 100);
+    }
+  }, [runResult, submissionResult]);
+
   // Manual scroll to bottom handler
   const scrollChatToBottom = () => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight
+    }
+  }
+
+  // Scroll to console/bottom of page
+  const scrollToBottom = () => {
+    if (consoleOutputRef.current) {
+      consoleOutputRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    } else {
+      // Fallback to scroll to bottom of page
+      window.scrollTo({ 
+        top: document.body.scrollHeight, 
+        behavior: 'smooth' 
+      });
     }
   }
 
@@ -454,7 +490,8 @@ const ProblemDetail: React.FC = () => {
       setProblem(response.data)
       setCode(response.data.codeTemplates?.[language] || "")
     } catch (error) {
-      console.error("Error fetching problem:", error)
+      // console.error("Error fetching problem:", error)
+      showError("Failed to load problem details");
     } finally {
       setLoading(false)
     }
@@ -733,7 +770,7 @@ const ProblemDetail: React.FC = () => {
 
   // Add near other state declarations
   const [editorSettings, setEditorSettings] = useState({
-    tabSize: 2, // Default to 2 spaces
+    tabSize: 4, // Default to 4 spaces
     insertSpaces: true,
     fontSize: 14,
     lineNumbers: true,
@@ -742,7 +779,7 @@ const ProblemDetail: React.FC = () => {
 
   // Temporary settings for the dropdown (before applying)
   const [tempEditorSettings, setTempEditorSettings] = useState({
-    tabSize: 2,
+    tabSize: 4,
     insertSpaces: true,
     fontSize: 14,
     lineNumbers: true,
@@ -842,7 +879,8 @@ const ProblemDetail: React.FC = () => {
       )
       setRunResult(response.data)
     } catch (error: any) {
-      console.error("Error running code:", error)
+      // console.error("Error running code:", error)
+      showError("Failed to run code: " + (error.response?.data?.message || "Please try again"));
       if (error.response?.status === 401) {
         toast.error("Authentication failed. Please login again.", {
           icon: "🔒",
@@ -964,7 +1002,8 @@ const ProblemDetail: React.FC = () => {
         fetchSubmissions()
       }
     } catch (error: any) {
-      console.error("Error submitting solution:", error)
+      // console.error("Error submitting solution:", error)
+      showError("Submission failed: " + (error.response?.data?.message || "Please try again"));
       if (error.response?.status === 401) {
         toast.error("Authentication failed. Please login again.", {
           icon: "🔒",
@@ -1149,12 +1188,8 @@ const ProblemDetail: React.FC = () => {
           <div className="flex-1 flex flex-col bg-white dark:bg-gray-850 border-r border-gray-200 dark:border-gray-750">
             {/* Editor Header */}
             <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-750 bg-gray-50 dark:bg-gray-900 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                  <Code className="h-4 w-4 mr-2 text-emerald-500" />
-                  Code Editor
-                </h3>
-                <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center">
+                <div className="flex items-center space-x-4">
                   <button
                     onClick={handleRun}
                     disabled={running || !token}
@@ -1224,14 +1259,17 @@ const ProblemDetail: React.FC = () => {
                   settings={editorSettings} // Pass settings
                   className="h-full w-full"
                   height="100%"
+                  onGoToBottom={scrollToBottom}
                 />
               </div>
             </div>
           </div>
 
           {/* Console/Results Panel */}
-          <div className="w-96 bg-white dark:bg-gray-850 flex flex-col shadow-lg">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-750 bg-gray-50 dark:bg-gray-900 flex-shrink-0">
+                    {/* Enhanced Console/Results Panel with Public Test Cases */}
+          <div className="w-96 bg-white dark:bg-gray-800 flex flex-col shadow-lg border-l border-gray-200 dark:border-gray-700">
+            {/* Console Header */}
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
               <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                 <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
                 Console Output
@@ -1245,7 +1283,8 @@ const ProblemDetail: React.FC = () => {
                 )}
               </h4>
             </div>
-            <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900 max-h-[500px]">
+
+            <div ref={consoleOutputRef} className="flex-1 p-4 overflow-y-auto bg-white dark:bg-gray-850 min-h-[400px]">
               {/* Show loading state */}
               {(running || submitting) && !runResult && !submissionResult && (
                 <div className="text-center py-8">
@@ -1256,217 +1295,259 @@ const ProblemDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* Rest of the console content remains the same */}
-              {runResult && (
-                <div className="mb-4 space-y-4">
-                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <span className="text-base font-medium text-gray-700 dark:text-gray-300 mr-2">Run Result:</span>
-                        <span className={`font-bold text-lg ${getStatusColor(runResult.status)}`}>{runResult.status}</span>
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                        Passed: <span className="font-bold">{runResult.passedTests}</span>/<span className="font-bold">{runResult.totalTests}</span>
-                      </div>
-                    </div>
-
-                    {runResult.error ? (
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-3 shadow-sm">
-                        <div className="text-red-800 dark:text-red-300 text-sm font-medium mb-1">Error:</div>
-                        <pre className="text-red-700 dark:text-red-200 text-sm font-mono break-words bg-red-100/50 dark:bg-red-900/50 p-2 rounded">
-                          {runResult.error}
-                        </pre>
-                      </div>
+              {/* Enhanced LeetCode-style Run Result */}
+              {runResult && !submissionResult && (
+                <div className="space-y-4">
+                  {/* Status Header */}
+                  <div className={`flex items-center space-x-3 px-4 py-3 rounded-lg ${
+                    runResult.status === "Accepted" || runResult.status === "Success"
+                      ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" 
+                      : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                  }`}>
+                    {runResult.status === "Accepted" || runResult.status === "Success" ? (
+                      <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
                     ) : (
-                      <div className="space-y-3">
-                        {runResult.testResults.map((result, index) => (
-                          <div key={index} className={`border rounded-lg p-3 shadow-sm ${
-                              result.passed
-                                ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20"
-                                : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center">
-                                {result.passed ? (
-                                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mr-2" />
-                                ) : (
-                                  <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 mr-2" />
-                                )}
-                                <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                                  Test Case {index + 1}
-                                </span>
-                              </div>
-                              <div className="flex items-center space-x-3 text-xs text-gray-600 dark:text-gray-400">
-                                <span>{result.executionTime}ms</span>
-                                <span>{result.memory}MB</span>
-                              </div>
-                            </div>
-                            <div className="space-y-2 text-xs">
-                              <div>
-                                <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Input:</div>
-                                <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
-                                  {result.input}
-                                </pre>
-                              </div>
-                              <div>
-                                <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Expected:</div>
-                                <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
-                                  {result.expectedOutput}
-                                </pre>
-                              </div>
-                              <div>
-                                <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Your Output:</div>
-                                <pre className={`p-2 rounded border overflow-x-auto ${
-                                    result.passed
-                                      ? "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200"
-                                      : "bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200"
-                                  }`}
-                                >
-                                  {result.actualOutput}
-                                </pre>
-                              </div>
+                      <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                    )}
+                    <div>
+                      <div className={`font-bold text-lg ${
+                        runResult.status === "Accepted" || runResult.status === "Success"
+                          ? "text-green-700 dark:text-green-300" 
+                          : "text-red-700 dark:text-red-300"
+                      }`}>
+                        Run Result: {runResult.status === "Success" ? "Accepted" : runResult.status}
+                      </div>
+                      {runResult.passedTests !== undefined && runResult.totalTests !== undefined && (
+                        <div className="text-gray-600 dark:text-gray-400 text-sm">
+                          Passed: {runResult.passedTests}/{runResult.totalTests} • Runtime: {runResult.executionTime || 0}ms
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Test Case Navigation */}
+                  {runResult.testResults && runResult.testResults.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      {/* Test Case Tabs */}
+                      <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                        <div className="flex overflow-x-auto">
+                          {runResult.testResults.map((result, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setActiveTestCaseTab(index)}
+                              className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 flex items-center space-x-2 ${
+                                activeTestCaseTab === index
+                                  ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800'
+                                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'
+                              }`}
+                            >
+                              {result.passed ? (
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              ) : (
+                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                              )}
+                              <span>Case {index + 1}</span>
+                              {result.passed ? (
+                                <span className="text-green-600 dark:text-green-400">- Passed</span>
+                              ) : (
+                                <span className="text-red-600 dark:text-red-400">- Failed</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Test Case Content */}
+                      {runResult.testResults[activeTestCaseTab] && (
+                        <div className="p-4 space-y-4">
+                          {/* Input Section */}
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Input</h4>
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                              <pre className="text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                                {runResult.testResults[activeTestCaseTab].input || 'No input data'}
+                              </pre>
                             </div>
                           </div>
-                        ))}
+
+                          {/* Output Section */}
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Output</h4>
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                              <pre className="text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                                {runResult.testResults[activeTestCaseTab].actualOutput || 'No output'}
+                              </pre>
+                            </div>
+                          </div>
+
+                          {/* Expected Section */}
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Expected</h4>
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                              <pre className="text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                                {runResult.testResults[activeTestCaseTab].expectedOutput || 'No expected output'}
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Error Display */}
+                  {runResult.error && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 mr-2" />
+                        <span className="text-red-800 dark:text-red-300 font-medium">Error</span>
                       </div>
-                    )}
-                  </div>
+                      <pre className="text-red-700 dark:text-red-200 text-sm font-mono whitespace-pre-wrap">
+                        {runResult.error}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* Enhanced LeetCode-style Submission Result */}
               {submissionResult && (
                 <div className="space-y-4">
-                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <span className="text-base font-medium text-gray-700 dark:text-gray-300 mr-2">
-                          Submission Result:
-                        </span>
-                        <span className={`font-bold text-lg ${getStatusColor(submissionResult.status)}`}>
-                          {submissionResult.status}
-                        </span>
+                  {/* Status Header */}
+                  <div className={`flex items-center space-x-3 px-4 py-3 rounded-lg ${
+                    submissionResult.status === "Accepted"
+                      ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" 
+                      : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                  }`}>
+                    {submissionResult.status === "Accepted" ? (
+                      <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                    )}
+                    <div>
+                      <div className={`font-bold text-lg ${
+                        submissionResult.status === "Accepted"
+                          ? "text-green-700 dark:text-green-300" 
+                          : "text-red-700 dark:text-red-300"
+                      }`}>
+                        {submissionResult.status}
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                        Passed: <span className="font-bold">{submissionResult.passedTests}</span>/<span className="font-bold">{submissionResult.totalTests}</span>
+                      {submissionResult.passedTests !== undefined && submissionResult.totalTests !== undefined && (
+                        <div className="text-gray-600 dark:text-gray-400 text-sm">
+                          Passed: {submissionResult.passedTests}/{submissionResult.totalTests} • Runtime: {submissionResult.executionTime || 0}ms
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* POTD Coin Award Notification */}
+                  {submissionResult.potd && submissionResult.potd.awarded && (
+                    <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-yellow-400 dark:bg-yellow-500 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                          🪙
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-bold text-yellow-800 dark:text-yellow-200">Problem of the Day Bonus!</h4>
+                          <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                            You earned <span className="font-semibold">{submissionResult.potd.coinsEarned} coins</span>!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submission Error Display */}
+                  {submissionResult.error && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 mr-2" />
+                        <span className="text-red-800 dark:text-red-300 font-medium">Error</span>
+                      </div>
+                      <pre className="text-red-700 dark:text-red-200 text-sm font-mono whitespace-pre-wrap">
+                        {submissionResult.error}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Default Public Test Cases View (shown when no run/submit results) */}
+              {!runResult && !submissionResult && !running && !submitting && problem?.testCases && (
+                <div className="space-y-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    {/* Header */}
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <h4 className="font-semibold text-gray-900 dark:text-gray-100">Testcase</h4>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <h4 className="font-semibold text-gray-900 dark:text-gray-100">Test Result</h4>
                       </div>
                     </div>
 
-                    {/* POTD Coin Award Notification */}
-                    {submissionResult.potd && submissionResult.potd.awarded && (
-                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-xl p-4 mb-4 shadow-inner">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0">
-                            <div className="w-8 h-8 bg-yellow-400 dark:bg-yellow-500 rounded-full flex items-center justify-center text-white text-lg font-bold">
-                              🪙
-                            </div>
-                          </div>
-                          <div className="ml-3">
-                            <h4 className="text-sm font-bold text-yellow-800 dark:text-yellow-200"> Problem of the Day Bonus! </h4>
-                            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                              You earned <span className="font-semibold">{submissionResult.potd.coinsEarned} coins</span>{" "}
-                              for solving today's Problem of the Day! 🎉
-                            </p>
+                    {/* Test Case Tabs */}
+                    <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30">
+                      <div className="flex overflow-x-auto">
+                        {problem.testCases.filter((tc: any) => tc.isPublic).map((testCase: any, index: number) => (
+                          <button
+                            key={index}
+                            onClick={() => setActiveTestCaseTab(index)}
+                            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 ${
+                              activeTestCaseTab === index
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800'
+                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'
+                            }`}
+                          >
+                            Case {index + 1}
+                          </button>
+                        ))}
+                        <button className="px-4 py-3 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed">
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Test Case Content */}
+                    {problem.testCases.filter((tc: any) => tc.isPublic)[activeTestCaseTab] && (
+                      <div className="p-4 space-y-4">
+                        {/* Input Section */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Input</h4>
+                          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                            <pre className="text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                              {problem.testCases.filter((tc: any) => tc.isPublic)[activeTestCaseTab]?.input || 'No input data'}
+                            </pre>
                           </div>
                         </div>
-                      </div>
-                    )}
-                    {submissionResult.error ? (
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 shadow-sm">
-                        <div className="text-red-800 dark:text-red-300 text-sm font-medium mb-1">Error:</div>
-                        <pre className="text-red-700 dark:text-red-200 text-sm font-mono break-words bg-red-100/50 dark:bg-red-900/50 p-2 rounded">
-                          {submissionResult.error}
-                        </pre>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1 opacity-70" />
-                            <span className="text-gray-600 dark:text-gray-300">Runtime:</span>
-                            <span className="ml-1 font-medium text-gray-900 dark:text-gray-100">
-                              {submissionResult.executionTime}ms
-                            </span>
-                          </div>
-                          <div className="flex items-center">
-                            <Memory className="h-4 w-4 mr-1 opacity-70" />
-                            <span className="text-gray-600 dark:text-gray-300">Memory:</span>
-                            <span className="ml-1 font-medium text-gray-900 dark:text-gray-100">
-                              {submissionResult.memory}MB
-                            </span>
+
+                        {/* Expected Output Section */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Expected</h4>
+                          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                            <pre className="text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                              {problem.testCases.filter((tc: any) => tc.isPublic)[activeTestCaseTab]?.output || 'No expected output'}
+                            </pre>
                           </div>
                         </div>
-                        {submissionResult.testResults.length > 0 && (
-                          <div className="space-y-2">
-                            <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
-                              Test Results (First 3):
-                            </h4>
-                            {submissionResult.testResults.slice(0, 3).map((result, index) => (
-                              <div key={index} className={`border rounded-lg p-3 shadow-sm ${
-                                  result.passed
-                                    ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20"
-                                    : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center">
-                                    {result.passed ? (
-                                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mr-2" />
-                                    ) : (
-                                      <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 mr-2" />
-                                    )}
-                                    <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                                      Test Case {index + 1}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center space-x-3 text-xs text-gray-600 dark:text-gray-400">
-                                    <span>{result.executionTime}ms</span>
-                                    <span>{result.memory}MB</span>
-                                  </div>
-                                </div>
-                                <div className="space-y-2 text-xs">
-                                  <div>
-                                    <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Input:</div>
-                                    <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
-                                      {result.input}
-                                    </pre>
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Expected:</div>
-                                    <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
-                                      {result.expectedOutput}
-                                    </pre>
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Your Output:</div>
-                                    <pre className={`p-2 rounded border overflow-x-auto ${
-                                        result.passed
-                                          ? "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200"
-                                          : "bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200"
-                                      }`}
-                                    >
-                                      {result.actualOutput}
-                                    </pre>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
-                </div>
-              )}
-              {!runResult && !submissionResult && !running && !submitting && (
-                <div className="text-gray-500 dark:text-gray-400 text-sm text-center py-8">
-                  <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Run your code to see the output here...</p>
+
+                  {/* Ready to Test Message */}
+                  <div className="text-center py-6">
+                    <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <Code className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Ready to test?</h4>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">Run your code to see output</p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
+          </div>
         </div>
-      </div>
+      // </div>
     )
   }
 
@@ -1765,6 +1846,7 @@ const ProblemDetail: React.FC = () => {
                   settings={editorSettings} // Pass settings
                   className="h-full w-full"
                   height="100%"
+                  onGoToBottom={scrollToBottom}
                 />
               </div>
             </div>
@@ -1912,6 +1994,17 @@ const ProblemDetail: React.FC = () => {
               <span className="text-gray-600 dark:text-gray-400 text-sm">
                 Acceptance: {problem.acceptanceRate.toFixed(2)}% ({problem.submissions} submissions)
               </span>
+            </div>
+            
+            {/* Go to Bottom Button */}
+            <div className="mt-3">
+              <button
+                onClick={scrollToBottom}
+                className="flex items-center px-3 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 text-sm"
+              >
+                <ArrowDown className="h-4 w-4 mr-2" />
+                Go to Bottom
+              </button>
             </div>
           </div>
 
@@ -2137,6 +2230,7 @@ const ProblemDetail: React.FC = () => {
                           disabled={true}
                           className="border border-gray-300 dark:border-gray-700 rounded-lg"
                           height="400px"
+                          onGoToBottom={scrollToBottom}
                         />
                       </div>
                     ))}
@@ -2195,12 +2289,13 @@ const ProblemDetail: React.FC = () => {
                 settings={editorSettings}
                 className="h-full w-full"
                 height="100%"
+                onGoToBottom={scrollToBottom}
               />
             </div>
 
             {/* Mobile Run/Submit Buttons and Console */}
             <div className="bg-gray-50 dark:bg-gray-900">
-              <div className="px-4 py-3 flex items-center justify-end space-x-2 border-b border-gray-200 dark:border-gray-750">
+              <div className="px-4 py-3 flex items-center justify-center space-x-4 border-b border-gray-200 dark:border-gray-750">
                 <button
                   onClick={handleRun}
                   disabled={running || !token}
@@ -2496,13 +2591,14 @@ const ProblemDetail: React.FC = () => {
                 settings={editorSettings} // Pass settings
                 className="h-full w-full"
                 height="100%"
+                onGoToBottom={scrollToBottom}
               />
             </div>
           </div>
 
           {/* Run/Submit Buttons and Console */}
           <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-750 bg-gray-50 dark:bg-gray-900">
-            <div className="p-4 flex items-center justify-end space-x-3">
+            <div className="p-4 flex items-center justify-center space-x-4">
               <button
                 onClick={handleRun}
                 disabled={running || !token}
@@ -2541,201 +2637,15 @@ const ProblemDetail: React.FC = () => {
               </button>
             </div>
 
-            {/* Console Output (Minimized View) */}
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-750 bg-gray-50 dark:bg-gray-900">
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-3">
-                <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Console Output
-                {(running || submitting) && (
-                  <div className="ml-2 flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-                    <span className="ml-2 text-sm text-blue-600 dark:text-blue-400">
-                      {running ? "Running..." : "Submitting..."}
-                    </span>
-                  </div>
-                )}
-              </h4>
-              <div className="max-h-60 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-700 custom-scrollbar">
-                {/* Show loading state */}
-                {(running || submitting) && !runResult && !submissionResult && (
-                  <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      {running ? "Running your code..." : "Submitting your solution..."}
-                    </p>
-                  </div>
-                )}
-
-                {runResult && (
-                  <div className="mb-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">Run Result:</span>
-                        <span className={`font-semibold ${getStatusColor(runResult.status)}`}>{runResult.status}</span>
-                      </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">
-                        Passed: {runResult.passedTests}/{runResult.totalTests}
-                      </div>
-                    </div>
-                    {runResult.error ? (
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2 text-sm">
-                        <div className="text-red-800 dark:text-red-300 font-medium mb-1">Error:</div>
-                        <pre className="text-red-700 dark:text-red-200 font-mono break-words">{runResult.error}</pre>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {runResult.testResults.slice(0, 1).map((result, index) => (
-                          <div key={index} className={`border rounded-lg p-2 text-xs ${
-                              result.passed
-                                ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20"
-                                : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center">
-                                {result.passed ? (
-                                  <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400 mr-1" />
-                                ) : (
-                                  <XCircle className="h-3 w-3 text-red-600 dark:text-red-400 mr-1" />
-                                )}
-                                <span className="font-medium text-xs text-gray-900 dark:text-gray-100"> Test Case {index + 1} </span>
-                              </div>
-                            </div>
-                            {!result.passed && (
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div>
-                                  <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Expected:</div>
-                                  <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
-                                    {result.expectedOutput}
-                                  </pre>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Your Output:
-                                  </div>
-                                  <pre className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 p-2 rounded text-red-800 dark:text-red-200 overflow-x-auto">
-                                    {result.actualOutput}
-                                  </pre>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {submissionResult && (
-                  <div className="mb-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">
-                          Submission Result:
-                        </span>
-                        <span className={`font-semibold ${getStatusColor(submissionResult.status)}`}>
-                          {submissionResult.status}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">
-                        Passed: {submissionResult.passedTests}/{submissionResult.totalTests}
-                      </div>
-                    </div>
-                    {/* POTD Coin Award Notification */}
-                    {submissionResult.potd && submissionResult.potd.awarded && (
-                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-xl p-3 mb-2 shadow-inner">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0">
-                            <div className="w-6 h-6 bg-yellow-400 dark:bg-yellow-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                              🪙
-                            </div>
-                          </div>
-                          <div className="ml-2">
-                            <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                              You earned <span className="font-semibold">{submissionResult.potd.coinsEarned} coins</span>!
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {submissionResult.error ? (
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2 text-sm">
-                        <div className="text-red-800 dark:text-red-300 font-medium mb-1">Error:</div>
-                        <pre className="text-red-700 dark:text-red-200 font-mono break-words">{submissionResult.error}</pre>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="grid grid-cols-2 gap-3 text-xs mb-2">
-                          <div className="flex items-center">
-                            <Clock className="h-3 w-3 text-gray-500 dark:text-gray-400 mr-1" />
-                            <span className="text-gray-600 dark:text-gray-300">Runtime:</span>
-                            <span className="ml-1 font-medium text-gray-900 dark:text-gray-100">
-                              {submissionResult.executionTime}ms
-                            </span>
-                          </div>
-                          <div className="flex items-center">
-                            <Memory className="h-3 w-3 text-gray-500 dark:text-gray-400 mr-1" />
-                            <span className="text-gray-600 dark:text-gray-300">Memory:</span>
-                            <span className="ml-1 font-medium text-gray-900 dark:text-gray-100">
-                              {submissionResult.memory}MB
-                            </span>
-                          </div>
-                        </div>
-                        {submissionResult.testResults.length > 0 && (
-                          <div className="space-y-1">
-                            <h4 className="font-semibold text-xs text-gray-900 dark:text-gray-100">
-                              Test Results (First 3):
-                            </h4>
-                            {submissionResult.testResults.slice(0, 3).map((result, index) => (
-                              <div key={index} className={`border rounded-lg p-2 ${
-                                  result.passed
-                                    ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20"
-                                    : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center">
-                                    {result.passed ? (
-                                      <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400 mr-1" />
-                                    ) : (
-                                      <XCircle className="h-3 w-3 text-red-600 dark:text-red-400 mr-1" />
-                                    )}
-                                    <span className="font-medium text-xs text-gray-900 dark:text-gray-100"> Test Case {index + 1} </span>
-                                  </div>
-                                </div>
-                                {!result.passed && (
-                                  <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div>
-                                      <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Expected:</div>
-                                      <pre className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 overflow-x-auto">
-                                        {result.expectedOutput}
-                                      </pre>
-                                    </div>
-                                    <div>
-                                      <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Your Output:
-                                      </div>
-                                      <pre className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 p-2 rounded text-red-800 dark:text-red-200 overflow-x-auto">
-                                        {result.actualOutput}
-                                      </pre>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {!runResult && !submissionResult && !running && !submitting && (
-                  <div className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
-                    <Code className="h-6 w-6 mx-auto mb-1 opacity-50" />
-                    <p>Run your code to see the output here...</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Console Output Component - Below code editor */}
+            <ConsoleOutput 
+              ref={consoleOutputRef}
+              publicTestCases={problem?.testCases?.filter((tc: any) => tc.isPublic) || []}
+              runResult={runResult}
+              submissionResult={submissionResult}
+              running={running}
+              submitting={submitting}
+            />
           </div>
 
           {/* Floating Buttons Container */}

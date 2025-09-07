@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
+import { showError, showSuccess } from '../utils/toast'
 import axios from "axios"
 import {
   Play,
@@ -331,7 +332,7 @@ const ContestProblemDetail: React.FC = () => {
       })
       setRunResult(response.data)
     } catch (error: any) {
-      console.error("Error running code:", error)
+      showError("Error running code");
       if (error.response?.status === 401) {
         alert('Authentication failed. Please login again.');
         return;
@@ -434,7 +435,7 @@ const ContestProblemDetail: React.FC = () => {
         });
       }
     } catch (error: any) {
-      console.error("Error submitting solution:", error)
+      showError("Error submitting solution");
       console.error('📊 Submission error details:', error.response?.data);
       if (error.response?.status === 401) {
         alert('Authentication failed. Please login again.');
