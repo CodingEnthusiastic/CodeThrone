@@ -1101,7 +1101,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           )}
         </div>
         <div className="flex items-center space-x-2 text-xs text-gray-500">
-          {onGoToBottom && (
+          {/* {onGoToBottom && (
             <button
               onClick={onGoToBottom}
               className="flex items-center px-2 py-1 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded text-xs transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
@@ -1109,7 +1109,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
               <ArrowDown className="h-3 w-3 mr-1" />
               Go to Bottom
             </button>
-          )}
+          )} */}
           {headerButtons && (
             <>
               <span>•</span>
