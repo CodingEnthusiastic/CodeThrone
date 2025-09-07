@@ -172,7 +172,7 @@ const DiscussionDetail: React.FC = () => {
         {/* Back Button */}
         <div className="mb-6">
           <button
-            onClick={() => navigate('/discussions')}
+            onClick={() => navigate('/top')}
             className={`inline-flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
               isDark
                 ? "bg-[#23243a] hover:bg-[#32334a] text-[#e0e7ff] border border-[#6366f1]/30 hover:border-[#6366f1]/50"
