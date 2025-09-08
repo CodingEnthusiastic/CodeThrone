@@ -38,7 +38,7 @@ interface CodeMirrorEditorProps {
 
 // Add default settings
 const DEFAULT_SETTINGS: EditorSettings = {
-  tabSize: 2, // Default to 2 spaces (modern standard)
+  tabSize: 4, // Default to 2 spaces (modern standard)
   insertSpaces: true,
   fontSize: 14,
   lineNumbers: true,
