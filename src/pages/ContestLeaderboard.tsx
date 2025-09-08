@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Search, Medal, TrendingUp, Users, ArrowUpDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { API_URL } from '../config/api';
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface ContestLeaderboardUser {
   _id: string;
@@ -34,7 +33,7 @@ const ContestLeaderboard: React.FC = () => {
   const fetchContestLeaderboard = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/users/contest-leaderboard`, {
+      const response = await axios.get(`${API_URL}/users/contest-leaderboard`, {
         params: { all: 'true' } // Request all users instead of pagination
       });
       
