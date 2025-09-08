@@ -13,24 +13,9 @@ interface ContestLeaderboardUser {
     contestRating: number;
   };
   stats: {
-    contestsWon: number;
-    contestsLost: number;
-    contestsTied: number;
     contestsPlayed: number;
   };
-  latestForm: string[];
   position?: number;
-}
-
-interface LeaderboardResponse {
-  users: ContestLeaderboardUser[];
-  totalUsers: number;
-  totalPages: number;
-  currentPage: number;
-  currentUserRank?: {
-    rank: number;
-    percentile: number;
-  };
 }
 
 const ContestLeaderboard: React.FC = () => {
@@ -39,7 +24,7 @@ const ContestLeaderboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'contestRating' | 'contestsWon' | 'username'>('contestRating');
+  const [sortBy, setSortBy] = useState<'contestRating' | 'contestsPlayed' | 'username'>('contestRating');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
@@ -67,15 +52,6 @@ const ContestLeaderboard: React.FC = () => {
     }
   };
 
-  const getResultIcon = (result: string) => {
-    switch (result) {
-      case 'W': return <span className="text-green-600 dark:text-green-400 font-bold">W</span>;
-      case 'L': return <span className="text-red-600 dark:text-red-400 font-bold">L</span>;
-      case 'D': return <span className="text-gray-500 dark:text-gray-400 font-bold">D</span>;
-      default: return <span className="text-gray-400 dark:text-gray-500">-</span>;
-    }
-  };
-
   const getRankIcon = (position: number) => {
     switch (position) {
       case 1: return <Trophy className="w-6 h-6 text-yellow-500" />;
@@ -97,9 +73,9 @@ const ContestLeaderboard: React.FC = () => {
         aValue = a.ratings?.contestRating || 0;
         bValue = b.ratings?.contestRating || 0;
         break;
-      case 'contestsWon':
-        aValue = a.stats?.contestsWon || 0;
-        bValue = b.stats?.contestsWon || 0;
+      case 'contestsPlayed':
+        aValue = a.stats?.contestsPlayed || 0;
+        bValue = b.stats?.contestsPlayed || 0;
         break;
       case 'username':
         aValue = a.username.toLowerCase();
@@ -114,7 +90,10 @@ const ContestLeaderboard: React.FC = () => {
     } else {
       return aValue < bValue ? 1 : -1;
     }
-  });
+  }).map((user, index) => ({
+    ...user,
+    position: index + 1
+  }));
 
   const handleSort = (field: typeof sortBy) => {
     if (sortBy === field) {
@@ -221,14 +200,14 @@ const ContestLeaderboard: React.FC = () => {
               </button>
               
               <button
-                onClick={() => handleSort('contestsWon')}
+                onClick={() => handleSort('contestsPlayed')}
                 className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
-                  sortBy === 'contestsWon'
+                  sortBy === 'contestsPlayed'
                     ? 'bg-blue-600 text-white border-blue-600'
                     : `${isDark ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-white text-gray-700 border-gray-300'} hover:bg-blue-50 dark:hover:bg-gray-600`
                 }`}
               >
-                Wins <ArrowUpDown className="w-4 h-4" />
+                Contests <ArrowUpDown className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -250,16 +229,7 @@ const ContestLeaderboard: React.FC = () => {
                     Rating
                   </th>
                   <th className={`px-4 py-4 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
-                    Wins
-                  </th>
-                  <th className={`px-4 py-4 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
-                    Losses
-                  </th>
-                  <th className={`px-4 py-4 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
-                    Draws
-                  </th>
-                  <th className={`px-4 py-4 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
-                    Recent Form
+                    Contests Played
                   </th>
                 </tr>
               </thead>
@@ -285,7 +255,7 @@ const ContestLeaderboard: React.FC = () => {
                             {user.username}
                           </div>
                           <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {user.stats.contestsPlayed || 0} contests played
+                            Contest Participant
                           </div>
                         </div>
                       </div>
@@ -304,42 +274,9 @@ const ContestLeaderboard: React.FC = () => {
                     </td>
                     
                     <td className="px-4 py-3 text-center whitespace-nowrap">
-                      <span className="text-green-600 dark:text-green-400 font-medium">
-                        {user.stats.contestsWon}
+                      <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'} font-medium`}>
+                        {user.stats.contestsPlayed || 0}
                       </span>
-                    </td>
-                    
-                    <td className="px-4 py-3 text-center whitespace-nowrap">
-                      <span className="text-red-600 dark:text-red-400 font-medium">
-                        {user.stats.contestsLost}
-                      </span>
-                    </td>
-                    
-                    <td className="px-4 py-3 text-center whitespace-nowrap">
-                      <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
-                        {user.stats.contestsTied}
-                      </span>
-                    </td>
-                    
-                    <td className="px-4 py-3 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center space-x-1">
-                        {user.latestForm.map((result: string, index: number) => (
-                          <div
-                            key={index}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                              result === 'W' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                : result === 'L'
-                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                : result === 'D'
-                                ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                                : 'bg-gray-50 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
-                            }`}
-                          >
-                            {getResultIcon(result)}
-                          </div>
-                        ))}
-                      </div>
                     </td>
                   </tr>
                 ))}

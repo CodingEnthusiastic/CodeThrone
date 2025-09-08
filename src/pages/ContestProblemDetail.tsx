@@ -1,11 +1,10 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
-import { showError, showSuccess } from '../utils/toast'
+import { showError } from '../utils/toast'
 import axios from "axios"
 import {
   Play,
@@ -21,7 +20,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import CodeMirrorEditor from "../components/CodeMirrorEditor"
-import { API_URL, SOCKET_URL } from "../config/api";
+import { API_URL } from "../config/api";
 
 interface Problem {
   _id: string
@@ -69,12 +68,12 @@ interface RunResult {
 }
 
 // Custom Components
-const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-blue-400
+const Card = React.forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(({ children, className = "" }, ref) => (
+  <div ref={ref} className={`bg-white rounded-xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-blue-400
                dark:bg-gray-800 dark:border-gray-700 dark:hover:border-blue-500 ${className}`}>
     {children}
   </div>
-)
+))
 
 const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => <div className="p-6 pb-4">{children}</div>
 
@@ -179,6 +178,15 @@ const ContestProblemDetail: React.FC = () => {
   const [timeRemaining, setTimeRemaining] = useState("")
   const [tabSwitchCount, setTabSwitchCount] = useState(0)
   const editorRef = useRef<HTMLDivElement>(null); // Ref for the editor container to attach event listeners
+  const consoleOutputRef = useRef<HTMLDivElement>(null); // Ref for console output section
+  const [showResultCard, setShowResultCard] = useState(false)
+  const [resultCardData, setResultCardData] = useState<{
+    type: 'success' | 'failure'
+    title: string
+    message: string
+    testCases: { passed: number; total: number }
+    scoreAwarded?: number
+  } | null>(null)
 
   useEffect(() => {
     if (contestId && problemId) {
@@ -242,20 +250,6 @@ const ContestProblemDetail: React.FC = () => {
     }
   }, []);
 
-  const fetchProblem = async () => {
-    try {
-      console.log("🔍 Fetching problem details for:", problemId)
-      const response = await axios.get(`${API_URL}/problems/${problemId}`)
-      console.log("✅ Problem details fetched:", response.data)
-      setProblem(response.data)
-      if (response.data?.codeTemplates) {
-        setCode(response.data.codeTemplates[language] || "")
-      }
-    } catch (error) {
-      console.error("❌ Error fetching problem:", error)
-    }
-  }
-
   const fetchContest = async () => {
     try {
       console.log("🔍 Fetching contest info for:", contestId)
@@ -306,6 +300,33 @@ const ContestProblemDetail: React.FC = () => {
     }
   }
 
+  const scrollToConsole = () => {
+    setTimeout(() => {
+      if (consoleOutputRef.current) {
+        consoleOutputRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        });
+      }
+    }, 300); // Small delay to ensure DOM is updated
+  }
+
+  const showResultCardWithData = (data: {
+    type: 'success' | 'failure'
+    title: string
+    message: string
+    testCases: { passed: number; total: number }
+    scoreAwarded?: number
+  }) => {
+    setResultCardData(data)
+    setShowResultCard(true)
+    setTimeout(() => {
+      setShowResultCard(false)
+      setResultCardData(null)
+    }, 5000) // Auto-dismiss after 5 seconds
+  }
+
   const handleRun = async () => {
     if (!code.trim()) {
       alert("Please write some code before running!")
@@ -319,6 +340,7 @@ const ContestProblemDetail: React.FC = () => {
 
     setRunning(true)
     setRunResult(null)
+    scrollToConsole() // Scroll to console output
 
     try {
       const response = await axios.post(`${API_URL}/problems/${problemId}/run`, {
@@ -377,6 +399,7 @@ const ContestProblemDetail: React.FC = () => {
 
     setSubmitting(true)
     setSubmissionResult(null)
+    scrollToConsole() // Scroll to console output
 
     try {
       console.log('🧪 Submitting code for contest problem...');
@@ -420,18 +443,46 @@ const ContestProblemDetail: React.FC = () => {
           );
           console.log('✅ Contest score updated:', contestResponse.data);
           
-          if (contestResponse.data.scoreAwarded) {
-            alert(`🎉 Problem solved! You earned ${contestResponse.data.scoreAwarded} points!`);
-          }
+          // Show success card instead of alert
+          showResultCardWithData({
+            type: 'success',
+            title: '🎉 Congratulations!',
+            message: `Problem solved! You earned ${contestResponse.data.scoreAwarded || 100} points!`,
+            testCases: {
+              passed: response.data.passedTests,
+              total: response.data.totalTests
+            },
+            scoreAwarded: contestResponse.data.scoreAwarded || 100
+          });
         } catch (contestError) {
           console.error('❌ Error updating contest score:', contestError);
-          alert('Problem solved but failed to update contest score. Please contact support.');
+          // Show success card even if score update failed
+          showResultCardWithData({
+            type: 'success',
+            title: '🎉 Problem Solved!',
+            message: 'Your solution passed all test cases, but there was an issue updating your score. Please contact support.',
+            testCases: {
+              passed: response.data.passedTests,
+              total: response.data.totalTests
+            }
+          });
         }
       } else {
         console.log('⚠️ Submission not fully successful:', {
           status: response.data.status,
           passedTests: response.data.passedTests,
           totalTests: response.data.totalTests
+        });
+        
+        // Show failure card
+        showResultCardWithData({
+          type: 'failure',
+          title: '❌ Try Again',
+          message: `Your solution passed ${response.data.passedTests} out of ${response.data.totalTests} test cases.`,
+          testCases: {
+            passed: response.data.passedTests,
+            total: response.data.totalTests
+          }
         });
       }
     } catch (error: any) {
@@ -953,7 +1004,7 @@ const ContestProblemDetail: React.FC = () => {
               </div>
 
               {/* Results Panel */}
-              <Card className="bg-gray-50 border-dashed border-gray-200 dark:bg-gray-800 dark:border-dashed dark:border-gray-700">
+              <Card ref={consoleOutputRef} className="bg-gray-50 border-dashed border-gray-200 dark:bg-gray-800 dark:border-dashed dark:border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-xl text-gray-800 dark:text-gray-50">Console Output</CardTitle>
                 </CardHeader>
@@ -1112,6 +1163,153 @@ const ContestProblemDetail: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Result Card Overlay */}
+      {showResultCard && resultCardData && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className={`relative max-w-lg w-full mx-4 transform transition-all duration-500 scale-100 ${
+            resultCardData.type === 'success' 
+              ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 border-green-300 dark:from-green-900/30 dark:via-emerald-900/20 dark:to-green-800/30 dark:border-green-600' 
+              : 'bg-gradient-to-br from-red-50 via-rose-50 to-red-100 border-red-300 dark:from-red-900/30 dark:via-rose-900/20 dark:to-red-800/30 dark:border-red-600'
+          } border-2 rounded-2xl shadow-2xl overflow-hidden`}>
+            
+            {/* Premium Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className={`absolute top-0 right-0 w-32 h-32 rounded-full ${
+                resultCardData.type === 'success' ? 'bg-green-400' : 'bg-red-400'
+              } blur-3xl transform translate-x-16 -translate-y-16`}></div>
+              <div className={`absolute bottom-0 left-0 w-24 h-24 rounded-full ${
+                resultCardData.type === 'success' ? 'bg-emerald-400' : 'bg-rose-400'
+              } blur-2xl transform -translate-x-12 translate-y-12`}></div>
+            </div>
+
+            {/* Close Button */}
+            <button 
+              onClick={() => {
+                setShowResultCard(false)
+                setResultCardData(null)
+              }}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors text-gray-600 dark:text-gray-300"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+
+            <div className="relative p-8 text-center">
+              {/* Success/Failure Icon with Animation */}
+              <div className="relative mb-6">
+                <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full ${
+                  resultCardData.type === 'success' 
+                    ? 'bg-green-100 border-4 border-green-300 dark:bg-green-800/50 dark:border-green-500' 
+                    : 'bg-red-100 border-4 border-red-300 dark:bg-red-800/50 dark:border-red-500'
+                } animate-pulse`}>
+                  {resultCardData.type === 'success' ? (
+                    <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <XCircle className="w-10 h-10 text-red-600 dark:text-red-400" />
+                  )}
+                </div>
+              </div>
+
+              {/* Title with Gradient Text */}
+              <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r ${
+                resultCardData.type === 'success' 
+                  ? 'from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400' 
+                  : 'from-red-600 to-rose-600 dark:from-red-400 dark:to-rose-400'
+              } bg-clip-text text-transparent`}>
+                {resultCardData.title}
+              </h2>
+
+              {/* Message */}
+              <p className={`text-lg mb-6 ${
+                resultCardData.type === 'success' 
+                  ? 'text-green-700 dark:text-green-200' 
+                  : 'text-red-700 dark:text-red-200'
+              }`}>
+                {resultCardData.message}
+              </p>
+              
+              {/* Test Cases Card */}
+              <div className={`inline-flex items-center px-6 py-3 rounded-xl mb-8 ${
+                resultCardData.type === 'success' 
+                  ? 'bg-green-200/50 border border-green-300 text-green-800 dark:bg-green-800/30 dark:border-green-600 dark:text-green-200' 
+                  : 'bg-red-200/50 border border-red-300 text-red-800 dark:bg-red-800/30 dark:border-red-600 dark:text-red-200'
+              } backdrop-blur-sm`}>
+                <div className={`w-3 h-3 rounded-full mr-3 ${
+                  resultCardData.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                } animate-pulse`}></div>
+                <span className="font-semibold">
+                  Test Cases: {resultCardData.testCases.passed}/{resultCardData.testCases.total} passed
+                </span>
+              </div>
+
+              {/* Score Display for Success */}
+              {resultCardData.type === 'success' && resultCardData.scoreAwarded && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30 rounded-xl border border-yellow-300 dark:border-yellow-600">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Trophy className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                    <span className="text-xl font-bold text-yellow-800 dark:text-yellow-200">
+                      +{resultCardData.scoreAwarded} Points
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex space-x-4 justify-center">
+                {resultCardData.type === 'failure' ? (
+                  <>
+                    <Button
+                      onClick={() => {
+                        setShowResultCard(false)
+                        setResultCardData(null)
+                      }}
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0 shadow-lg"
+                      variant="default"
+                    >
+                      <Code className="w-4 h-4 mr-2" />
+                      Try Again
+                    </Button>
+                    <Button
+                      onClick={() => navigate(`/contest/${contestId}/problems`)}
+                      className="flex-1"
+                      variant="outline"
+                    >
+                      Other Problems
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={() => navigate(`/contest/${contestId}/problems`)}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg"
+                      variant="success"
+                    >
+                      <Trophy className="w-4 h-4 mr-2" />
+                      Solve More Problems
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowResultCard(false)
+                        setResultCardData(null)
+                      }}
+                      className="flex-1"
+                      variant="outline"
+                    >
+                      Continue Coding
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Auto-dismiss indicator */}
+              <div className="mt-6 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center space-x-1">
+                <Clock className="w-3 h-3" />
+                <span>Auto-closes in 5 seconds</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tailwind CSS custom animations (add to your global CSS or in a style block if using Next.js/similar) */}
       <style>{`
