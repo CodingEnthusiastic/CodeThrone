@@ -45,6 +45,8 @@ interface AuthContextType {
   updateCoins: (newCoins: number) => void; // Add method to update coins directly
   setUser: (user: User | null) => void;
   loading: boolean;
+  setRedirectUrl: (url: string) => void; // Add redirect URL setter
+  getAndClearRedirectUrl: () => string | null; // Get and clear redirect URL
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -61,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
+  const [redirectUrl, setRedirectUrlState] = useState<string | null>(null);
 
   // Auto-login if token exists
   useEffect(() => {
@@ -224,6 +227,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
   };
 
+  // Redirect URL management methods
+  const setRedirectUrl = (url: string) => {
+    setRedirectUrlState(url);
+  };
+
+  const getAndClearRedirectUrl = (): string | null => {
+    const url = redirectUrl;
+    setRedirectUrlState(null);
+    return url;
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -235,7 +249,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       refreshUser, 
       updateCoins, 
       setUser, 
-      loading 
+      loading,
+      setRedirectUrl,
+      getAndClearRedirectUrl
     }}>
       {children}
     </AuthContext.Provider>

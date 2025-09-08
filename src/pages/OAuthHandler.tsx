@@ -6,7 +6,7 @@ import { showError, showSuccess } from '../utils/toast';
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
-  const { setUser, refreshUser } = useAuth();
+  const { setUser, refreshUser, getAndClearRedirectUrl } = useAuth();
   const handledRef = useRef(false);
 
   useEffect(() => {
@@ -45,7 +45,13 @@ const OAuthHandler = () => {
           // Force a page refresh for OAuth users to ensure proper authentication state
           // This fixes the issue where users need to refresh the page to be recognized as authenticated
           setTimeout(() => {
-            window.location.href = '/';
+            // Check if there's a saved redirect URL
+            const redirectUrl = getAndClearRedirectUrl();
+            if (redirectUrl) {
+              window.location.href = redirectUrl;
+            } else {
+              window.location.href = '/';
+            }
           }, 100);
         } catch (error) {
           showError('OAuth authentication failed');

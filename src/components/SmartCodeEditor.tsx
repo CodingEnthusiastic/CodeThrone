@@ -449,13 +449,33 @@ const SmartCodeEditor: React.FC<SmartCodeEditorProps> = ({
 
   return (
     <div className="relative">
+      {/* Top bar with Run/Submit buttons */}
+      <div className="w-full h-14 bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2 rounded-t-md" style={{ minHeight: '56px' }}>
+        <div className="flex items-center justify-center gap-6">
+          <button
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition-all duration-150"
+            style={{ marginRight: '12px' }}
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('runCode'))}
+          >
+            Run
+          </button>
+          <button
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition-all duration-150"
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('submitCode'))}
+          >
+            Submit
+          </button>
+        </div>
+      </div>
       <textarea
         ref={textareaRef}
         value={value}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         className={`
-          w-full h-96 p-4 border border-gray-300 rounded-md 
+          w-full h-96 p-4 border border-gray-300 rounded-b-md 
           font-mono text-sm resize-none
           focus:ring-2 focus:ring-blue-500 focus:border-transparent
           ${className}
@@ -473,7 +493,6 @@ const SmartCodeEditor: React.FC<SmartCodeEditorProps> = ({
         autoCorrect="off"
         autoCapitalize="off"
       />
-      
       {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
         <div 

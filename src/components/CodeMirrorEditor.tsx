@@ -10,7 +10,7 @@ import { python } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { searchKeymap } from '@codemirror/search';
-import { ArrowDown } from 'lucide-react';
+import { ArrowDown, Play, Send } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { EditorSelection } from '@codemirror/state';
 import { indentUnit } from '@codemirror/language';
@@ -34,6 +34,11 @@ interface CodeMirrorEditorProps {
   settings?: Partial<EditorSettings>; // Add settings prop
   headerButtons?: React.ReactNode; // Add header buttons prop
   onGoToBottom?: () => void; // Add callback for go to bottom
+  onRun?: () => void; // Run button handler
+  onSubmit?: () => void; // Submit button handler
+  running?: boolean; // Running state
+  submitting?: boolean; // Submitting state
+  token?: string; // Auth token for enabling/disabling buttons
 }
 
 // Add default settings
@@ -686,6 +691,11 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   settings = {}, // Add settings prop
   headerButtons, // Add header buttons prop
   onGoToBottom, // Add go to bottom callback
+  onRun,
+  onSubmit,
+  running = false,
+  submitting = false,
+  token,
 }) => {
   const { isDark } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -694,6 +704,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   
   // Merge user settings with defaults
   const editorSettings = { ...DEFAULT_SETTINGS, ...settings };
+
+  // Add extra line breaks to ensure main function is visible - but only if not already present
+  const displayValue = value.endsWith('\n\n') ? value : value + '\n\n';
 
   const customCompletions = useCallback(() => {
     return autocompletion({
@@ -839,7 +852,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       EditorView.updateListener.of((update: any) => {
         if (update.docChanged && !disabled) {
           const newValue = update.state.doc.toString();
-          onChange(newValue);
+          // Remove the extra line breaks we added for display before calling onChange
+          const cleanValue = newValue.endsWith('\n\n') ? newValue.slice(0, -2) : newValue;
+          onChange(cleanValue);
         }
       }),
     ];
@@ -875,7 +890,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     }
 
     return EditorState.create({
-      doc: value,
+      doc: displayValue,
       extensions,
     });
   }, [language, disabled, contestMode, isDark, editorSettings, height]);
@@ -918,7 +933,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
 
     // Create new editor state with preserved content and cursor position
     const state = EditorState.create({
-      doc: currentDoc,
+      doc: displayValue,
       extensions: (() => {
         const extensions: Extension[] = [
           basicSetup,
@@ -997,7 +1012,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           EditorView.updateListener.of((update: any) => {
             if (update.docChanged && !disabled) {
               const newValue = update.state.doc.toString();
-              onChange(newValue);
+              // Remove the extra line breaks we added for display before calling onChange
+              const cleanValue = newValue.endsWith('\n\n') ? newValue.slice(0, -2) : newValue;
+              onChange(cleanValue);
             }
           }),
         ];
@@ -1045,7 +1062,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     // Update editor content when value changes externally
     if (viewRef.current) {
       const currentDoc = viewRef.current.state.doc.toString();
-      if (currentDoc !== value) {
+      if (currentDoc !== displayValue) {
         // Only update if the change is not from user input
         // This prevents cursor jumping during typing
         const isUserInput = viewRef.current.hasFocus;
@@ -1053,13 +1070,13 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         if (!isUserInput) {
           // Store current cursor position
           const currentSelection = viewRef.current.state.selection;
-          const cursorPos = Math.min(currentSelection.main.head, value.length);
+          const cursorPos = Math.min(currentSelection.main.head, displayValue.length);
           
           const transaction = viewRef.current.state.update({
             changes: {
               from: 0,
               to: viewRef.current.state.doc.length,
-              insert: value,
+              insert: displayValue,
             },
             selection: EditorSelection.cursor(cursorPos), // Restore cursor position
             scrollIntoView: true,
@@ -1068,7 +1085,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         }
       }
     }
-  }, [value]);
+  }, [displayValue]);
 
   return (
     <div className={`relative border rounded-lg overflow-hidden ${
@@ -1076,58 +1093,72 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         ? 'border-gray-600 bg-gray-800' 
         : 'border-gray-300 bg-white'
     } ${className}`}>
-      {/* Editor Header */}
-      <div className={`flex items-center justify-between px-4 py-2 border-b ${
+      {/* Premium Editor Header with Run/Submit buttons */}
+      <div className={`flex items-center justify-center h-16 border-b ${
         isDark 
           ? 'border-gray-600 bg-gray-700' 
           : 'border-gray-300 bg-gray-50'
       }`}>
-        <div className="flex items-center space-x-2">
-          <div className={`px-2 py-1 rounded text-xs font-medium ${
-            isDark 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-blue-100 text-blue-800'
-          }`}>
-            {language.toUpperCase()}
-          </div>
-          {contestMode && (
-            <div className={`px-2 py-1 rounded text-xs font-medium ${
-              isDark 
-                ? 'bg-red-600 text-white' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              CONTEST MODE
-            </div>
-          )}
-        </div>
-        <div className="flex items-center space-x-2 text-xs text-gray-500">
-          {/* {onGoToBottom && (
-            <button
-              onClick={onGoToBottom}
-              className="flex items-center px-2 py-1 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded text-xs transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
-            >
-              <ArrowDown className="h-3 w-3 mr-1" />
-              Go to Bottom
-            </button>
-          )} */}
-          {headerButtons && (
-            <>
-              <span>•</span>
-              <div className="flex items-center gap-2 ml-2">
-                {headerButtons}
-              </div>
-            </>
-          )}
+        <div className="flex items-center gap-8">
+          <button
+            onClick={() => {
+              if (typeof onRun === 'function') {
+                onRun();
+              } else {
+                window.dispatchEvent(new CustomEvent('runCode'));
+              }
+            }}
+            disabled={running || !token}
+            className="flex items-center px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            style={{ marginRight: '12px' }}
+            title={!token ? "Please login to run code" : ""}
+          >
+            {running ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                Running...
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Run
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              if (typeof onSubmit === 'function') {
+                onSubmit();
+              } else {
+                window.dispatchEvent(new CustomEvent('submitCode'));
+              }
+            }}
+            disabled={submitting || !token}
+            className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            title={!token ? "Please login to submit code" : ""}
+          >
+            {submitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Submit
+              </>
+            )}
+          </button>
         </div>
       </div>
-      
       {/* Editor Container */}
       <div 
         ref={editorRef} 
         className="w-full"
         style={{ height }}
       />
-      
       {/* Status Bar */}
       <div className={`flex items-center justify-between px-4 py-1 text-xs border-t ${
         isDark 

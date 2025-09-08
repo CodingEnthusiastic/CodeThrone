@@ -149,7 +149,7 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, getAndClearRedirectUrl } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,7 +159,14 @@ const Login: React.FC = () => {
 
     try {
       await login(username, password, role);
-      navigate('/', { replace: true });
+      
+      // Check if there's a saved redirect URL
+      const redirectUrl = getAndClearRedirectUrl();
+      if (redirectUrl) {
+        navigate(redirectUrl, { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {

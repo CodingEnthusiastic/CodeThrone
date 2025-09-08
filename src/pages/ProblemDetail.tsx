@@ -1260,6 +1260,11 @@ const ProblemDetail: React.FC = () => {
                   className="h-full w-full"
                   height="100%"
                   onGoToBottom={scrollToBottom}
+                  onRun={handleRun}
+                  onSubmit={handleSubmit}
+                  running={running}
+                  submitting={submitting}
+                  token={token || undefined}
                 />
               </div>
             </div>
@@ -1847,6 +1852,11 @@ const ProblemDetail: React.FC = () => {
                   className="h-full w-full"
                   height="100%"
                   onGoToBottom={scrollToBottom}
+                  onRun={handleRun}
+                  onSubmit={handleSubmit}
+                  running={running}
+                  submitting={submitting}
+                  token={token || undefined}
                 />
               </div>
             </div>
@@ -2280,139 +2290,34 @@ const ProblemDetail: React.FC = () => {
             </div>
 
             {/* Mobile Code Editor */}
-            <div className="h-64 border-b border-gray-200 dark:border-gray-750">
+            <div>
               <CodeMirrorEditor
                 value={code}
                 onChange={setCode}
                 language={language}
                 disabled={false}
                 settings={editorSettings}
-                className="h-full w-full"
-                height="100%"
+                className="w-full"
+                height="24rem"
                 onGoToBottom={scrollToBottom}
+                onRun={handleRun}
+                onSubmit={handleSubmit}
+                running={running}
+                submitting={submitting}
+                token={token || undefined}
               />
             </div>
 
-            {/* Mobile Run/Submit Buttons and Console */}
+            {/* Mobile Console Output - Only console, no duplicate buttons */}
             <div className="bg-gray-50 dark:bg-gray-900">
-              <div className="px-4 py-3 flex items-center justify-center space-x-4 border-b border-gray-200 dark:border-gray-750">
-                <button
-                  onClick={handleRun}
-                  disabled={running || !token}
-                  className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  title={!token ? "Please login to run code" : ""}
-                >
-                  {running ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent mr-1"></div>
-                      <span className="hidden sm:inline">Running...</span>
-                      <span className="sm:hidden">Run</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-3 w-3 mr-1" />
-                      Run
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting || !token}
-                  className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  title={!token ? "Please login to submit code" : ""}
-                >
-                  {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent mr-1"></div>
-                      <span className="hidden sm:inline">Submitting...</span>
-                      <span className="sm:hidden">Submit</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-3 w-3 mr-1" />
-                      Submit
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Mobile Console Output */}
-              <div className="px-4 py-3">
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-2 text-sm">
-                  <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                  Console Output
-                  {(running || submitting) && (
-                    <div className="ml-2 flex items-center">
-                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-500 border-t-transparent"></div>
-                      <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
-                        {running ? "Running..." : "Submitting..."}
-                      </span>
-                    </div>
-                  )}
-                </h4>
-                
-                <div className="max-h-48 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded p-3">
-                  {(running || submitting) && !runResult && !submissionResult && (
-                    <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">
-                        {running ? "Running your code..." : "Submitting your solution..."}
-                      </p>
-                    </div>
-                  )}
-
-                  {runResult && (
-                    <div className="mb-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mr-2">Run Result:</span>
-                          <span className={`font-semibold text-sm ${getStatusColor(runResult.status)}`}>{runResult.status}</span>
-                        </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                          Passed: {runResult.passedTests}/{runResult.totalTests}
-                        </div>
-                      </div>
-                      {runResult.error ? (
-                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2 text-xs">
-                          <div className="text-red-800 dark:text-red-300 font-medium mb-1">Error:</div>
-                          <pre className="text-red-700 dark:text-red-200 font-mono break-words whitespace-pre-wrap">{runResult.error}</pre>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-gray-600 dark:text-gray-400">All tests passed!</div>
-                      )}
-                    </div>
-                  )}
-
-                  {submissionResult && (
-                    <div className="mb-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mr-2">Submission Result:</span>
-                          <span className={`font-semibold text-sm ${getStatusColor(submissionResult.status)}`}>{submissionResult.status}</span>
-                        </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                          Passed: {submissionResult.passedTests}/{submissionResult.totalTests}
-                        </div>
-                      </div>
-                      {submissionResult.error ? (
-                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2 text-xs">
-                          <div className="text-red-800 dark:text-red-300 font-medium mb-1">Error:</div>
-                          <pre className="text-red-700 dark:text-red-200 font-mono break-words whitespace-pre-wrap">{submissionResult.error}</pre>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-green-600 dark:text-green-400 font-medium">🎉 Solution accepted!</div>
-                      )}
-                    </div>
-                  )}
-
-                  {!runResult && !submissionResult && !running && !submitting && (
-                    <div className="text-gray-500 dark:text-gray-400 text-xs text-center py-4">
-                      <Code className="h-5 w-5 mx-auto mb-1 opacity-50" />
-                      <p>Run your code to see the output here...</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <ConsoleOutput 
+                ref={consoleOutputRef}
+                publicTestCases={problem?.testCases?.filter((tc: any) => tc.isPublic) || []}
+                runResult={runResult}
+                submissionResult={submissionResult}
+                running={running}
+                submitting={submitting}
+              />
             </div>
           </div>
         </div>
@@ -2592,52 +2497,17 @@ const ProblemDetail: React.FC = () => {
                 className="h-full w-full"
                 height="100%"
                 onGoToBottom={scrollToBottom}
+                onRun={handleRun}
+                onSubmit={handleSubmit}
+                running={running}
+                submitting={submitting}
+                token={token || undefined}
               />
             </div>
           </div>
 
-          {/* Run/Submit Buttons and Console */}
+          {/* Console Output Component - Below code editor */}
           <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-750 bg-gray-50 dark:bg-gray-900">
-            <div className="p-4 flex items-center justify-center space-x-4">
-              <button
-                onClick={handleRun}
-                disabled={running || !token}
-                className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-                title={!token ? "Please login to run code" : ""}
-              >
-                {running ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    Running...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Run
-                  </>
-                )}
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || !token}
-                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                title={!token ? "Please login to submit code" : ""}
-              >
-                {submitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Submit
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Console Output Component - Below code editor */}
             <ConsoleOutput 
               ref={consoleOutputRef}
               publicTestCases={problem?.testCases?.filter((tc: any) => tc.isPublic) || []}
