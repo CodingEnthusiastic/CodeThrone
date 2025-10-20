@@ -71,8 +71,8 @@ root/
 ## Setup & Installation
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/CodingEnthusiastic/Building-Wonders---2.git
-   cd Building-Wonders---2
+   git clone https://github.com/CodingEnthusiastic/CodeThrone.git
+   cd CodeThrone
    ```
 2. **Install Dependencies:**
    - Backend:
@@ -82,7 +82,7 @@ root/
      ```
    - Frontend:
      ```bash
-     cd ../src
+     cd src
      npm install
      ```
 3. **Environment Variables:**
@@ -90,7 +90,7 @@ root/
 4. **Run the Application:**
    - Start backend:
      ```bash
-     npm start
+     npm run dev
      ```
    - Start frontend:
      ```bash
