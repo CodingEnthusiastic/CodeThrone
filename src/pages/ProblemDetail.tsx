@@ -170,6 +170,7 @@ const ProblemDetail: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [solutions, setSolutions] = useState<Solution[]>([])
+  const [selectedSolutionLanguage, setSelectedSolutionLanguage] = useState<string>("cpp")
   const [isSolved, setIsSolved] = useState(false)
   const [tabSwitchCount, setTabSwitchCount] = useState(0)
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
@@ -753,7 +754,19 @@ const ProblemDetail: React.FC = () => {
   const fetchSolutions = async () => {
     try {
       const response = await axios.get(`${API_URL}/problems/${id}/solutions`)
-      setSolutions(response.data.solutions)
+      const fetchedSolutions = response.data.solutions;
+      setSolutions(fetchedSolutions);
+      
+      // Auto-select first available language
+      if (fetchedSolutions.length > 0) {
+        const availableLanguages = ['cpp', 'java', 'python', 'c'];
+        const firstAvailable = availableLanguages.find(lang => 
+          fetchedSolutions.some((sol: Solution) => sol.language === lang)
+        );
+        if (firstAvailable) {
+          setSelectedSolutionLanguage(firstAvailable);
+        }
+      }
     } catch (error) {
       console.error("Error fetching solutions:", error)
     }
@@ -2217,33 +2230,92 @@ const ProblemDetail: React.FC = () => {
 
             {activeTab === "solutions" && (
               <div className="text-gray-800 dark:text-gray-200">
-                <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">Official Solutions</h2>
+                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Official Solutions</h2>
                 {solutions.length > 0 ? (
-                  <div className="space-y-6">
-                    {solutions.map((solution, index) => (
-                      <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                            Solution ({solution.language})
-                          </h3>
+                  <div>
+                    {/* Language Selection Buttons */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {(['cpp', 'java', 'python', 'c'] as const).map((lang) => {
+                        const solution = solutions.find(s => s.language === lang);
+                        const isActive = selectedSolutionLanguage === lang;
+                        const isAvailable = !!solution;
+                        
+                        return (
                           <button
-                            onClick={() => copyToClipboard(solution.completeCode)}
-                            className="flex items-center px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium transition-colors border border-transparent dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                            key={lang}
+                            onClick={() => isAvailable && setSelectedSolutionLanguage(lang)}
+                            disabled={!isAvailable}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                              isActive && isAvailable
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                : isAvailable
+                                ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                            }`}
                           >
-                            <Copy className="h-4 w-4 mr-2" /> Copy Code
+                            {lang === 'cpp' ? 'C++' : 
+                             lang === 'java' ? 'Java' : 
+                             lang === 'python' ? 'Python' : 
+                             'C'}
+                            {!isAvailable && (
+                              <span className="ml-1 text-xs">✕</span>
+                            )}
                           </button>
-                        </div>
-                        <CodeMirrorEditor
-                          value={solution.completeCode}
-                          onChange={() => {}} 
-                          language={solution.language}
-                          disabled={true}
-                          className="border border-gray-300 dark:border-gray-700 rounded-lg"
-                          height="400px"
-                          onGoToBottom={scrollToBottom}
-                        />
-                      </div>
-                    ))}
+                        );
+                      })}
+                    </div>
+
+                    {/* Selected Solution Display */}
+                    {(() => {
+                      const selectedSolution = solutions.find(s => s.language === selectedSolutionLanguage);
+                      
+                      if (selectedSolution) {
+                        return (
+                          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                {selectedSolutionLanguage === 'cpp' ? 'C++' : 
+                                 selectedSolutionLanguage === 'java' ? 'Java' : 
+                                 selectedSolutionLanguage === 'python' ? 'Python' : 
+                                 'C'} Solution
+                              </h3>
+                              <button
+                                onClick={() => copyToClipboard(selectedSolution.completeCode)}
+                                className="flex items-center px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium transition-colors border border-transparent dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                              >
+                                <Copy className="h-4 w-4 mr-2" /> Copy Code
+                              </button>
+                            </div>
+                            <div className="p-4">
+                              <CodeMirrorEditor
+                                value={selectedSolution.completeCode}
+                                onChange={() => {}} 
+                                language={selectedSolution.language}
+                                disabled={true}
+                                className="border border-gray-300 dark:border-gray-600 rounded-lg"
+                                height="300px"
+                                onGoToBottom={scrollToBottom}
+                              />
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="text-center py-8 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <Code className="h-8 w-8 mx-auto mb-2 opacity-50 text-gray-600 dark:text-gray-400" />
+                            <p className="text-gray-600 dark:text-gray-400">
+                              Solution not available for {selectedSolutionLanguage === 'cpp' ? 'C++' : 
+                                                         selectedSolutionLanguage === 'java' ? 'Java' : 
+                                                         selectedSolutionLanguage === 'python' ? 'Python' : 
+                                                         'C'}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                              Try selecting a different language from the buttons above.
+                            </p>
+                          </div>
+                        );
+                      }
+                    })()}
                   </div>
                 ) : (
                   <div className="text-center py-8 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">

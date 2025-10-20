@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
@@ -31,11 +31,13 @@ const Problems: React.FC = () => {
   const [potd, setPotd] = useState<POTD | null>(null);
   const [hasSolvedPOTD, setHasSolvedPOTD] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState(searchParams.get('difficulty') || '');
   const [selectedTag, setSelectedTag] = useState(searchParams.get('tags') || '');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Set initial filters from URL params
@@ -53,14 +55,40 @@ const Problems: React.FC = () => {
     }
   }, [currentPage, selectedDifficulty, selectedTag, user, searchParams]);
 
+  // Debounced search effect with cursor position preservation
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const currentCursorPosition = searchInputRef.current?.selectionStart;
+      const currentFocus = document.activeElement === searchInputRef.current;
+      
+      setCurrentPage(1); // Reset to first page when searching
+      fetchProblems().then(() => {
+        // Restore focus and cursor position after search
+        if (currentFocus && searchInputRef.current) {
+          searchInputRef.current.focus();
+          if (currentCursorPosition !== null && currentCursorPosition !== undefined) {
+            searchInputRef.current.setSelectionRange(currentCursorPosition, currentCursorPosition);
+          }
+        }
+      });
+    }, 300); // Reduced from 500ms to 300ms for faster response
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
   const fetchProblems = async () => {
     try {
-      setLoading(true);
+      if (!loading) setSearching(true); // Only show searching state if not initial load
+      
+      // Use search API if there's a search term, otherwise use regular problems API
+      if (searchTerm.trim()) {
+        await searchProblems();
+        return;
+      }
+
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10' // Changed from '20' to '10'
-
-        
       });
 
       if (selectedDifficulty) params.append('difficulty', selectedDifficulty);
@@ -74,6 +102,33 @@ const Problems: React.FC = () => {
       showError('Failed to load problems');
     } finally {
       setLoading(false);
+      setSearching(false);
+    }
+  };
+
+  const searchProblems = async () => {
+    try {
+      const params = new URLSearchParams({
+        q: searchTerm.trim(),
+        page: currentPage.toString(),
+        limit: '10'
+      });
+
+      if (selectedDifficulty) params.append('difficulty', selectedDifficulty);
+      if (selectedTag) params.append('tags', selectedTag);
+
+      const response = await axios.get(`${API_URL}/problems/search?${params}`);
+      setProblems(response.data.problems);
+      setTotalPages(response.data.totalPages);
+    } catch (error: any) {
+      // console.error('Error searching problems:', error);
+      if (error.response?.status === 400) {
+        showError('Please enter a search term');
+      } else {
+        showError('Failed to search problems');
+      }
+      setProblems([]);
+      setTotalPages(1);
     }
   };
 
@@ -132,9 +187,8 @@ const Problems: React.FC = () => {
     return () => window.removeEventListener('problemSolved', handleProblemSolved);
   }, [user]);
 
-  const filteredProblems = problems.filter(problem =>
-  (problem?.title?.toLowerCase() ?? "").includes(searchTerm.toLowerCase())
-  );
+  // Since we're now doing server-side search, we use problems directly
+  const filteredProblems = problems;
 
   const allTags = [...new Set(problems.flatMap(p => p?.tags || []))];
 
@@ -361,12 +415,18 @@ const Problems: React.FC = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-300" />
               <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Search problems..."
+                placeholder="Search problems by title, description, or number..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              {searching && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                </div>
+              )}
             </div>
             <div>
               <select

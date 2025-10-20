@@ -159,6 +159,70 @@ router.get("/topic", async (req, res) => {
   }
 })
 
+// Search problems across entire database
+router.get('/search', async (req, res) => {
+  console.log('🔍 Search problems request');
+  console.log('📊 Query params:', req.query);
+  
+  try {
+    const { q, page = 1, limit = 20, difficulty, tags } = req.query;
+    
+    if (!q || q.trim() === '') {
+      return res.status(400).json({ message: 'Search query is required' });
+    }
+
+    const searchTerm = q.trim();
+    const query = { isPublished: true, visibility: 'public' };
+
+    // Create search conditions for title, description, and serial number
+    const searchConditions = [
+      { title: { $regex: searchTerm, $options: 'i' } },
+      { description: { $regex: searchTerm, $options: 'i' } }
+    ];
+
+    // Check if search term is a number (for serial number search)
+    const serialNumber = parseInt(searchTerm);
+    if (!isNaN(serialNumber)) {
+      searchConditions.push({ serialNumber: serialNumber });
+    }
+
+    query.$or = searchConditions;
+
+    // Add additional filters
+    if (difficulty) {
+      query.difficulty = difficulty;
+      console.log('🎯 Filtering by difficulty:', difficulty);
+    }
+    if (tags) {
+      query.tags = { $in: tags.split(',') };
+      console.log('🏷️ Filtering by tags:', tags);
+    }
+
+    console.log('🔍 Search query:', JSON.stringify(query, null, 2));
+
+    const problems = await Problem.find(query)
+      .select('-testCases -referenceSolution')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .populate('createdBy', 'username');
+
+    const total = await Problem.countDocuments(query);
+    console.log('✅ Found problems:', problems.length, 'Total:', total);
+
+    res.json({
+      problems,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total,
+      searchTerm
+    });
+  } catch (error) {
+    console.error('❌ Search problems error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 router.get('/admin/all', authenticateToken, requireAdmin, async (req, res) => {
   console.log('🛡️ Admin get all problems request');
   try {

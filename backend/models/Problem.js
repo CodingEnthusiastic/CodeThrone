@@ -42,6 +42,7 @@ const referenceSolutionSchema = new mongoose.Schema({
 
 const problemSchema = new mongoose.Schema({
   // Problem basics
+  serialNumber: { type: Number, unique: true, sparse: true }, // For sequential problem numbering
   title: { type: String, required: true, trim: true },
   description: { type: String, required: true },
   difficulty: { type: String, enum: ['Easy', 'Medium', 'Hard'], required: true },
