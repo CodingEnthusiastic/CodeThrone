@@ -32,6 +32,7 @@ import {
   GraduationCap, // For visualizer
   Settings,
   ArrowDown,
+  Trophy,
 } from "lucide-react"
 import CodeMirrorEditor from "../components/CodeMirrorEditor"
 import ConsoleOutput from "../components/ConsoleOutput"
@@ -199,6 +200,17 @@ const ProblemDetail: React.FC = () => {
   // Active test case tab states
   const [activeTestCaseTab, setActiveTestCaseTab] = useState(0);
   const [activeSubmissionTestCaseTab, setActiveSubmissionTestCaseTab] = useState(0);
+  // Result card overlay states
+  const [showResultCard, setShowResultCard] = useState(false);
+  const [resultCardData, setResultCardData] = useState<{
+    type: 'success' | 'failure';
+    title: string;
+    message: string;
+    testCases: { passed: number; total: number };
+    executionTime?: number;
+    memory?: number;
+    coinsEarned?: number;
+  } | null>(null);
 
 
   // Auto-scroll chat to bottom in both minimized and maximized mode when new answer appears
@@ -243,6 +255,20 @@ const ProblemDetail: React.FC = () => {
         behavior: 'smooth' 
       });
     }
+  }
+
+  // Show result card overlay
+  const showResultCardWithData = (data: {
+    type: 'success' | 'failure';
+    title: string;
+    message: string;
+    testCases: { passed: number; total: number };
+    executionTime?: number;
+    memory?: number;
+    coinsEarned?: number;
+  }) => {
+    setResultCardData(data);
+    setShowResultCard(true);
   }
 
   const [allChatHistory, setAllChatHistory] = useState<
@@ -968,6 +994,20 @@ const ProblemDetail: React.FC = () => {
       if (response.data.status === "Accepted") {
         setIsSolved(true);
 
+        // Show result card overlay
+        showResultCardWithData({
+          type: 'success',
+          title: '🎉 Solution Accepted!',
+          message: 'Congratulations! Your solution passed all test cases.',
+          testCases: {
+            passed: response.data.passedTests || 0,
+            total: response.data.totalTests || 0
+          },
+          executionTime: response.data.executionTime,
+          memory: response.data.memory,
+          coinsEarned: response.data.potd?.awarded ? response.data.potd.coinsEarned : undefined
+        });
+
         // 🎉 Trigger confetti animation
         let duration = 3000; // 3 seconds
         let animationEnd = Date.now() + duration;
@@ -1008,6 +1048,19 @@ const ProblemDetail: React.FC = () => {
           //   );
           // }, 1000);
         }
+      } else {
+        // Show result card overlay for failure
+        showResultCardWithData({
+          type: 'failure',
+          title: '❌ Solution Failed',
+          message: 'Your solution didn\'t pass all test cases. Keep trying!',
+          testCases: {
+            passed: response.data.passedTests || 0,
+            total: response.data.totalTests || 0
+          },
+          executionTime: response.data.executionTime,
+          memory: response.data.memory
+        });
       }
 
 
@@ -1037,6 +1090,14 @@ const ProblemDetail: React.FC = () => {
         memory: 0,
         error: error.response?.data?.error || "Submission failed",
       })
+
+      // Show result card overlay for error
+      showResultCardWithData({
+        type: 'failure',
+        title: '❌ Submission Error',
+        message: 'There was an error submitting your solution. Please try again.',
+        testCases: { passed: 0, total: 0 }
+      });
     } finally {
       setSubmitting(false)
     }
@@ -1161,31 +1222,69 @@ const ProblemDetail: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <select
-                value={language}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
-              >
-                <option value="cpp">C++20</option>
-                <option value="java">Java</option>
-                <option value="python">Python</option>
-                <option value="c">C</option>
-              </select>
-              {(runResult || submissionResult) && (
+              <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => {
-                    setRunResult(null)
-                    setSubmissionResult(null)
-                  }}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm font-medium border border-transparent dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-                  title="Clear Results"
+                  onClick={handleRun}
+                  disabled={running || !token}
+                  className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                  title={!token ? "Please login to run code" : ""}
                 >
-                  Clear Results
+                  {running ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Run
+                    </>
+                  )}
                 </button>
-              )}
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting || !token}
+                  className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                  title={!token ? "Please login to submit code" : ""}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Submit
+                    </>
+                  )}
+                </button>
+                <select
+                  value={language}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
+                >
+                  <option value="cpp">C++20</option>
+                  <option value="java">Java</option>
+                  <option value="python">Python</option>
+                  <option value="c">C</option>
+                </select>
+                {(runResult || submissionResult) && (
+                  <button
+                    onClick={() => {
+                      setRunResult(null)
+                      setSubmissionResult(null)
+                    }}
+                    className="px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm font-medium border border-transparent dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                    title="Clear Results"
+                  >
+                    Clear Results
+                  </button>
+                )}
+              </div>
               <button
                 onClick={toggleCodeEditorMaximized}
-                className="flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors font-medium border border-transparent dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                className="flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors font-medium border border-transparent dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 ml-2"
                 title="Minimize Code Editor"
               >
                 <Minimize2 className="h-5 w-5 mr-2" />
@@ -1201,46 +1300,6 @@ const ProblemDetail: React.FC = () => {
           <div className="flex-1 flex flex-col bg-white dark:bg-gray-850 border-r border-gray-200 dark:border-gray-750">
             {/* Editor Header */}
             <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-750 bg-gray-50 dark:bg-gray-900 flex-shrink-0">
-              <div className="flex items-center justify-center">
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={handleRun}
-                    disabled={running || !token}
-                    className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-                    title={!token ? "Please login to run code" : ""}
-                  >
-                    {running ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                        Running...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        Run
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={submitting || !token}
-                    className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                    title={!token ? "Please login to submit code" : ""}
-                  >
-                    {submitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Submit
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
 
               {/* Warnings */}
               {tabSwitchCount > 0 && (
@@ -1273,10 +1332,6 @@ const ProblemDetail: React.FC = () => {
                   className="h-full w-full"
                   height="100%"
                   onGoToBottom={scrollToBottom}
-                  onRun={handleRun}
-                  onSubmit={handleSubmit}
-                  running={running}
-                  submitting={submitting}
                   token={token || undefined}
                 />
               </div>
@@ -1865,10 +1920,6 @@ const ProblemDetail: React.FC = () => {
                   className="h-full w-full"
                   height="100%"
                   onGoToBottom={scrollToBottom}
-                  onRun={handleRun}
-                  onSubmit={handleSubmit}
-                  running={running}
-                  submitting={submitting}
                   token={token || undefined}
                 />
               </div>
@@ -2353,7 +2404,7 @@ const ProblemDetail: React.FC = () => {
                   <button
                     onClick={handleResetCode}
                     className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors"
-                    title="Reset Code"
+                    title="Reset"
                   >
                     Reset
                   </button>
@@ -2372,10 +2423,6 @@ const ProblemDetail: React.FC = () => {
                 className="w-full"
                 height="24rem"
                 onGoToBottom={scrollToBottom}
-                onRun={handleRun}
-                onSubmit={handleSubmit}
-                running={running}
-                submitting={submitting}
                 token={token || undefined}
               />
             </div>
@@ -2402,7 +2449,7 @@ const ProblemDetail: React.FC = () => {
               <div className="flex items-center">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                   <Code className="h-5 w-5 mr-2 text-emerald-500" />
-                  Code Editor
+                  Editor
                 </h3>
                 <select
                   value={language}
@@ -2418,13 +2465,51 @@ const ProblemDetail: React.FC = () => {
               
               {/* Right side container with relative positioning for dropdown */}
               <div className="flex items-center space-x-3 relative">
+                {/* Run and Submit Buttons */}
+                <button
+                  onClick={handleRun}
+                  disabled={running || !token}
+                  className="flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 text-sm"
+                  title={!token ? "Please login to run code" : ""}
+                >
+                  {running ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent mr-1.5"></div>
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3 w-3 mr-1.5" />
+                      Run
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting || !token}
+                  className="flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-sm"
+                  title={!token ? "Please login to submit code" : ""}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent mr-1.5"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-3 w-3 mr-1.5" />
+                      Submit
+                    </>
+                  )}
+                </button>
+
                 {/* Settings Button */}
                 <button
                   onClick={handleOpenSettings}
                   className="settings-button p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   title="Editor Settings"
                 >
-                  <Settings className="h-4 w-4" /> Settings
+                  <Settings className="h-4 w-4" />
                 </button>
 
                 {/* Action Buttons */}
@@ -2446,7 +2531,7 @@ const ProblemDetail: React.FC = () => {
                   title="Reset code to starting template"
                 >
                   <History className="h-4 w-4 mr-2" />
-                  Reset Code
+                  Reset
                 </button>
                 <button
                   onClick={toggleCodeEditorMaximized}
@@ -2569,10 +2654,6 @@ const ProblemDetail: React.FC = () => {
                 className="h-full w-full"
                 height="100%"
                 onGoToBottom={scrollToBottom}
-                onRun={handleRun}
-                onSubmit={handleSubmit}
-                running={running}
-                submitting={submitting}
                 token={token || undefined}
               />
             </div>
@@ -2624,6 +2705,171 @@ const ProblemDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Result Card Overlay */}
+      {showResultCard && resultCardData && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className={`relative max-w-lg w-full mx-4 transform transition-all duration-500 scale-100 ${
+            resultCardData.type === 'success' 
+              ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 border-green-300 dark:from-green-900/30 dark:via-emerald-900/20 dark:to-green-800/30 dark:border-green-600' 
+              : 'bg-gradient-to-br from-red-50 via-rose-50 to-red-100 border-red-300 dark:from-red-900/30 dark:via-rose-900/20 dark:to-red-800/30 dark:border-red-600'
+          } border-2 rounded-2xl shadow-2xl overflow-hidden`}>
+            
+            {/* Premium Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className={`absolute top-0 right-0 w-32 h-32 rounded-full ${
+                resultCardData.type === 'success' ? 'bg-green-400' : 'bg-red-400'
+              } blur-3xl transform translate-x-16 -translate-y-16`}></div>
+              <div className={`absolute bottom-0 left-0 w-24 h-24 rounded-full ${
+                resultCardData.type === 'success' ? 'bg-emerald-400' : 'bg-rose-400'
+              } blur-2xl transform -translate-x-12 translate-y-12`}></div>
+            </div>
+
+            {/* Close Button */}
+            <button 
+              onClick={() => {
+                setShowResultCard(false)
+                setResultCardData(null)
+              }}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors text-gray-600 dark:text-gray-300"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+
+            <div className="relative p-8 text-center">
+              {/* Success/Failure Icon with Animation */}
+              <div className="relative mb-6">
+                <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full ${
+                  resultCardData.type === 'success' 
+                    ? 'bg-green-100 border-4 border-green-300 dark:bg-green-800/50 dark:border-green-500' 
+                    : 'bg-red-100 border-4 border-red-300 dark:bg-red-800/50 dark:border-red-500'
+                } animate-pulse`}>
+                  {resultCardData.type === 'success' ? (
+                    <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <XCircle className="w-10 h-10 text-red-600 dark:text-red-400" />
+                  )}
+                </div>
+              </div>
+
+              {/* Title with Gradient Text */}
+              <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r ${
+                resultCardData.type === 'success' 
+                  ? 'from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400' 
+                  : 'from-red-600 to-rose-600 dark:from-red-400 dark:to-rose-400'
+              } bg-clip-text text-transparent`}>
+                {resultCardData.title}
+              </h2>
+
+              {/* Message */}
+              <p className={`text-lg mb-6 ${
+                resultCardData.type === 'success' 
+                  ? 'text-green-700 dark:text-green-200' 
+                  : 'text-red-700 dark:text-red-200'
+              }`}>
+                {resultCardData.message}
+              </p>
+              
+              {/* Test Cases Card */}
+              <div className={`inline-flex items-center px-6 py-3 rounded-xl mb-6 ${
+                resultCardData.type === 'success' 
+                  ? 'bg-green-200/50 border border-green-300 text-green-800 dark:bg-green-800/30 dark:border-green-600 dark:text-green-200' 
+                  : 'bg-red-200/50 border border-red-300 text-red-800 dark:bg-red-800/30 dark:border-red-600 dark:text-red-200'
+              } backdrop-blur-sm`}>
+                <div className={`w-3 h-3 rounded-full mr-3 ${
+                  resultCardData.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                } animate-pulse`}></div>
+                <span className="font-semibold">
+                  Test Cases: {resultCardData.testCases.passed}/{resultCardData.testCases.total} passed
+                </span>
+              </div>
+
+              {/* Performance Stats */}
+              {(resultCardData.executionTime !== undefined || resultCardData.memory !== undefined) && (
+                <div className="flex justify-center space-x-4 mb-6">
+                  {resultCardData.executionTime !== undefined && (
+                    <div className={`px-4 py-2 rounded-lg ${
+                      resultCardData.type === 'success' 
+                        ? 'bg-green-100 dark:bg-green-800/30 text-green-800 dark:text-green-200' 
+                        : 'bg-red-100 dark:bg-red-800/30 text-red-800 dark:text-red-200'
+                    }`}>
+                      <div className="text-sm font-medium">Runtime</div>
+                      <div className="text-lg font-bold">{resultCardData.executionTime}ms</div>
+                    </div>
+                  )}
+                  {resultCardData.memory !== undefined && (
+                    <div className={`px-4 py-2 rounded-lg ${
+                      resultCardData.type === 'success' 
+                        ? 'bg-green-100 dark:bg-green-800/30 text-green-800 dark:text-green-200' 
+                        : 'bg-red-100 dark:bg-red-800/30 text-red-800 dark:text-red-200'
+                    }`}>
+                      <div className="text-sm font-medium">Memory</div>
+                      <div className="text-lg font-bold">{resultCardData.memory}MB</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Coins Earned for Success */}
+              {resultCardData.type === 'success' && resultCardData.coinsEarned && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30 rounded-xl border border-yellow-300 dark:border-yellow-600">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-8 h-8 bg-yellow-400 dark:bg-yellow-500 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                      🪙
+                    </div>
+                    <span className="text-xl font-bold text-yellow-800 dark:text-yellow-200">
+                      +{resultCardData.coinsEarned} Coins Earned!
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex space-x-4 justify-center">
+                {resultCardData.type === 'failure' ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowResultCard(false)
+                        setResultCardData(null)
+                      }}
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
+                    >
+                      <Code className="w-4 h-4 mr-2 inline" />
+                      Try Again
+                    </button>
+                    <button
+                      onClick={() => navigate('/problems')}
+                      className="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50"
+                    >
+                      Other Problems
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => navigate('/problems')}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50"
+                    >
+                      <Trophy className="w-4 h-4 mr-2 inline" />
+                      Solve More Problems
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowResultCard(false)
+                        setResultCardData(null)
+                      }}
+                      className="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50"
+                    >
+                      Continue Coding
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
