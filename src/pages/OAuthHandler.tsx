@@ -66,7 +66,7 @@ const OAuthHandler = () => {
   }, [navigate, setUser, refreshUser]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 to-purple-600">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-700 to-gray-600">
       <div className="text-center text-white">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
         <div className="text-xl font-semibold">Signing you in...</div>
