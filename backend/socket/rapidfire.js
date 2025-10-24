@@ -146,6 +146,34 @@ const endRapidFireGame = async (gameId, io) => {
         player1User.ratings.rapidFireRating = newRating;
         player1.ratingAfter = newRating;
         player1.ratingChange = player1Change;
+        
+        // Update comprehensive rapidfire stats (matching leaderboard field structure)
+        if (!player1User.stats) player1User.stats = {};
+        
+        // Update the fields expected by the leaderboard
+        player1User.stats.rapidFireGamesPlayed = (player1User.stats.rapidFireGamesPlayed || 0) + 1;
+        
+        if (isDraw) {
+          player1User.stats.rapidFireGamesTied = (player1User.stats.rapidFireGamesTied || 0) + 1;
+        } else if (player1.score > player2.score) {
+          player1User.stats.rapidFireGamesWon = (player1User.stats.rapidFireGamesWon || 0) + 1;
+        } else {
+          player1User.stats.rapidFireGamesLost = (player1User.stats.rapidFireGamesLost || 0) + 1;
+        }
+        
+        // Update recentGameForm for form tracking
+        if (!player1User.recentGameForm) player1User.recentGameForm = [];
+        const gameResult = isDraw ? 'draw' : (player1.score > player2.score ? 'win' : 'loss');
+        player1User.recentGameForm.unshift({
+          gameType: 'rapidfire',
+          result: gameResult,
+          date: new Date()
+        });
+        // Keep only last 10 games
+        if (player1User.recentGameForm.length > 10) {
+          player1User.recentGameForm = player1User.recentGameForm.slice(0, 10);
+        }
+        
         await player1User.save();
         
         ratingUpdates.push({
@@ -161,6 +189,34 @@ const endRapidFireGame = async (gameId, io) => {
         player2User.ratings.rapidFireRating = newRating;
         player2.ratingAfter = newRating;
         player2.ratingChange = player2Change;
+        
+        // Update comprehensive rapidfire stats (matching leaderboard field structure)
+        if (!player2User.stats) player2User.stats = {};
+        
+        // Update the fields expected by the leaderboard
+        player2User.stats.rapidFireGamesPlayed = (player2User.stats.rapidFireGamesPlayed || 0) + 1;
+        
+        if (isDraw) {
+          player2User.stats.rapidFireGamesTied = (player2User.stats.rapidFireGamesTied || 0) + 1;
+        } else if (player2.score > player1.score) {
+          player2User.stats.rapidFireGamesWon = (player2User.stats.rapidFireGamesWon || 0) + 1;
+        } else {
+          player2User.stats.rapidFireGamesLost = (player2User.stats.rapidFireGamesLost || 0) + 1;
+        }
+        
+        // Update recentGameForm for form tracking
+        if (!player2User.recentGameForm) player2User.recentGameForm = [];
+        const gameResult = isDraw ? 'draw' : (player2.score > player1.score ? 'win' : 'loss');
+        player2User.recentGameForm.unshift({
+          gameType: 'rapidfire',
+          result: gameResult,
+          date: new Date()
+        });
+        // Keep only last 10 games
+        if (player2User.recentGameForm.length > 10) {
+          player2User.recentGameForm = player2User.recentGameForm.slice(0, 10);
+        }
+        
         await player2User.save();
         
         ratingUpdates.push({
@@ -171,7 +227,7 @@ const endRapidFireGame = async (gameId, io) => {
         });
       }
 
-      console.log('🏆 BULLETPROOF: Rating changes applied:', ratingUpdates);
+      console.log('🏆 BULLETPROOF: Rating changes and stats applied:', ratingUpdates);
     }
 
     await game.save();
@@ -223,7 +279,7 @@ const endRapidFireGame = async (gameId, io) => {
 
     console.log('🏁 BULLETPROOF: Game end events emitted with results:', gameResults);
 
-    // Clean up active game
+    // Clean up active game and all timers
     const activeGame = activeRapidFireGames.get(gameId);
     if (activeGame?.timer) {
       clearTimeout(activeGame.timer);
@@ -231,7 +287,12 @@ const endRapidFireGame = async (gameId, io) => {
     if (activeGame?.updateTimer) {
       clearInterval(activeGame.updateTimer);
     }
+    if (activeGame?.timerSyncInterval) {
+      clearInterval(activeGame.timerSyncInterval);
+    }
     activeRapidFireGames.delete(gameId);
+
+    console.log('🧹 BULLETPROOF: All timers cleaned up for game:', gameId);
 
     console.log('✅ BULLETPROOF: Rapid fire game ended successfully with Elo ratings');
 
@@ -387,30 +448,82 @@ const setupRapidFireSocket = (io) => {
             totalQuestions: TOTAL_QUESTIONS
           });
 
-          // Start periodic timer updates (every 5 seconds)
-          const updateTimer = setInterval(() => {
+          // CRITICAL FIX: Enhanced timer synchronization (every 1 second)
+          const timerSyncInterval = setInterval(async () => {
             const gameState = activeRapidFireGames.get(gameId);
             if (gameState) {
               const elapsed = Math.floor((Date.now() - gameState.startTime.getTime()) / 1000);
               const remaining = Math.max(0, GAME_DURATION - elapsed);
               
               if (remaining > 0) {
-                io.to(`rapidfire-${gameId}`).emit('rapidfire-live-update', { 
+                // Send precise timer sync to prevent 2-second lag
+                io.to(`rapidfire-${gameId}`).emit('rapidfire-timer-sync', { 
                   gameId: gameId,
-                  timeRemaining: remaining 
+                  timeRemaining: remaining,
+                  serverTime: Date.now()
                 });
               } else {
+                // Timer reached zero - end the game immediately
+                console.log('⏰ CRITICAL: Timer reached zero in sync interval, ending game immediately');
+                clearInterval(timerSyncInterval);
+                clearInterval(gameState.updateTimer);
+                clearTimeout(gameState.timer);
+                await endRapidFireGame(gameId, io);
+              }
+            } else {
+              clearInterval(timerSyncInterval);
+            }
+          }, 1000); // Every 1 second for better sync
+          
+          // CRITICAL FIX: Enhanced game state updates with all player data (every 2 seconds)
+          const updateTimer = setInterval(async () => {
+            const gameState = activeRapidFireGames.get(gameId);
+            if (gameState) {
+              const elapsed = Math.floor((Date.now() - gameState.startTime.getTime()) / 1000);
+              const remaining = Math.max(0, GAME_DURATION - elapsed);
+              
+              if (remaining > 0) {
+                try {
+                  // Get fresh game data from database for accurate player stats
+                  const freshGame = await RapidFireGame.findById(gameId)
+                    .populate('players.user', 'username profile.avatar ratings.rapidFireRating');
+                  
+                  if (freshGame) {
+                    // CRITICAL FIX: Send complete player data to ALL clients
+                    io.to(`rapidfire-${gameId}`).emit('rapidfire-live-update', { 
+                      gameId: gameId,
+                      timeRemaining: remaining,
+                      players: freshGame.players.map(p => ({
+                        userId: p.user._id.toString(),
+                        username: p.user.username,
+                        score: p.score || 0,
+                        correctAnswers: p.correctAnswers || 0,
+                        wrongAnswers: p.wrongAnswers || 0,
+                        questionsAnswered: p.questionsAnswered || 0
+                      }))
+                    });
+                  }
+                } catch (dbError) {
+                  console.error('❌ Error fetching fresh game data:', dbError);
+                }
+              } else {
+                // Timer reached zero in live update - end the game
+                console.log('⏰ CRITICAL: Timer reached zero in live update, ending game immediately');
                 clearInterval(updateTimer);
+                clearInterval(gameState.timerSyncInterval);
+                clearTimeout(gameState.timer);
+                await endRapidFireGame(gameId, io);
               }
             } else {
               clearInterval(updateTimer);
             }
-          }, 5000);
+          }, 2000); // Every 2 seconds for complete state sync
           
-          // Store update timer reference
+          // Store timer references
           const gameState = activeRapidFireGames.get(gameId);
           if (gameState) {
             gameState.updateTimer = updateTimer;
+            gameState.timerSyncInterval = timerSyncInterval;
             activeRapidFireGames.set(gameId, gameState);
           }
         }
@@ -741,6 +854,28 @@ const setupRapidFireSocket = (io) => {
       } catch (error) {
         console.error('❌ BULLETPROOF: Error in skip-rapidfire-question:', error);
         socket.emit('error', { message: 'Failed to skip question' });
+      }
+    });
+
+    // CRITICAL FIX: Handle frontend timeout event
+    socket.on('rapidfire-game-timeout', async (gameId) => {
+      try {
+        console.log('⏰ CRITICAL: Frontend reported game timeout for game:', gameId);
+        
+        if (gameId) {
+          // Clean up any existing timers
+          const gameState = activeRapidFireGames.get(gameId);
+          if (gameState) {
+            if (gameState.timer) clearTimeout(gameState.timer);
+            if (gameState.updateTimer) clearInterval(gameState.updateTimer);
+            if (gameState.timerSyncInterval) clearInterval(gameState.timerSyncInterval);
+          }
+          
+          // End the game immediately
+          await endRapidFireGame(gameId, io);
+        }
+      } catch (error) {
+        console.error('❌ BULLETPROOF: Error in rapidfire-game-timeout:', error);
       }
     });
 

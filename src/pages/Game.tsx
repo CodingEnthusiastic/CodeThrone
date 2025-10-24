@@ -1825,7 +1825,7 @@ const getOpponentPlayer = () => {
           <div className="flex flex-col items-center mb-4">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Game Mode</h1>
             <button
-              onClick={() => navigate('/game-leaderboard')}
+              onClick={() => navigate('/game/leaderboard')}
               className="mb-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-green-600 text-white rounded-lg hover:from-blue-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
             >
               <Trophy className="h-5 w-5" />

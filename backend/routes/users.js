@@ -108,7 +108,7 @@ router.get('/contest-leaderboard', async (req, res) => {
 });
 
 // GET /api/users/game-leaderboard - Game leaderboard (MOVED TO TOP) 
-router.get('/game-leaderboard', async (req, res) => {
+router.get('/game/leaderboard', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;

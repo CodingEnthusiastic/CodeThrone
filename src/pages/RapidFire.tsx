@@ -727,38 +727,75 @@ const RapidFire: React.FC = () => {
       setActiveGame(payload.game);
     });
 
-    // BULLETPROOF: Handle comprehensive game state updates
-    newSocket.on("rapidfire-game-state-update", (gameState: any) => {
-      console.log("🔄 BULLETPROOF: Comprehensive game state update:", gameState);
+    // BULLETPROOF: Handle real-time game state synchronization
+    newSocket.on("rapidfire-live-update", (updateData: any) => {
+      console.log("🔄 BULLETPROOF: Real-time game update received:", {
+        gameId: updateData.gameId,
+        playersCount: updateData.players?.length || 0,
+        playersData: updateData.players?.map((p: any) => ({
+          userId: p.userId,
+          score: p.score,
+          correctAnswers: p.correctAnswers
+        })),
+        timeRemaining: updateData.timeRemaining,
+        currentUserId: user?.id || user?._id
+      });
       
-      if (activeGame && gameState.gameId === activeGame._id) {
+      if (activeGame && updateData.gameId === activeGame._id) {
         const updatedGame = { ...activeGame };
         
-        // Update all player stats from the server
-        gameState.players.forEach((serverPlayer: any) => {
+        console.log("🔧 BEFORE UPDATE - Current game players:", updatedGame.players.map(p => ({
+          userId: p.user._id,
+          username: p.user.username,
+          score: p.score,
+          correctAnswers: p.correctAnswers
+        })));
+        
+        // CRITICAL FIX: Update ALL player stats in real-time for both players
+        updateData.players.forEach((serverPlayer: any) => {
           const playerIndex = updatedGame.players.findIndex(
             (p: any) => String(p.user._id) === String(serverPlayer.userId)
           );
           
           if (playerIndex !== -1) {
+            console.log(`🔄 Updating player ${serverPlayer.userId}:`, {
+              oldScore: updatedGame.players[playerIndex].score,
+              newScore: serverPlayer.score,
+              oldCorrect: updatedGame.players[playerIndex].correctAnswers,
+              newCorrect: serverPlayer.correctAnswers
+            });
+            
+            // Update all stats from server
             updatedGame.players[playerIndex].score = serverPlayer.score;
             updatedGame.players[playerIndex].correctAnswers = serverPlayer.correctAnswers;
             updatedGame.players[playerIndex].wrongAnswers = serverPlayer.wrongAnswers;
             updatedGame.players[playerIndex].questionsAnswered = serverPlayer.questionsAnswered;
+          } else {
+            console.warn(`⚠️ Player not found in local game state: ${serverPlayer.userId}`);
+            console.warn(`⚠️ Available players:`, updatedGame.players.map(p => String(p.user._id)));
           }
         });
         
-        console.log("✅ BULLETPROOF: Game state synchronized for all players");
-        setActiveGame(updatedGame);
+        console.log("🔧 AFTER UPDATE - Updated game players:", updatedGame.players.map(p => ({
+          userId: p.user._id,
+          username: p.user.username,
+          score: p.score,
+          correctAnswers: p.correctAnswers
+        })));
         
-        // Show answer result if this player submitted the answer
-        if (gameState.answerResult?.playerId === user?.id) {
-          setShowResult(true);
-          setTimeout(() => {
-            setShowResult(false);
-            setSelectedAnswer(null);
-          }, 2000);
+        // CRITICAL FIX: Synchronize timer across all clients
+        if (updateData.timeRemaining !== undefined) {
+          setTimeRemaining(updateData.timeRemaining);
         }
+        
+        console.log("✅ BULLETPROOF: All player stats synchronized in real-time");
+        
+        // CRITICAL FIX: Force React re-render by updating object reference
+        setActiveGame({
+          ...updatedGame,
+          _syncVersion: (updatedGame._syncVersion || 0) + 1,
+          lastUpdated: Date.now()
+        });
       }
     });
 
@@ -794,33 +831,19 @@ const RapidFire: React.FC = () => {
       }
     });
 
-    // BULLETPROOF: Handle live game updates (new 120-second timer system)
-    newSocket.on("rapidfire-live-update", (updateData: any) => {
-      console.log("🔄 BULLETPROOF: Live game update received:", updateData);
+    // BULLETPROOF: Handle server timer synchronization
+    newSocket.on("rapidfire-timer-sync", (timerData: any) => {
+      console.log("⏰ BULLETPROOF: Timer sync from server:", timerData);
       
-      if (activeGame && updateData.gameId === activeGame._id) {
-        const updatedGame = { ...activeGame };
+      if (activeGame && timerData.gameId === activeGame._id) {
+        // CRITICAL FIX: Synchronize timer with server to prevent 2-second lag
+        const serverTime = timerData.timeRemaining;
+        const currentTime = timeRemaining;
         
-        // Update all player stats from the server
-        updateData.players.forEach((serverPlayer: any) => {
-          const playerIndex = updatedGame.players.findIndex(
-            (p: any) => String(p.user._id) === String(serverPlayer.userId)
-          );
-          
-          if (playerIndex !== -1) {
-            updatedGame.players[playerIndex].score = serverPlayer.score;
-            updatedGame.players[playerIndex].correctAnswers = serverPlayer.correctAnswers;
-            updatedGame.players[playerIndex].wrongAnswers = serverPlayer.wrongAnswers;
-            updatedGame.players[playerIndex].questionsAnswered = serverPlayer.questionsAnswered;
-          }
-        });
-        
-        console.log("✅ BULLETPROOF: Live game state synchronized");
-        setActiveGame(updatedGame);
-        
-        // Update global game timer
-        if (updateData.timeRemaining !== undefined) {
-          setTimeRemaining(updateData.timeRemaining);
+        // Only sync if difference is significant (more than 1 second)
+        if (Math.abs(serverTime - currentTime) > 1) {
+          console.log(`🔄 Timer correction: ${currentTime}s → ${serverTime}s`);
+          setTimeRemaining(serverTime);
         }
       }
     });
@@ -897,11 +920,31 @@ const RapidFire: React.FC = () => {
     // BULLETPROOF: Handle player completion notifications
     newSocket.on("rapidfire-player-completed", (data: any) => {
       console.log("✅ Player completed all questions:", data);
+      
       // Show toast notification that player finished
       if (window.showInfo) {
         window.showInfo(data.message);
       } else {
         alert(data.message);
+      }
+      
+      // CRITICAL FIX: Check if both players completed all questions
+      if (activeGame && activeGame.players) {
+        const allCompleted = activeGame.players.every((p: any) => 
+          (p.questionsAnswered || 0) >= 10
+        );
+        
+        if (allCompleted) {
+          console.log("🏁 EMERGENCY: All players completed, forcing game end");
+          setTimeout(() => {
+            if (!gameFinished) {
+              console.log("🏁 EMERGENCY: Backend didn't end game, forcing frontend end");
+              setGameFinished(true);
+              setGameStarted(false);
+              setShowGameEndModal(true);
+            }
+          }, 5000); // Give backend 5 seconds to end the game
+        }
       }
     });
 
@@ -945,8 +988,19 @@ const RapidFire: React.FC = () => {
           const newTime = Math.max(0, prev - 1);
           
           if (newTime <= 0 && socketRef.current && !gameFinished) {
-            console.log("⏰ Rapid fire time is up!");
+            console.log("⏰ CRITICAL: Rapid fire time is up! Ending game immediately.");
             socketRef.current.emit("rapidfire-game-timeout", activeGame?._id);
+            
+            // CRITICAL FIX: Force game end on frontend if backend doesn't respond
+            setTimeout(() => {
+              if (!gameFinished) {
+                console.log("⏰ EMERGENCY: Backend didn't end game, forcing frontend end");
+                setGameFinished(true);
+                setGameStarted(false);
+                setShowGameEndModal(true);
+              }
+            }, 3000); // Give backend 3 seconds to respond
+            
             if (timerRef.current) {
               clearInterval(timerRef.current);
               timerRef.current = null;
@@ -1233,9 +1287,31 @@ const RapidFire: React.FC = () => {
   }, [activeGame, user]);
 
   const getOpponentPlayer = useMemo(() => {
-    if (!activeGame || !user) return null;
+    if (!activeGame || !user) {
+      console.log("🔍 getOpponentPlayer: No activeGame or user", { activeGame: !!activeGame, user: !!user });
+      return null;
+    }
+    
     const userId = String(user._id || user.id);
-    return activeGame.players.find(p => String(p.user._id) !== userId);
+    const opponent = activeGame.players.find(p => String(p.user._id) !== userId);
+    
+    console.log("🔍 getOpponentPlayer debug:", {
+      currentUserId: userId,
+      allPlayers: activeGame.players.map(p => ({
+        userId: String(p.user._id),
+        username: p.user.username,
+        score: p.score
+      })),
+      opponentFound: !!opponent,
+      opponentData: opponent ? {
+        userId: String(opponent.user._id),
+        username: opponent.user.username,
+        score: opponent.score,
+        correctAnswers: opponent.correctAnswers
+      } : null
+    });
+    
+    return opponent;
   }, [activeGame, user]);
 
   // Get current question with debug logging

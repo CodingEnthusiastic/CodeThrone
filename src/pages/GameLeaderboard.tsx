@@ -54,7 +54,7 @@ const GameLeaderboard: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await axios.get(`${API_URL}/users/game-leaderboard`, {
+      const response = await axios.get(`${API_URL}/users/game/leaderboard`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         params: {
           page: currentPage,
@@ -82,7 +82,7 @@ const GameLeaderboard: React.FC = () => {
   const fetchAllUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/users/game-leaderboard`, {
+      const response = await axios.get(`${API_URL}/users/game/leaderboard`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         params: {
           page: 1,
@@ -281,7 +281,7 @@ const GameLeaderboard: React.FC = () => {
                   <th className="px-4 py-3 text-left">User</th>
                   <th className="px-4 py-3 text-center">Games</th>
                   <th className="px-4 py-3 text-center">W</th>
-                  <th className="px-4 py-3 text-center">L</th>
+                  {/* <th className="px-4 py-3 text-center">L</th> */}
                   <th className="px-4 py-3 text-center">D</th>
                   {/* Removed Latest Form column */}
                   <th className="px-4 py-3 text-right">Rating</th>
@@ -354,11 +354,11 @@ const GameLeaderboard: React.FC = () => {
                         </span>
                       </td>
                       
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                      {/* <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className="text-red-600 dark:text-red-400 font-medium">
                           {user.stats.gamesLost}
                         </span>
-                      </td>
+                      </td> */}
                       
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'} font-medium`}>

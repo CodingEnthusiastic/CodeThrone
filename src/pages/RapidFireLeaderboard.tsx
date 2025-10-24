@@ -279,10 +279,10 @@ const RapidFireLeaderboard: React.FC = () => {
                 <tr>
                   <th className="px-4 py-3 text-left w-20">Rank</th>
                   <th className="px-4 py-3 text-left w-48">User</th>
-                  <th className="px-4 py-3 text-center w-20">Games</th>
+                  {/* <th className="px-4 py-3 text-center w-20">Games</th>
                   <th className="px-4 py-3 text-center w-16">W</th>
                   <th className="px-4 py-3 text-center w-16">L</th>
-                  <th className="px-4 py-3 text-center w-16">D</th>
+                  <th className="px-4 py-3 text-center w-16">D</th> */}
                   <th className="px-4 py-3 text-center w-24">Rating</th>
                 </tr>
               </thead>
@@ -338,29 +338,29 @@ const RapidFireLeaderboard: React.FC = () => {
                         </div>
                       </td>
                       
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                      {/* <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                           {user.stats.rapidFireGamesPlayed}
                         </span>
-                      </td>
+                      </td> */}
                       
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                      {/* <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className="text-green-600 dark:text-green-400 font-medium">
                           {user.stats.rapidFireGamesWon}
                         </span>
-                      </td>
+                      </td> */}
                       
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                      {/* <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className="text-red-600 dark:text-red-400 font-medium">
                           {user.stats.rapidFireGamesPlayed - user.stats.rapidFireGamesWon - user.stats.rapidFireGamesTied}
                         </span>
-                      </td>
+                      </td> */}
                       
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                      {/* <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'} font-medium`}>
                           {user.stats.rapidFireGamesTied}
                         </span>
-                      </td>
+                      </td> */}
                       
                       <td className="px-4 py-3 text-center w-24 font-bold">
                         <span className={isDark ? "text-blue-400" : "text-blue-600"}>
