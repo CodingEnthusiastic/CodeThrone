@@ -336,10 +336,10 @@ const Problems: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 md:py-8 relative z-10">
-        <div className="mb-6 md:mb-8">
+        {/* <div className="mb-6 md:mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Problems</h1>
           <p className="text-gray-600 dark:text-gray-300">Practice coding problems and improve your skills</p>
-        </div>
+        </div> */}
 
         {/* Problem of the Day */}
         {potd && (
