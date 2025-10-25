@@ -88,7 +88,7 @@ const CompanyProblems: React.FC = () => {
 }, [user, problems]);
 
   const fetchCompanyProblems = async () => {
-  console.log('📡 Fetching company problems...');
+  // console.log('📡 Fetching company problems...');
   try {
     setLoading(true);
     
@@ -117,10 +117,10 @@ const CompanyProblems: React.FC = () => {
       hardSolved: 0
     });
 
-    console.log('✅ Data fetched successfully:', {
-      problemsCount: response.data.problems.length,
-      stats: response.data.stats
-    });
+    // console.log('✅ Data fetched successfully:', {
+    //   problemsCount: response.data.problems.length,
+    //   stats: response.data.stats
+    // });
 
     // Check certificate eligibility
     if (user) {
@@ -128,7 +128,7 @@ const CompanyProblems: React.FC = () => {
     }
 
   } catch (error) {
-    console.error('❌ Error:', error);
+    // console.error('❌ Error:', error);
   } finally {
     setLoading(false);
   }
@@ -146,7 +146,7 @@ const checkCertificateEligibility = async () => {
 
     setCertificateData(response.data);
   } catch (error) {
-    console.error('Certificate check error:', error);
+    // console.error('Certificate check error:', error);
   }
 };
 
@@ -169,7 +169,7 @@ const generateCertificate = async () => {
       setShowCertificate(true);
     }
   } catch (error) {
-    console.error('Certificate generation error:', error);
+    // console.error('Certificate generation error:', error);
   } finally {
     setCertificateLoading(false);
   }
@@ -210,9 +210,9 @@ const fetchSolvedProblems = async () => {
     const response = await axios.get(`${API_URL}/profile/${user.username}/solved`);
     const solvedIds = response.data.solvedProblems.map((p: any) => p._id);
     updateSolvedStats(solvedIds);
-    console.log('✅ Solved problems fetched:', solvedIds.length);
+    // console.log('✅ Solved problems fetched:', solvedIds.length);
   } catch (error) {
-    console.error('❌ Error fetching solved problems:', error);
+    // console.error('❌ Error fetching solved problems:', error);
   }
 };
   const calculateCompanyStats = (allProblems: Problem[]): CompanyStats => {
@@ -302,7 +302,7 @@ const fetchSolvedProblems = async () => {
             certificateData={certificateData} 
             onDownload={() => {
               // Optional: Add download tracking or feedback here
-              console.log('Certificate downloaded for', companyName);
+              // console.log('Certificate downloaded for', companyName);
             }}
           />
         </div>

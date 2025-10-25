@@ -149,7 +149,7 @@ const Chat: React.FC = () => {
   // Enhanced socket connection with reconnection logic
   const connectSocket = useCallback(() => {
     if (!token || !user) {
-      console.log("❌ Cannot connect socket: missing token or user")
+      // console.log("❌ Cannot connect socket: missing token or user")
       return
     }
 
@@ -170,7 +170,7 @@ const Chat: React.FC = () => {
 
     // Connection events
     newSocket.on("connect", () => {
-      console.log("✅ Socket connected successfully!")
+      // console.log("✅ Socket connected successfully!")
       setSocket(newSocket)
       setConnectionStatus("connected")
       setReconnectAttempts(0)
@@ -178,7 +178,7 @@ const Chat: React.FC = () => {
     })
 
     newSocket.on("disconnect", (reason) => {
-      console.log("🔌 Socket disconnected:", reason)
+      // console.log("🔌 Socket disconnected:", reason)
       setConnectionStatus("disconnected")
       setSocket(null)
 
@@ -188,38 +188,38 @@ const Chat: React.FC = () => {
     })
 
     newSocket.on("connect_error", (error) => {
-      console.error("❌ Socket connection error:", error)
+      // console.error("❌ Socket connection error:", error)
       setConnectionStatus("error")
       setLastError(error.message)
       attemptReconnection()
     })
 
     newSocket.on("reconnect", (attemptNumber) => {
-      console.log(`🔄 Socket reconnected after ${attemptNumber} attempts`)
+      // console.log(`🔄 Socket reconnected after ${attemptNumber} attempts`)
       setConnectionStatus("connected")
       setReconnectAttempts(0)
       setLastError(null)
     })
 
     newSocket.on("reconnect_attempt", (attemptNumber) => {
-      console.log(`🔄 Reconnection attempt ${attemptNumber}`)
+      // console.log(`🔄 Reconnection attempt ${attemptNumber}`)
       setReconnectAttempts(attemptNumber)
     })
 
     newSocket.on("reconnect_error", (error) => {
-      console.error("❌ Reconnection error:", error)
+      // console.error("❌ Reconnection error:", error)
       setLastError(error.message)
     })
 
     newSocket.on("reconnect_failed", () => {
-      console.error("❌ Reconnection failed after maximum attempts")
+      // console.error("❌ Reconnection failed after maximum attempts")
       setConnectionStatus("error")
       setLastError("Failed to reconnect after maximum attempts")
     })
 
     // Chat event listeners
     newSocket.on("newMessage", (message: Message) => {
-      console.log("📨 New message received:", message)
+      // console.log("📨 New message received:", message)
       if (activeRoom && message.room === activeRoom._id) {
         setMessages((prev) => [...prev, message])
       }
@@ -257,7 +257,7 @@ const Chat: React.FC = () => {
     })
 
     newSocket.on("error", (error) => {
-      console.error("❌ Socket error:", error)
+      // console.error("❌ Socket error:", error)
       setLastError(error.message)
     })
 
@@ -267,12 +267,12 @@ const Chat: React.FC = () => {
   // Reconnection logic
   const attemptReconnection = useCallback(() => {
     if (reconnectAttempts >= 5) {
-      console.log("❌ Maximum reconnection attempts reached")
+      // console.log("❌ Maximum reconnection attempts reached")
       return
     }
 
     const delay = Math.min(10000 * Math.pow(2, reconnectAttempts), 10000)
-    console.log(`🔄 Attempting reconnection in ${delay}ms (attempt ${reconnectAttempts + 1})`)
+    // console.log(`🔄 Attempting reconnection in ${delay}ms (attempt ${reconnectAttempts + 1})`)
 
     reconnectTimeoutRef.current = setTimeout(() => {
       setReconnectAttempts((prev) => prev + 1)
@@ -321,7 +321,7 @@ const Chat: React.FC = () => {
           setActiveRoom(data[0])
         }
       } catch (error) {
-        console.error("❌ Error fetching rooms:", error)
+        // console.error("❌ Error fetching rooms:", error)
       }
     }
 
@@ -348,7 +348,7 @@ const Chat: React.FC = () => {
         const data = await response.json()
         setMessages(data)
       } catch (error) {
-        console.error("❌ Error fetching messages:", error)
+        // console.error("❌ Error fetching messages:", error)
       }
     }
 
@@ -501,7 +501,7 @@ const Chat: React.FC = () => {
         setReplyTo(null)
       }
     } catch (error) {
-      console.error("❌ Error sending message:", error)
+      // console.error("❌ Error sending message:", error)
     } finally {
       setIsSendingMessage(false)
     }
@@ -540,7 +540,7 @@ const Chat: React.FC = () => {
         setSearchResults(data)
       }
     } catch (error) {
-      console.error("❌ Error searching users:", error)
+      // console.error("❌ Error searching users:", error)
     }
   }
 
@@ -1923,7 +1923,7 @@ const Chat: React.FC = () => {
         alert(`Failed to join room: ${errorData.message || response.statusText}`);
       }
     } catch (error) {
-      console.error("Error joining room:", error);
+      // console.error("Error joining room:", error);
       alert("An error occurred while trying to join the room.");
     } finally {
       setJoiningRoom(false);

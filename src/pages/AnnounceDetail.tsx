@@ -61,7 +61,7 @@ const AnnounceDetail: React.FC = () => {
         priority: response.data.priority,
       })
     } catch (error) {
-      console.error("Error fetching announcement:", error)
+      // console.error("Error fetching announcement:", error)
     } finally {
       setLoading(false)
     }
@@ -81,7 +81,7 @@ const AnnounceDetail: React.FC = () => {
       setAnnouncement(response.data)
       setIsEditing(false)
     } catch (error) {
-      console.error("Error updating announcement:", error)
+      // console.error("Error updating announcement:", error)
     }
   }
 
@@ -98,7 +98,7 @@ const AnnounceDetail: React.FC = () => {
         })
         window.location.href = "/announcements"
       } catch (error) {
-        console.error("Error deleting announcement:", error)
+        // console.error("Error deleting announcement:", error)
       }
     }
   }
