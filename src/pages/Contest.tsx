@@ -154,7 +154,7 @@ const Contest: React.FC = () => {
       }))
       setContests(updatedContests)
     } catch (error) {
-      console.error("Error fetching contests:", error)
+      // console.error("Error fetching contests:", error)
     } finally {
       setLoading(false)
     }
@@ -274,10 +274,10 @@ const Contest: React.FC = () => {
   }
 
   const handleEnterContest = (contestId: string) => {
-    console.log("Entering contest:", contestId);
+    // console.log("Entering contest:", contestId);
     navigate(`/contest/${contestId}/problems`)
   }
-  console.log(loading, "Loading state for contests:", contests);
+  // console.log(loading, "Loading state for contests:", contests);
   if (loading) {
     if (isDark) {
       return (
@@ -309,7 +309,7 @@ const Contest: React.FC = () => {
       </div>
     )
   }
-  console.log("here");
+  // console.log("here");
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8">
@@ -493,7 +493,7 @@ const Contest: React.FC = () => {
                           .sort((a, b) => a.rank - b.rank)
                           .slice(0, Math.min(3, contest.participants.length))
                           .map((participant, index) => {
-                            console.log("Participant object:", participant); 
+                            // console.log("Participant object:", participant); 
                             return(
                             // console.log("Participant object:", participant)
                             <div key={index} className="flex items-center justify-between">
