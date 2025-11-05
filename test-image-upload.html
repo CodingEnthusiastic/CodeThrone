@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            border: 2px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .preview {
+            margin-top: 20px;
+        }
+        .preview img {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Image Upload Test</h1>
+        <p>Test Cloudinary image upload functionality</p>
+        
+        <div class="form-group">
+            <label for="token">Auth Token:</label>
+            <input type="text" id="token" placeholder="Paste your JWT token here">
+            <small>Get this from localStorage in browser console: localStorage.getItem('token')</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="image">Select Image (max 2MB):</label>
+            <input type="file" id="image" accept="image/*">
+        </div>
+        
+        <button id="uploadBtn" onclick="uploadImage()">Upload Image</button>
+        
+        <div id="result"></div>
+        <div id="preview" class="preview"></div>
+    </div>
+
+    <script>
+        async function uploadImage() {
+            const token = document.getElementById('token').value;
+            const fileInput = document.getElementById('image');
+            const resultDiv = document.getElementById('result');
+            const previewDiv = document.getElementById('preview');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            // Clear previous results
+            resultDiv.innerHTML = '';
+            previewDiv.innerHTML = '';
+            
+            // Validate inputs
+            if (!token) {
+                resultDiv.innerHTML = '<div class="result error">❌ Please enter your auth token</div>';
+                return;
+            }
+            
+            if (!fileInput.files || !fileInput.files[0]) {
+                resultDiv.innerHTML = '<div class="result error">❌ Please select an image file</div>';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            // Validate file size
+            if (file.size > 2097152) {
+                resultDiv.innerHTML = '<div class="result error">❌ Image size must be under 2MB</div>';
+                return;
+            }
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                resultDiv.innerHTML = '<div class="result error">❌ Please select an image file</div>';
+                return;
+            }
+            
+            try {
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'Uploading...';
+                
+                const formData = new FormData();
+                formData.append('image', file);
+                
+                console.log('📤 Uploading to:', 'http://localhost:5000/api/documents/upload-image');
+                console.log('📁 File:', file.name, '(' + (file.size / 1024).toFixed(2) + ' KB)');
+                
+                const response = await fetch('http://localhost:5000/api/documents/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ Upload successful!<br>
+                            <strong>URL:</strong> ${data.url}<br>
+                            <strong>Public ID:</strong> ${data.publicId}<br>
+                            <strong>Dimensions:</strong> ${data.width} x ${data.height}px
+                        </div>
+                    `;
+                    
+                    previewDiv.innerHTML = `
+                        <h3>Preview:</h3>
+                        <img src="${data.url}" alt="Uploaded image">
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            ❌ Upload failed: ${data.message || 'Unknown error'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ Error: ${error.message}<br>
+                        Make sure backend server is running on http://localhost:5000
+                    </div>
+                `;
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload Image';
+            }
+        }
+        
+        // Allow Enter key to trigger upload in token field
+        document.getElementById('token').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                uploadImage();
+            }
+        });
+    </script>
+</body>
+</html>

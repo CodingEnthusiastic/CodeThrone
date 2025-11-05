@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "backend": "nodemon backend/index.js"
+    "backend": "nodemon backend/index.js",
+    "clear-cache": "rm -rf node_modules/.vite && rm -rf dist && echo 'Cache cleared! Restart dev server.'"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.6",

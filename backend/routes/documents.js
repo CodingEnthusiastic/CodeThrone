@@ -7,12 +7,20 @@ import Subject from '../models/Subject.js';
 
 const router = express.Router();
 
-// Configure Cloudinary
+// Configure Cloudinary from environment variables
 cloudinary.config({
-  cloud_name: 'dmq8ld9qq',
-  api_key: '626312846239842',
-  api_secret: 'gYdo9NBrs-35dMQ-uIbZpgyDd_k'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+// Validate Cloudinary configuration
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.error('❌ CLOUDINARY configuration missing in environment variables!');
+  console.log('Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set in .env');
+} else {
+  console.log('✅ Cloudinary configured successfully');
+}
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -217,7 +225,7 @@ router.post('/subjects', auth, async (req, res) => {
       description: description?.trim() || '',
       icon: icon || '📚',
       color: color || '#3B82F6',
-      createdBy: req.userId
+      createdBy: req.user._id
     });
 
     await subject.save();
@@ -402,9 +410,9 @@ router.post('/', auth, async (req, res) => {
       tags: tags ? tags.map(tag => tag.trim().toLowerCase()) : [],
       difficulty: difficulty || 'Beginner',
       isPublished: isPublished || false,
-      createdBy: req.userId,
+      createdBy: req.user._id,
       metadata: {
-        lastEditedBy: req.userId
+        lastEditedBy: req.user._id
       }
     });
 
@@ -479,7 +487,7 @@ router.put('/:id', auth, async (req, res) => {
     if (difficulty) document.difficulty = difficulty;
     if (isPublished !== undefined) document.isPublished = isPublished;
     
-    document.metadata.lastEditedBy = req.userId;
+    document.metadata.lastEditedBy = req.user._id;
 
     // Regenerate table of contents
     document.generateTableOfContents();
@@ -563,7 +571,7 @@ router.delete('/:id', auth, async (req, res) => {
 router.post('/:id/like', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.userId;
+    const userId = req.user._id;
 
     const document = await Document.findById(id);
     if (!document) {

@@ -51,7 +51,6 @@ const documentSchema = new mongoose.Schema({
   },
   slug: {
     type: String,
-    required: true,
     unique: true,
     lowercase: true
   },
@@ -138,16 +137,19 @@ documentSchema.index({ title: 'text', description: 'text' });
 
 // Generate slug from title
 documentSchema.pre('save', function(next) {
-  if (this.isModified('title')) {
-    this.slug = this.title
+  // Always generate slug if it doesn't exist or if title changed
+  if (!this.slug || this.isModified('title')) {
+    const baseSlug = this.title
       .toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+      .trim()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
     
-    // Ensure uniqueness
-    const timestamp = Date.now().toString().slice(-4);
-    this.slug = `${this.slug}-${timestamp}`;
+    // Ensure uniqueness with timestamp
+    const timestamp = Date.now().toString().slice(-6);
+    this.slug = `${baseSlug}-${timestamp}`;
   }
   
   this.updatedAt = Date.now();
