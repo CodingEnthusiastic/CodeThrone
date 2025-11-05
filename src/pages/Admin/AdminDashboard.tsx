@@ -996,8 +996,8 @@ const AdminDashboard: React.FC = () => {
     { id: 'announcements', label: 'Announcements', icon: <Megaphone className="h-4 w-4" /> },
     { id: 'mcq', label: 'MCQ Questions', icon: <HelpCircle className="h-4 w-4" /> },
     { id: 'chats', label: 'Chat Rooms', icon: <MessageSquare className="h-4 w-4" /> },
-    { id: 'view-docs', label: 'View Documents', icon: <BookOpen className="h-4 w-4" /> },
-    { id: 'add-doc', label: 'Add Document', icon: <Plus className="h-4 w-4" /> }
+    { id: 'view-docs', label: 'View Docs', icon: <BookOpen className="h-4 w-4" /> },
+    { id: 'add-doc', label: 'Add Docs', icon: <Plus className="h-4 w-4" /> }
   ];
 
   if (loading) {
