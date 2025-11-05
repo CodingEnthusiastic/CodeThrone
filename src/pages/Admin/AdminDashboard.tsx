@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from "../../config/api";
-import { useTheme } from '../../contexts/ThemeContext'
+import { useTheme } from '../../contexts/ThemeContext';
 import { 
   Plus, 
   Edit, 
@@ -26,7 +26,9 @@ import {
   Calendar,
   Award,
   ShoppingCart,
-  HelpCircle
+  HelpCircle,
+  BookOpen,
+  FileText
 } from 'lucide-react';
 
 interface MCQQuestion {
@@ -3319,6 +3321,16 @@ const AdminDashboard: React.FC = () => {
                     )}
                   </div>
                 </div>
+              )}
+
+              {/* View Documents Tab */}
+              {activeTab === 'view-documents' && (
+                <ViewDocumentsTab />
+              )}
+
+              {/* Add Documents Tab */}
+              {activeTab === 'add-documents' && (
+                <AddDocumentTab />
               )}
             </div>
           </div>
