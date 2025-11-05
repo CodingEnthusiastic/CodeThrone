@@ -225,7 +225,7 @@ router.post('/subjects', auth, async (req, res) => {
       description: description?.trim() || '',
       icon: icon || '📚',
       color: color || '#3B82F6',
-      createdBy: req.userId
+      createdBy: req.user._id
     });
 
     await subject.save();
@@ -410,9 +410,9 @@ router.post('/', auth, async (req, res) => {
       tags: tags ? tags.map(tag => tag.trim().toLowerCase()) : [],
       difficulty: difficulty || 'Beginner',
       isPublished: isPublished || false,
-      createdBy: req.userId,
+      createdBy: req.user._id,
       metadata: {
-        lastEditedBy: req.userId
+        lastEditedBy: req.user._id
       }
     });
 
@@ -487,7 +487,7 @@ router.put('/:id', auth, async (req, res) => {
     if (difficulty) document.difficulty = difficulty;
     if (isPublished !== undefined) document.isPublished = isPublished;
     
-    document.metadata.lastEditedBy = req.userId;
+    document.metadata.lastEditedBy = req.user._id;
 
     // Regenerate table of contents
     document.generateTableOfContents();
@@ -571,7 +571,7 @@ router.delete('/:id', auth, async (req, res) => {
 router.post('/:id/like', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.userId;
+    const userId = req.user._id;
 
     const document = await Document.findById(id);
     if (!document) {
