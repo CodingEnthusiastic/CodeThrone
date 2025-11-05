@@ -30,7 +30,6 @@ import usersRouter from "./routes/users.js";
 import { updateContestStatusesAndRatings } from "./routes/contest-status-updater.js";
 console.log("🚀 Starting backend server...")
 import statsRouter from "./routes/stats.js"
-import documentRoutes from "./routes/documents.js"
 
 // Load environment variables
 console.log("✅ Environment variables loaded")
@@ -149,9 +148,6 @@ console.log("✅ Chat routes mounted at /api/chat")
 
 app.use("/api/stats", statsRouter)
 console.log("✅ Stats routes mounted at /api/stats")
-
-app.use("/api/documents", documentRoutes)
-console.log("✅ Document routes mounted at /api/documents")
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
