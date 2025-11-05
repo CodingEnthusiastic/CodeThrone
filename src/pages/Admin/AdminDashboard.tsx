@@ -4,6 +4,8 @@ import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from "../../config/api";
 import { useTheme } from '../../contexts/ThemeContext';
+import ViewDocumentsTab from '../../components/Admin/ViewDocumentsTab';
+import AddDocumentTab from '../../components/Admin/AddDocumentTab';
 import { 
   Plus, 
   Edit, 
@@ -996,8 +998,8 @@ const AdminDashboard: React.FC = () => {
     { id: 'announcements', label: 'Announcements', icon: <Megaphone className="h-4 w-4" /> },
     { id: 'mcq', label: 'MCQ Questions', icon: <HelpCircle className="h-4 w-4" /> },
     { id: 'chats', label: 'Chat Rooms', icon: <MessageSquare className="h-4 w-4" /> },
-    { id: 'view-docs', label: 'View Docs', icon: <BookOpen className="h-4 w-4" /> },
-    { id: 'add-doc', label: 'Add Docs', icon: <Plus className="h-4 w-4" /> }
+    { id: 'documents', label: 'View Documents', icon: <BookOpen className="h-4 w-4" /> },
+    { id: 'add-document', label: 'Add Document', icon: <Plus className="h-4 w-4" /> }
   ];
 
   if (loading) {
@@ -3326,200 +3328,13 @@ const AdminDashboard: React.FC = () => {
               )}
 
               {/* View Documents Tab */}
-              {activeTab === 'view-docs' && (
-                <div className="p-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-6">
-                        <div>
-                          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">📚 Document Library</h2>
-                          <p className="text-gray-600 dark:text-gray-400">Browse and manage all documents by subject</p>
-                        </div>
-                        <button
-                          onClick={() => setActiveTab('add-doc')}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Add New Document
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Placeholder subjects - will be loaded from API */}
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-                          <div className="flex items-center gap-3 mb-4">
-                            <span className="text-2xl">💻</span>
-                            <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Computer Science</h3>
-                          </div>
-                          <p className="text-blue-700 dark:text-blue-300 text-sm mb-3">Algorithms, Data Structures, and more</p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-blue-600 dark:text-blue-400 text-sm font-medium">12 Documents</span>
-                            <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-                              <Eye className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-6 border border-green-200 dark:border-green-800">
-                          <div className="flex items-center gap-3 mb-4">
-                            <span className="text-2xl">🧮</span>
-                            <h3 className="text-lg font-semibold text-green-900 dark:text-green-100">Mathematics</h3>
-                          </div>
-                          <p className="text-green-700 dark:text-green-300 text-sm mb-3">Linear Algebra, Calculus, Statistics</p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-green-600 dark:text-green-400 text-sm font-medium">8 Documents</span>
-                            <button className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300">
-                              <Eye className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
-                          <div className="flex items-center gap-3 mb-4">
-                            <span className="text-2xl">⚛️</span>
-                            <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Physics</h3>
-                          </div>
-                          <p className="text-purple-700 dark:text-purple-300 text-sm mb-3">Quantum Mechanics, Thermodynamics</p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-purple-600 dark:text-purple-400 text-sm font-medium">5 Documents</span>
-                            <button className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300">
-                              <Eye className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                        <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-                          🚧 <strong>Coming Soon:</strong> Full document management with search, filters, and real-time editing capabilities powered by Tiptap and Cloudinary.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {activeTab === 'documents' && (
+                <ViewDocumentsTab />
               )}
 
               {/* Add Documents Tab */}
-              {activeTab === 'add-doc' && (
-                <div className="p-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-6">
-                        <div>
-                          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">📝 Create New Document</h2>
-                          <p className="text-gray-600 dark:text-gray-400">Write rich content with Notion-style editor</p>
-                        </div>
-                        <button
-                          onClick={() => setActiveTab('view-docs')}
-                          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
-                        >
-                          <BookOpen className="h-4 w-4" />
-                          View All Documents
-                        </button>
-                      </div>
-
-                      <div className="space-y-6">
-                        {/* Document Form */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Document Title
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="Enter document title..."
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Subject
-                            </label>
-                            <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
-                              <option>Select Subject</option>
-                              <option>Computer Science</option>
-                              <option>Mathematics</option>
-                              <option>Physics</option>
-                              <option>+ Add New Subject</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Difficulty Level
-                            </label>
-                            <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
-                              <option>Beginner</option>
-                              <option>Intermediate</option>
-                              <option>Advanced</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Tags (comma separated)
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="algorithm, sorting, arrays..."
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Rich Text Editor Placeholder */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Document Content
-                          </label>
-                          <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 min-h-[400px] bg-gray-50 dark:bg-gray-700">
-                            <div className="flex items-center gap-2 mb-4 p-2 border-b border-gray-200 dark:border-gray-600">
-                              {/* Editor Toolbar Mockup */}
-                              <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm font-bold">B</button>
-                              <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm italic">I</button>
-                              <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm">H1</button>
-                              <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm">📷</button>
-                              <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm">💻</button>
-                            </div>
-                            <div className="text-gray-500 dark:text-gray-400 text-center py-20">
-                              <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                              <p className="text-lg mb-2">🚧 Tiptap Rich Text Editor</p>
-                              <p className="text-sm">Coming soon with image upload, code blocks, and more!</p>
-                              <p className="text-xs mt-4 opacity-75">
-                                Features: Block-based editing • Image upload to Cloudinary • Code syntax highlighting
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2">
-                              <input type="checkbox" className="rounded" />
-                              <span className="text-sm text-gray-600 dark:text-gray-400">Publish immediately</span>
-                            </label>
-                            <label className="flex items-center gap-2">
-                              <input type="checkbox" className="rounded" />
-                              <span className="text-sm text-gray-600 dark:text-gray-400">Featured document</span>
-                            </label>
-                          </div>
-                          
-                          <div className="flex gap-3">
-                            <button className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                              Save Draft
-                            </button>
-                            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                              <Save className="h-4 w-4" />
-                              Create Document
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {activeTab === 'add-document' && (
+                <AddDocumentTab />
               )}
             </div>
           </div>

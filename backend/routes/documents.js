@@ -7,12 +7,20 @@ import Subject from '../models/Subject.js';
 
 const router = express.Router();
 
-// Configure Cloudinary
+// Configure Cloudinary from environment variables
 cloudinary.config({
-  cloud_name: 'dmq8ld9qq',
-  api_key: '626312846239842',
-  api_secret: 'gYdo9NBrs-35dMQ-uIbZpgyDd_k'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+// Validate Cloudinary configuration
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.error('❌ CLOUDINARY configuration missing in environment variables!');
+  console.log('Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set in .env');
+} else {
+  console.log('✅ Cloudinary configured successfully');
+}
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
