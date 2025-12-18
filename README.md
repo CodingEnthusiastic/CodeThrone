@@ -88,28 +88,26 @@ root/
 3. **Environment Variables:**
 
    in /CodeThrone , create a .env file with these details
-   # Database
+   
    MONGODB_URI=
    
-   # JWT
    JWT_SECRET=
    
-   # Gemini AI
+   
    GEMINI_API_KEY=
    VITE_GEMINI_API_KEY=
-   # Server
+  
    PORT=
    NODE_ENV=development
    
-   # Compiler API (Judge0 API Keys with Fallback System)
-   # Basic plan keys (100 submissions/day each)
+   
    JUDGE0_API_KEY_1=
    JUDGE0_API_KEY_2=
    JUDGE0_API_KEY_3=
    JUDGE0_API_KEY_4=
    JUDGE0_API_KEY_5=
    
-   # Legacy single key (kept for backward compatibility)
+   
    JUDGE0_API_KEY=
    
    GOOGLE_CLIENT_ID=
