@@ -109,43 +109,25 @@ router.get("/:id", async (req, res) => {
     if (contest.status !== actualStatus) {
       contest.status = actualStatus
       await contest.save()
-      // If contest just ended, update ratings and history
-      if (actualStatus === "ended") {
+      
+      // If contest just ended and ratings not finalized yet, trigger immediate finalization
+      if (actualStatus === "ended" && !contest.ratingsFinalized) {
+        console.log(`🔔 Contest ${contest.name} just ended! Triggering immediate ratings finalization...`)
         ratingsUpdated = true
-        for (const participant of contest.participants) {
-          const user = await User.findById(participant.user._id)
-          if (user) {
-            // Calculate new rating (simple example: +10 for top 3, else +2)
-            let ratingChange = 2
-            if (participant.rank === 1) ratingChange = 10
-            else if (participant.rank === 2) ratingChange = 7
-            else if (participant.rank === 3) ratingChange = 5
-
-            user.ratings.contestRating += ratingChange
-            
-            // Improved duplicate check - ensure no duplicate contest history entries
-            const existingEntry = user.contestHistory.find(h => 
-              h.contest && h.contest.toString() === contest._id.toString()
-            );
-            
-            if (!existingEntry) {
-              // Add contest history entry
-              user.contestHistory.push({
-                contest: contest._id,
-                rank: participant.rank,
-                score: participant.score,
-                ratingChange,
-                problemsSolved: participant.submissions.filter(s => s.score > 0).length,
-                totalProblems: contest.problems.length,
-                date: contest.endTime,
-              })
-              console.log(`✅ Added contest history for user ${user.username}`)
-            } else {
-              console.log(`⚠️ Contest history already exists for user ${user.username}, skipping duplicate`)
-            }
-            await user.save()
-            console.log(`✅ Updated rating and history for user ${user.username}: +${ratingChange}`)
+        // Import the finalization function
+        try {
+          const response = await import("axios").then(axios => 
+            axios.default.post(`http://localhost:3000/api/contest-status/${req.params.id}/finalize-ratings`, {})
+          ).catch(err => {
+            console.error("⚠️ Could not trigger immediate finalization via HTTP (running locally), will use 60s poll instead:", err.message)
+            return null
+          })
+          if (response) {
+            console.log(`✅ Ratings finalized immediately: ${response.data.updatedUsers} users updated`)
           }
+        } catch (error) {
+          console.error("⚠️ Error triggering immediate finalization:", error.message)
+          // Ratings will be updated in the next 60s poll cycle
         }
       }
     }

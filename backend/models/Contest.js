@@ -33,6 +33,11 @@ const contestSchema = new mongoose.Schema({
     enum: ['upcoming', 'ongoing', 'ended'],
     default: 'upcoming'
   },
+  ratingsFinalized: {
+    type: Boolean,
+    default: false,
+    description: "Flag to prevent duplicate rating calculations when contest ends"
+  },
   problems: [{
     problem: {
       type: mongoose.Schema.Types.ObjectId,

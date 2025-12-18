@@ -39,6 +39,44 @@ function calculateCodeforcesElo(participants) {
   return ratingChanges;
 }
 
+// Helper function to finalize contest rankings
+const finalizeContestRankings = async (contest) => {
+  try {
+    // Only finalize if not already done
+    if (contest.ratingsFinalized) {
+      console.log(`⚠️ Contest ${contest.name} ratings already finalized, skipping`);
+      return;
+    }
+
+    // Sort participants by score (descending), then by submission time (ascending) for tie-breaking
+    contest.participants.sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score; // Higher score = better rank
+      }
+      // Tie-breaker: who solved first
+      const aLastSubmit = a.submissions.length > 0 ? new Date(a.submissions[a.submissions.length - 1].timeSubmitted) : new Date(0);
+      const bLastSubmit = b.submissions.length > 0 ? new Date(b.submissions[b.submissions.length - 1].timeSubmitted) : new Date(0);
+      return aLastSubmit - bLastSubmit;
+    });
+
+    // Assign final ranks
+    let currentRank = 1;
+    let prevScore = null;
+    contest.participants.forEach((participant, index) => {
+      if (prevScore !== null && participant.score !== prevScore) {
+        currentRank = index + 1;
+      }
+      participant.rank = currentRank;
+      prevScore = participant.score;
+    });
+
+    await contest.save();
+    console.log(`✅ Finalized rankings for contest: ${contest.name}`);
+  } catch (error) {
+    console.error(`❌ Error finalizing rankings for ${contest.name}:`, error);
+  }
+};
+
 // Function to update contest statuses and ratings when contests end
 const updateContestStatusesAndRatings = async () => {
   try {
@@ -72,6 +110,9 @@ const updateContestStatusesAndRatings = async () => {
     // Update ratings for ended contests
     for (const contest of endingContests) {
       console.log(`📊 Processing ratings for contest: ${contest.name}`)
+      
+      // Finalize rankings before updating ratings
+      await finalizeContestRankings(contest);
       
       // Filter valid participants (those with ranks > 0)
       const validParticipants = contest.participants.filter(p => p.rank > 0 && p.user);
@@ -114,7 +155,7 @@ const updateContestStatusesAndRatings = async () => {
               ratingChange: ratingChanges[i],
               problemsSolved: participant.submissions.filter(s => s.score > 0).length,
               totalProblems: contest.problems.length,
-              date: new Date(),
+              date: contest.endTime,
             });
             
             // Update contest stats
@@ -124,6 +165,8 @@ const updateContestStatusesAndRatings = async () => {
             }
             
             console.log(`✅ Updated rating for ${user.username}: ${oldRating} → ${newRating} (${ratingChanges[i] > 0 ? '+' : ''}${ratingChanges[i]})`)
+          } else {
+            console.log(`⚠️ Contest history already exists for ${user.username}, skipping duplicate`)
           }
           
           await user.save();
@@ -140,11 +183,11 @@ const updateContestStatusesAndRatings = async () => {
         status: "ongoing",
         endTime: { $lte: now },
       },
-      { status: "ended" },
+      { status: "ended", ratingsFinalized: true },
     )
     
     if (endedContests.modifiedCount > 0) {
-      console.log(`🔚 ${endedContests.modifiedCount} contests marked as ended`)
+      console.log(`🔚 ${endedContests.modifiedCount} contests marked as ended and ratings finalized`)
     }
 
     console.log("✅ Contest statuses and ratings updated successfully")
@@ -353,6 +396,7 @@ router.get(
 // Route to manually trigger contest status and rating updates (admin only)
 router.post("/update-contests", async (req, res) => {
   try {
+    console.log("🔄 Manual trigger: Updating contest statuses and ratings");
     await updateContestStatusesAndRatings();
     res.json({ message: "Contest statuses and ratings updated successfully" });
   } catch (error) {
@@ -361,8 +405,132 @@ router.post("/update-contests", async (req, res) => {
   }
 });
 
+// CRITICAL: Immediate endpoint to finalize ratings for a specific contest when it ends
+// Called immediately when contest end time is reached, not waiting for 60s poll
+router.post("/:contestId/finalize-ratings", async (req, res) => {
+  try {
+    const { contestId } = req.params;
+    console.log(`🏁 IMMEDIATE: Finalizing ratings for contest ${contestId}`);
+
+    const contest = await Contest.findById(contestId)
+      .populate("participants.user");
+
+    if (!contest) {
+      return res.status(404).json({ message: "Contest not found" });
+    }
+
+    // Check if already finalized
+    if (contest.ratingsFinalized) {
+      console.log(`⚠️ Contest ${contest.name} ratings already finalized`);
+      return res.status(200).json({ message: "Ratings already finalized", alreadyFinalized: true });
+    }
+
+    // Only finalize if contest has actually ended
+    const actualStatus = getContestStatus(contest.startTime, contest.endTime);
+    if (actualStatus !== "ended") {
+      return res.status(400).json({ message: "Contest has not ended yet" });
+    }
+
+    console.log(`🔍 Finalizing rankings and calculating ratings for: ${contest.name}`);
+
+    // Finalize rankings
+    await finalizeContestRankings(contest);
+
+    // Get updated contest with finalized rankings
+    const updatedContest = await Contest.findById(contestId)
+      .populate("participants.user");
+
+    // Filter valid participants
+    const validParticipants = updatedContest.participants.filter(p => p.rank > 0 && p.user);
+
+    if (validParticipants.length < 2) {
+      console.log(`⚠️ Contest has less than 2 valid participants`);
+      updatedContest.ratingsFinalized = true;
+      await updatedContest.save();
+      return res.status(200).json({ message: "Contest finalized but insufficient participants for rating calculation" });
+    }
+
+    // Calculate Elo ratings
+    const ratingChanges = calculateCodeforcesElo(validParticipants);
+
+    // Update user ratings and history
+    let updatedUsers = 0;
+    for (let i = 0; i < validParticipants.length; i++) {
+      const participant = validParticipants[i];
+      const user = await User.findById(participant.user._id);
+
+      if (user) {
+        const oldRating = user.ratings.contestRating || 1200;
+        const newRating = Math.max(800, oldRating + ratingChanges[i]);
+        user.ratings.contestRating = newRating;
+
+        if (!Array.isArray(user.contestHistory)) {
+          user.contestHistory = [];
+        }
+
+        // Prevent duplicates
+        const alreadyExists = user.contestHistory.some(h =>
+          h.contest && h.contest.toString() === contestId
+        );
+
+        if (!alreadyExists) {
+          user.contestHistory.push({
+            contest: contestId,
+            rank: participant.rank,
+            score: participant.score,
+            ratingChange: ratingChanges[i],
+            problemsSolved: participant.submissions.filter(s => s.score > 0).length,
+            totalProblems: updatedContest.problems.length,
+            date: updatedContest.endTime,
+          });
+
+          user.stats.contestsPlayed = (user.stats.contestsPlayed || 0) + 1;
+          if (participant.rank === 1) {
+            user.stats.contestsWon = (user.stats.contestsWon || 0) + 1;
+          }
+
+          console.log(`✅ ${user.username}: ${oldRating} → ${newRating} (${ratingChanges[i] > 0 ? '+' : ''}${ratingChanges[i]})`);
+        }
+
+        await user.save();
+        updatedUsers++;
+      }
+    }
+
+    // Mark ratings as finalized
+    updatedContest.ratingsFinalized = true;
+    updatedContest.status = "ended";
+    await updatedContest.save();
+
+    console.log(`✅ Finalized ratings for ${updatedUsers} users`);
+    res.json({
+      message: "Ratings finalized successfully",
+      updatedUsers,
+      contestName: updatedContest.name,
+    });
+  } catch (error) {
+    console.error("❌ Error finalizing ratings:", error);
+    res.status(500).json({ message: "Failed to finalize ratings", error: error.message });
+  }
+});
+
+// Helper to get contest status (duplicated from contest.js for modularity)
+const getContestStatus = (startTime, endTime) => {
+  const now = new Date();
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  if (now < start) {
+    return "upcoming";
+  } else if (now >= start && now <= end) {
+    return "ongoing";
+  } else {
+    return "ended";
+  }
+};
+
 // Set up automatic status and rating updates every minute
 setInterval(updateContestStatusesAndRatings, 60000); // Run every minute
 
-export { updateContestStatusesAndRatings };
+export { updateContestStatusesAndRatings, finalizeContestRankings };
 export default router;
