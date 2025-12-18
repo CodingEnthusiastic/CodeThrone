@@ -65,8 +65,8 @@ const SubmissionCalendar: React.FC<SubmissionCalendarProps> = ({ submissions }) 
     while (currentDate <= endDate) {
       const week = [];
       for (let i = 0; i < 7; i++) {
-        // Use IST date string to match the submission grouping
-        const dateStr = toISTDateString(currentDate);
+        // Use UTC date string to match the submission grouping
+        const dateStr = toUTCDateString(currentDate);
         const intensity = getSubmissionIntensity(dateStr);
         const daySubmissions = submissionsByDate[dateStr] || [];
         
