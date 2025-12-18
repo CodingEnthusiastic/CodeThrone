@@ -1510,7 +1510,7 @@ const Home: React.FC = () => {
                 <div className={`flex flex-col sm:flex-row gap-4 card-animate-in ${getResponsiveSettings().buttonGap}`} style={{ animationDelay: '0.1s' }}>
                   <Link
                     to="/problems"
-                    className={`group relative overflow-hidden ${isDark ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'} px-8 py-4 rounded-2xl font-bold transition-all duration-300 inline-flex items-center justify-center shadow-2xl ${isDark ? 'hover:shadow-white/25' : 'hover:shadow-blue-500/25'} hover:scale-105 magnetic-hover`
+                    className={`group relative overflow-hidden ${isDark ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'} px-8 py-4 rounded-2xl font-bold transition-all duration-300 inline-flex items-center justify-center shadow-2xl ${isDark ? 'hover:shadow-white/25' : 'hover:shadow-blue-500/25'} hover:scale-105 magnetic-hover`}
                   >
                     <Brain className="mr-2 h-5 w-5 group-hover:animate-pulse" />
                     Continue Learning
