@@ -11,17 +11,16 @@ interface SubmissionCalendarProps {
 const SubmissionCalendar: React.FC<SubmissionCalendarProps> = ({ submissions }) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   
-  // Utility function to convert any date to IST date string
-  const toISTDateString = (date: Date) => {
-    const istOffset = 5.5 * 60; // 5 hours 30 minutes in minutes
-    const istDate = new Date(date.getTime() + (istOffset * 60 * 1000));
-    return istDate.toISOString().split('T')[0];
+  // Utility function to convert any date to UTC date string (for consistency across all timezones)
+  const toUTCDateString = (date: Date) => {
+    const utcDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    return utcDate.toISOString().split('T')[0];
   };
 
-  // Group submissions by date (convert to Indian timezone IST)
+  // Group submissions by date (convert to UTC)
   const submissionsByDate = submissions.reduce((acc, submission) => {
     const date = new Date(submission.date);
-    const localDate = toISTDateString(date);
+    const localDate = toUTCDateString(date);
     if (!acc[localDate]) {
       acc[localDate] = [];
     }
@@ -91,17 +90,16 @@ const SubmissionCalendar: React.FC<SubmissionCalendarProps> = ({ submissions }) 
   const stats = useMemo(() => {
     const yearSubmissions = submissions.filter(s => {
       const date = new Date(s.date);
-      const istDate = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
-      return istDate.getFullYear() === selectedYear;
+      return date.getUTCFullYear() === selectedYear;
     });
     
     const activeDays = new Set(
-      yearSubmissions.map(s => toISTDateString(new Date(s.date)))
+      yearSubmissions.map(s => toUTCDateString(new Date(s.date)))
     ).size;
     
     const maxStreak = () => {
       const dates = Array.from(new Set(
-        yearSubmissions.map(s => toISTDateString(new Date(s.date)))
+        yearSubmissions.map(s => toUTCDateString(new Date(s.date)))
       )).sort();
       
       let maxStreak = 0;
@@ -109,7 +107,7 @@ const SubmissionCalendar: React.FC<SubmissionCalendarProps> = ({ submissions }) 
       let lastDate = null;
       
       for (const dateStr of dates) {
-        const date = new Date(dateStr + 'T00:00:00.000Z'); // Parse as UTC to avoid timezone shift
+        const date = new Date(dateStr + 'T00:00:00.000Z'); // Parse as UTC
         if (lastDate) {
           const daysDiff = (date.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
           if (daysDiff === 1) {
@@ -139,8 +137,7 @@ const SubmissionCalendar: React.FC<SubmissionCalendarProps> = ({ submissions }) 
   const availableYears = useMemo(() => {
     const years = new Set(submissions.map(s => {
       const date = new Date(s.date);
-      const istDate = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
-      return istDate.getFullYear();
+      return date.getUTCFullYear();
     }));
     return Array.from(years).sort((a, b) => b - a);
   }, [submissions]);

@@ -184,7 +184,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Calculate streak from submissions (fix timezone issues - IST)
+    // Calculate streak from submissions (use UTC for consistency)
     console.log('📈 Calculating current streak...');
     const submissions = user.submissions || [];
     const acceptedSubmissions = submissions
@@ -193,19 +193,16 @@ router.get('/me', authenticateToken, async (req, res) => {
     
     let currentStreak = 0;
     if (acceptedSubmissions.length > 0) {
-      // Get today's date in IST (UTC + 5:30)
+      // Get today's date in UTC
       const now = new Date();
-      const istOffset = 5.5 * 60; // 5 hours 30 minutes in minutes
-      const todayIST = new Date(now.getTime() + (istOffset * 60 * 1000));
-      const todayLocal = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
+      const todayUTC = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
       
-      // Group submissions by local IST date
+      // Group submissions by UTC date
       const submissionDates = new Set();
       acceptedSubmissions.forEach(sub => {
         const subDate = new Date(sub.date);
-        const istDate = new Date(subDate.getTime() + (istOffset * 60 * 1000));
-        const localDate = new Date(istDate.getFullYear(), istDate.getMonth(), istDate.getDate());
-        submissionDates.add(localDate.getTime());
+        const utcDate = new Date(subDate.getUTCFullYear(), subDate.getUTCMonth(), subDate.getUTCDate());
+        submissionDates.add(utcDate.getTime());
       });
       
       // Convert to sorted array of dates
@@ -216,7 +213,9 @@ router.get('/me', authenticateToken, async (req, res) => {
       // Calculate consecutive streak from most recent date
       if (sortedDates.length > 0) {
         const mostRecentDate = sortedDates[0];
-        const daysSinceLastSubmission = Math.floor((todayLocal.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSinceLastSubmission = Math.floor((todayUTC.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        console.log(`📈 Days since last submission: ${daysSinceLastSubmission}, Most recent: ${mostRecentDate.toISOString()}, Today: ${todayUTC.toISOString()}`);
         
         // Only count streak if last submission was today or yesterday
         if (daysSinceLastSubmission <= 1) {

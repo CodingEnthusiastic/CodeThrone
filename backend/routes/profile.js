@@ -86,7 +86,7 @@ router.get('/:username', async (req, res) => {
     const correctSubmissions = submissions.filter(sub => sub.status === 'accepted').length;
     const accuracy = totalSubmissions > 0 ? (correctSubmissions / totalSubmissions) * 100 : 0;
     
-    // Calculate streak (fix timezone issues)
+    // Calculate streak (use UTC for consistency)
     console.log('📈 Calculating streak data...');
     let currentStreak = 0;
     let maxStreak = 0;
@@ -98,16 +98,16 @@ router.get('/:username', async (req, res) => {
     
     // Calculate current streak (consecutive days with accepted submissions)
     if (sortedSubmissions.length > 0) {
-      // Get today's date in local timezone
-      const today = new Date();
-      const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      // Get today's date in UTC
+      const now = new Date();
+      const todayUTC = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
       
-      // Group submissions by local date
+      // Group submissions by UTC date
       const submissionDates = new Set();
       sortedSubmissions.forEach(sub => {
         const subDate = new Date(sub.date);
-        const localDate = new Date(subDate.getFullYear(), subDate.getMonth(), subDate.getDate());
-        submissionDates.add(localDate.getTime());
+        const utcDate = new Date(subDate.getUTCFullYear(), subDate.getUTCMonth(), subDate.getUTCDate());
+        submissionDates.add(utcDate.getTime());
       });
       
       // Convert to sorted array of dates
@@ -118,7 +118,9 @@ router.get('/:username', async (req, res) => {
       // Calculate consecutive streak from most recent date
       if (sortedDates.length > 0) {
         const mostRecentDate = sortedDates[0];
-        const daysSinceLastSubmission = Math.floor((todayLocal.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSinceLastSubmission = Math.floor((todayUTC.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        console.log(`📈 Profile: Days since last submission: ${daysSinceLastSubmission}`);
         
         // Only count streak if last submission was today or yesterday
         if (daysSinceLastSubmission <= 1) {

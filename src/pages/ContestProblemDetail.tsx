@@ -1189,7 +1189,9 @@ const ContestProblemDetail: React.FC = () => {
                 setShowResultCard(false)
                 setResultCardData(null)
               }}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors text-gray-600 dark:text-gray-300"
+              className="absolute top-4 right-4 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/80 hover:bg-white dark:bg-gray-700/80 dark:hover:bg-gray-600 transition-all duration-200 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white shadow-md hover:shadow-lg transform hover:scale-110"
+              title="Close"
+              type="button"
             >
               <XCircle className="w-5 h-5" />
             </button>
