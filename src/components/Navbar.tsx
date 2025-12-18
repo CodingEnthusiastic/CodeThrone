@@ -76,7 +76,7 @@ const Navbar: React.FC = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-8">
+          <div className="hidden lg:flex items-center gap-1">
             {navItems.map((item) => {
               const active = isActive(item.path);
               return (
@@ -84,10 +84,14 @@ const Navbar: React.FC = () => {
                   key={item.path}
                   to={item.path}
                   onClick={() => handleNavigation(item.path)}
-                  className={`text-sm font-medium transition-colors duration-200 ${
+                  className={`px-4 py-2.5 text-base font-semibold transition-all duration-200 rounded-lg whitespace-nowrap ${
                     active
-                      ? isDark ? 'text-blue-400' : 'text-blue-600'
-                      : isDark ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                      ? isDark 
+                        ? 'bg-blue-900/30 text-blue-400 shadow-md' 
+                        : 'bg-blue-50 text-blue-600 shadow-md'
+                      : isDark 
+                        ? 'text-gray-300 hover:text-white hover:bg-gray-700/40' 
+                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
                   {item.label}
