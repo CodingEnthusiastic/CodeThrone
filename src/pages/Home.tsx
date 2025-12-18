@@ -816,6 +816,7 @@ const Home: React.FC = () => {
           ? "bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900"
           : "bg-white"
       }`}
+      style={{ overscrollBehavior: 'none' }}
     >
       {/* Beautiful Falling White Balls Animation for Dark Mode */}
       {isDark && (
@@ -962,13 +963,11 @@ const Home: React.FC = () => {
             @keyframes card-entrance {
               0% { 
                 opacity: 0; 
-                transform: translateY(30px) scale(0.95) rotateX(10deg);
-                filter: blur(5px);
+                transform: translateY(20px) scale(0.98);
               }
               100% { 
                 opacity: 1; 
-                transform: translateY(0) scale(1) rotateX(0deg);
-                filter: blur(0px);
+                transform: translateY(0) scale(1);
               }
             }
             @keyframes magnetic-pull {
@@ -1033,14 +1032,15 @@ const Home: React.FC = () => {
               background-size: 400% 400%;
             }
             .card-animate-in {
-              animation: card-entrance 0.6s ease-out forwards;
+              animation: card-entrance 0.3s ease-out forwards;
+              will-change: transform, opacity;
             }
             .magnetic-hover:hover {
               animation: magnetic-pull 0.6s ease-in-out;
             }
           `}</style>
           
-          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" style={{ transform: 'translateZ(0)', willChange: 'transform' }}>
             {/* Morphing Background Blobs */}
             <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 morphing-blob"></div>
             <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-gradient-to-br from-purple-500/10 to-pink-500/10 morphing-blob" style={{ animationDelay: '4s' }}></div>
@@ -1473,7 +1473,7 @@ const Home: React.FC = () => {
                   </span>
                 </h1>
 
-                <p className={`text-xl md:text-2xl ${isDark ? 'text-white/90' : 'text-gray-700'} leading-relaxed max-w-2xl card-animate-in`} style={{ animationDelay: '0.2s' }}>
+                <p className={`text-xl md:text-2xl ${isDark ? 'text-white/90' : 'text-gray-700'} leading-relaxed max-w-2xl card-animate-in`} style={{ animationDelay: '0.05s' }}>
                   Join thousands of developers mastering coding skills through our comprehensive platform featuring
                   <span className={`font-semibold ${isDark ? 'text-yellow-300' : 'text-yellow-600'} animate-pulse`}> interactive problems</span>,
                   <span className={`font-semibold ${isDark ? 'text-green-300' : 'text-green-600'} animate-pulse`} style={{ animationDelay: '0.5s' }}> live contests</span>, and
@@ -1507,7 +1507,7 @@ const Home: React.FC = () => {
                   </Link>
                 </div>
               ) : (
-                <div className={`flex flex-col sm:flex-row gap-4 card-animate-in ${getResponsiveSettings().buttonGap}`} style={{ animationDelay: '0.4s' }}>
+                <div className={`flex flex-col sm:flex-row gap-4 card-animate-in ${getResponsiveSettings().buttonGap}`} style={{ animationDelay: '0.1s' }}>
                   <Link
                     to="/problems"
                     className={`group relative overflow-hidden ${isDark ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'} px-8 py-4 rounded-2xl font-bold transition-all duration-300 inline-flex items-center justify-center shadow-2xl ${isDark ? 'hover:shadow-white/25' : 'hover:shadow-blue-500/25'} hover:scale-105 magnetic-hover`}
@@ -1535,7 +1535,7 @@ const Home: React.FC = () => {
 
             {/* Right Carousel */}
               {/* Right Carousel: Only show on devices >= 768px */}
-              <div className="relative card-animate-in hidden md:block" style={{ animationDelay: '0.6s' }}>
+              <div className="relative card-animate-in hidden md:block" style={{ animationDelay: '0.15s' }}>
                 <div className="relative h-96 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm border border-white/20">
                   {carouselItems.map((item, index) => (
                     <div
