@@ -266,7 +266,10 @@ router.get('/', async (req, res) => {
     
     if (published === 'true') {
       filter.isPublished = true;
+    } else if (published === 'false') {
+      filter.isPublished = false;
     }
+    // If published === 'all', don't add any filter for isPublished
     
     if (subject && subject !== 'all') {
       filter.subject = subject;

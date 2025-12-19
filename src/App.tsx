@@ -29,6 +29,9 @@ import Chat from './pages/Chat';
 import ContestLeaderboard from './pages/ContestLeaderboard';
 import GameLeaderboard from './pages/GameLeaderboard';
 import RapidFireLeaderboard from './pages/RapidFireLeaderboard';
+import SubjectDocuments from './pages/SubjectDocuments';
+import AddDocument from './pages/AddDocument';
+import ViewDocument from './pages/ViewDocument';
 import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
@@ -463,6 +466,10 @@ const AppRoutes = () => {
             <Route path="/company/:company" element={<CompanyProblems />} />
             <Route path="/company-problems" element={<CompanyProblems />} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/documents" element={<ProtectedRoute><SubjectDocuments /></ProtectedRoute>} />
+            <Route path="/admin/add-document" element={<ProtectedRoute><AddDocument /></ProtectedRoute>} />
+            <Route path="/admin/edit-document/:docId" element={<ProtectedRoute><AddDocument /></ProtectedRoute>} />
+            <Route path="/admin/view-document/:docId" element={<ProtectedRoute><ViewDocument /></ProtectedRoute>} />
             <Route path='/announcements' element={<Announcements/>}/>
             <Route path='/announcements/:id' element={<AnnounceDetail/>}/>
             <Route path="/oauth" element={<OAuthHandler />} />

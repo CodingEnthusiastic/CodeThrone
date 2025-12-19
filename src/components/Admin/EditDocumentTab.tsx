@@ -440,7 +440,7 @@ const EditDocumentTab: React.FC<EditDocumentTabProps> = ({ documentId, onBack })
                   } focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                 >
                   <option value="">Select a subject</option>
-                  {subjects.map((subject) => (
+                  {(subjects || []).map((subject) => (
                     <option key={subject._id} value={subject._id}>
                       {subject.icon} {subject.name}
                     </option>

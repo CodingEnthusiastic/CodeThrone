@@ -48,7 +48,7 @@ interface TiptapEditorProps {
 }
 
 // Convert blocks to HTML for Tiptap
-const blocksToHtml = (blocks: any[]): string => {
+export const blocksToHtml = (blocks: any[]): string => {
   if (!blocks || !Array.isArray(blocks)) return '';
   
   return blocks.map(block => {
@@ -210,6 +210,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   const { token } = useAuth();
   const { isDark } = useTheme();
   const [isUploading, setIsUploading] = useState(false);
+  const [initialized, setInitialized] = React.useState(false);
 
   // Upload image to Cloudinary
   const uploadImage = useCallback(async (file: File): Promise<string | null> => {
@@ -338,6 +339,17 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       });
     }
   }, [content, onChange, handleImageInsert]);
+
+  // Update editor content when external content changes
+  React.useEffect(() => {
+    if (editor && content && Array.isArray(content) && content.length > 0 && !initialized) {
+      const html = blocksToHtml(content);
+      if (html) {
+        editor.commands.setContent(html);
+        setInitialized(true);
+      }
+    }
+  }, [editor, initialized]);
 
   // Toolbar button component
   const ToolbarButton: React.FC<{
@@ -558,13 +570,31 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         </ToolbarButton>
       </div>
 
-      {/* Editor */}
-      <div className={`min-h-[300px] p-4 prose max-w-none ${isDark ? 'prose-invert' : ''}`}>
-        <EditorContent
-          editor={editor}
-          className="focus:outline-none"
-          placeholder={placeholder}
-        />
+      {/* Editor Container */}
+      <div 
+        className={`w-full rounded-b-lg border-t ${isDark ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white'}`}
+      >
+        {/* Editor Content Area */}
+        <div 
+          className={`relative w-full px-4 py-6 focus-within:ring-1 focus-within:ring-orange-600 transition-all ${
+            isDark ? 'bg-gray-800' : 'bg-white'
+          }`}
+          onClick={() => editor?.chain().focus().run()}
+        >
+          <EditorContent
+            editor={editor}
+            className={`tiptap-editor prose max-w-none focus:outline-none ${isDark ? 'prose-invert' : ''}`}
+            style={{
+              minHeight: '500px',
+              width: '100%',
+              outline: 'none',
+              WebkitUserModify: 'read-write-plaintext-only',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              whiteSpace: 'pre-wrap'
+            }}
+          />
+        </div>
         {isUploading && (
           <div className="flex items-center justify-center py-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>

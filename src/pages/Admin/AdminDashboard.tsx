@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from "../../config/api";
 import { useTheme } from '../../contexts/ThemeContext';
@@ -168,6 +168,7 @@ interface User {
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [problems, setProblems] = useState<Problem[]>([]);
   const [contests, setContests] = useState<Contest[]>([]);
@@ -1324,7 +1325,15 @@ const AdminDashboard: React.FC = () => {
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => {
+                      if (tab.id === 'documents') {
+                        navigate('/admin/documents');
+                      } else if (tab.id === 'add-document') {
+                        navigate('/admin/add-document');
+                      } else {
+                        setActiveTab(tab.id);
+                      }
+                    }}
                     className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                       activeTab === tab.id
                         ? 'border-blue-500 text-blue-600'
